@@ -17,34 +17,31 @@
                 <button id="test-api" class="button">Test API Connection</button>
                 <div id="api-test-result" class="api-test-result"></div>
             </div>
-            <div class="checkbox-container">
-                <input type="checkbox" id="enable-ai" name="enable-ai">
-                <label for="enable-ai">Enable AI-powered labeling</label>
+            <div class="ai-description">
+                <p>AutoSort+ uses AI to analyze your emails and automatically sort them into categories/folders based on their content. The AI will:</p>
+                <ul>
+                    <li>Read and understand email content</li>
+                    <li>Identify key topics and themes</li>
+                    <li>Match emails to appropriate categories/folders</li>
+                    <li>Learn from your manual corrections to improve accuracy</li>
+                </ul>
             </div>
         </div>
 
         <div class="section">
-            <h2>Custom Labels</h2>
+            <h2>Custom Categories/Folders</h2>
             <div class="bulk-import">
-                <label for="bulk-import-text">Import Labels (one per line):</label>
-                <textarea id="bulk-import-text" class="bulk-import-textarea" placeholder="Enter labels, one per line"></textarea>
-                <button id="import-labels" class="button">Import Labels</button>
+                <label for="bulk-import-text">Import Categories/Folders (one per line):</label>
+                <textarea id="bulk-import-text" class="bulk-import-textarea" placeholder="Enter categories/folders, one per line"></textarea>
+                <button id="import-labels" class="button">Import</button>
             </div>
             <div id="labels-container">
                 <div class="label-item">
-                    <input type="text" class="label-input" placeholder="Enter label name">
+                    <input type="text" class="label-input" placeholder="Enter category/folder name">
                     <button class="remove-label">×</button>
                 </div>
             </div>
-            <button id="add-label" class="button">Add Label</button>
-        </div>
-
-        <div class="section">
-            <h2>Bulk Actions</h2>
-            <div class="checkbox-container">
-                <input type="checkbox" id="bulk-move" name="bulk-move">
-                <label for="bulk-move">Enable bulk move to labels</label>
-            </div>
+            <button id="add-label" class="button">Add</button>
         </div>
 
         <div class="section">

@@ -188,4 +188,29 @@ input[type="checkbox"] {
     border-radius: 4px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     z-index: 1000;
+}
+
+.ai-description {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: var(--background-color);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.ai-description p {
+    margin-bottom: 10px;
+    color: var(--text-color);
+    line-height: 1.5;
+}
+
+.ai-description ul {
+    margin: 0;
+    padding-left: 20px;
+    color: var(--text-color);
+}
+
+.ai-description li {
+    margin-bottom: 8px;
+    line-height: 1.4;
 } 

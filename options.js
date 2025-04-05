@@ -2,29 +2,21 @@ document.addEventListener('DOMContentLoaded', function() {
     const labelsContainer = document.getElementById('labels-container');
     const addLabelButton = document.getElementById('add-label');
     const saveButton = document.getElementById('save-settings');
-    const bulkMoveCheckbox = document.getElementById('bulk-move');
     const geminiApiKeyInput = document.getElementById('gemini-api-key');
-    const enableAiCheckbox = document.getElementById('enable-ai');
     const testApiButton = document.getElementById('test-api');
     const apiTestResult = document.getElementById('api-test-result');
     const importLabelsButton = document.getElementById('import-labels');
     const bulkImportTextarea = document.getElementById('bulk-import-text');
 
     // Load saved settings
-    browser.storage.local.get(['labels', 'bulkMove', 'geminiApiKey', 'enableAi']).then(result => {
+    browser.storage.local.get(['labels', 'geminiApiKey']).then(result => {
         if (result.labels) {
             result.labels.forEach(label => {
                 addLabelInput(label);
             });
         }
-        if (result.bulkMove !== undefined) {
-            bulkMoveCheckbox.checked = result.bulkMove;
-        }
         if (result.geminiApiKey) {
             geminiApiKeyInput.value = result.geminiApiKey;
-        }
-        if (result.enableAi !== undefined) {
-            enableAiCheckbox.checked = result.enableAi;
         }
     });
 
@@ -63,15 +55,15 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Import labels in bulk
+    // Import categories/folders in bulk
     importLabelsButton.addEventListener('click', () => {
         const labelsText = bulkImportTextarea.value.trim();
         if (!labelsText) {
-            showMessage('Please enter labels to import', false);
+            showMessage('Please enter categories/folders to import', false);
             return;
         }
 
-        // Clear existing labels
+        // Clear existing categories/folders
         labelsContainer.innerHTML = '';
 
         // Split by newlines and filter out empty lines
@@ -79,12 +71,12 @@ document.addEventListener('DOMContentLoaded', function() {
             .map(label => label.trim())
             .filter(label => label !== '');
 
-        // Add each label
+        // Add each category/folder
         labels.forEach(label => {
             addLabelInput(label);
         });
 
-        showMessage(`Imported ${labels.length} labels`, true);
+        showMessage(`Imported ${labels.length} categories/folders`, true);
         bulkImportTextarea.value = ''; // Clear the textarea
     });
 
@@ -101,9 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const settings = {
             labels: labels,
-            bulkMove: bulkMoveCheckbox.checked,
-            geminiApiKey: geminiApiKeyInput.value,
-            enableAi: enableAiCheckbox.checked
+            geminiApiKey: geminiApiKeyInput.value
         };
 
         browser.storage.local.set(settings).then(() => {
@@ -113,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Add label input field
+    // Add category/folder input field
     function addLabelInput(value = '') {
         const labelItem = document.createElement('div');
         labelItem.className = 'label-item';
@@ -121,7 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'label-input';
-        input.placeholder = 'Enter label name';
+        input.placeholder = 'Enter category/folder name';
         input.value = value;
 
         const removeButton = document.createElement('button');
