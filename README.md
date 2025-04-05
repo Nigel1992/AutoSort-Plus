@@ -2,6 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Thunderbird Add-on](https://img.shields.io/amo/v/autosortplus)](https://addons.thunderbird.net/en-US/thunderbird/addon/autosortplus/)
+[![Development Status](https://img.shields.io/badge/status-active_development-orange)](https://github.com/Nigel1992/AutoSort-Plus)
+
+> ⚠️ **Development Status**: AutoSort+ is currently under active development. While functional, it may not be 100% reliable in all scenarios. We're working hard to improve stability and performance. Please report any issues you encounter!
 
 AutoSort+ is an AI-powered email organization addon for Thunderbird that automatically sorts your emails into your own custom folders and categories using Google's Gemini AI.
 
