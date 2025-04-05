@@ -1,109 +1,49 @@
 # AutoSort+ for Thunderbird
 
-![AutoSort+ Logo](icons/icon-96.png)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Thunderbird Add-on](https://img.shields.io/amo/v/autosortplus)](https://addons.thunderbird.net/en-US/thunderbird/addon/autosortplus/)
 
-AutoSort+ is an intelligent email organization addon for Thunderbird that uses AI to automatically categorize and sort your emails into folders or tags.
+AutoSort+ is an AI-powered email organization addon for Thunderbird that automatically sorts your emails into your own custom folders and categories using Google's Gemini AI.
 
-## Features
+## 🌟 Key Features
 
-- 🤖 **AI-Powered Classification**: Uses Google's Gemini AI to analyze email content and determine the best category
-- 📁 **Smart Folder Organization**: Automatically moves emails to appropriate folders based on AI analysis
-- 🏷️ **Tag Support**: Option to add tags instead of moving to folders
-- 🎯 **Custom Categories**: Define your own categories and folder structure
-- 📊 **Bulk Processing**: Process multiple emails at once
-- 🔔 **Real-time Feedback**: Detailed progress notifications during processing
-- ⚙️ **Flexible Configuration**: Customize the addon to match your workflow
+- **Fully Customizable Organization**: Use your own folder structure and categories - the AI adapts to your organizational system
+- **AI-Powered Classification**: Leverages Google's Gemini AI to understand email content and context
+- **Smart Folder Organization**: Automatically moves emails to the appropriate folders based on your custom categories
+- **Bulk Processing**: Process multiple emails at once to save time
+- **Privacy First**: All processing happens locally - your emails never leave your computer
 
-## Installation
+## 🚀 Quick Start
 
-1. Download the latest release from the [Releases](https://github.com/yourusername/AutoSort-Plus/releases) page
-2. Open Thunderbird
-3. Go to Tools > Add-ons and Themes
-4. Click the gear icon and select "Install Add-on From File"
-5. Select the downloaded `.xpi` file
-6. Restart Thunderbird
+1. Install the addon from the [latest release](https://github.com/Nigel1992/AutoSort-Plus/releases)
+2. Create your desired folder structure in Thunderbird
+3. Select emails you want to organize
+4. Right-click and choose "AutoSort+ Analyze with AI"
+5. The addon will automatically sort emails into your folders based on content
 
-## Setup
+## ⚙️ Configuration
 
-1. After installation, go to the addon settings:
-   - Click the menu button (☰)
-   - Select Add-ons and Themes
-   - Find AutoSort+ in the list
-   - Click the gear icon and select "Options"
+1. Set up your preferred folder structure in Thunderbird
+2. The addon will learn and adapt to your organizational system
+3. Fine-tune settings through the addon preferences if needed
 
-2. Configure your Gemini API key:
-   - Get an API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - Enter the key in the addon settings
-   - Test the connection using the "Test API Connection" button
+## 📚 Documentation
 
-3. Set up your categories:
-   - Add custom labels that match your email organization needs
-   - Choose between folder move or tag mode
-   - Save your settings
+For detailed documentation, visit our [GitHub Pages site](https://nigel1992.github.io/AutoSort-Plus/).
 
-## Usage
+## 🤝 Contributing
 
-1. Select one or more emails in your inbox
-2. Right-click and choose "AutoSort+ Analyze with AI"
-3. The addon will:
-   - Analyze the email content
-   - Determine the most appropriate category
-   - Move the email to the corresponding folder (or apply a tag)
-   - Show progress notifications throughout the process
+We welcome contributions! Please check our [Contributing Guidelines](CONTRIBUTING.md) for details on:
+- Reporting bugs
+- Suggesting features
+- Submitting pull requests
 
-## Folder Structure
-
-AutoSort+ supports the following default category folders:
-
-- Financiën (Finance)
-- Werk en Carrière (Work and Career)
-- Persoonlijke Communicatie (Personal Communication)
-- Gezondheid en Welzijn (Health and Wellness)
-- Online Activiteiten (Online Activities)
-- Reizen en Evenementen (Travel and Events)
-- Informatie en Media (Information and Media)
-- Beveiliging en IT (Security and IT)
-- Klantensupport (Customer Support)
-- Overheid en Gemeenschap (Government and Community)
-
-You can customize these categories in the addon settings.
-
-## Requirements
-
-- Thunderbird 78.0 or later
-- Google Gemini API key
-- Internet connection for AI analysis
-
-## Development
-
-To build the addon from source:
-
-1. Clone the repository
-2. Make your changes to the source files
-3. Create an `.xpi` file with the following files:
-   - manifest.json
-   - background.js
-   - content.js
-   - options.html
-   - options.js
-   - styles.css
-   - icons/*
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## Author
+## 🙏 Acknowledgments
 
-Nigel Hagen
-
-## Support
-
-If you encounter any issues or have questions:
-1. Check the [Wiki](https://github.com/yourusername/AutoSort-Plus/wiki)
-2. Open an [Issue](https://github.com/yourusername/AutoSort-Plus/issues)
-3. Contact the author 
+- [Thunderbird](https://www.thunderbird.net/) for the amazing email client
+- [Google's Gemini AI](https://ai.google.dev/) for the powerful AI capabilities
+- All contributors and users who help improve AutoSort+ 

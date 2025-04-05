@@ -3,15 +3,20 @@ plugins:
 - jekyll-remote-theme
 
 title: AutoSort+
-description: AI-powered email organization addon for Thunderbird
+description: Fully customizable AI-powered email organization for Thunderbird. Create your own folder structure and let the AI adapt to your organizational system.
 show_downloads: true
 google_analytics:
 theme: jekyll-theme-cayman
 
 # Navigation
 nav:
-  - Installation: installation.md
-  - Configuration: configuration.md
-  - Usage Guide: usage.md
-  - FAQ: faq.md
-  - Contributing: contributing.md 
+  - title: Installation
+    url: /installation
+  - title: Your Custom Setup
+    url: /custom-setup
+  - title: Usage Guide
+    url: /usage
+  - title: FAQ
+    url: /faq
+  - title: Contributing
+    url: /contributing 
