@@ -1,0 +1,43 @@
+{
+  "manifest_version": 2,
+  "name": "AutoSort+",
+  "version": "1.0",
+  "description": "Automatically sort and label your emails with custom rules using AI",
+  "author": "Nigel Hagen",
+  "applications": {
+    "gecko": {
+      "id": "autosortplus@nigelhagen.com",
+      "strict_min_version": "78.0"
+    }
+  },
+  "permissions": [
+    "messagesRead",
+    "messagesModify",
+    "accountsRead",
+    "storage",
+    "menus",
+    "tabs",
+    "notifications",
+    "messagesMove",
+    "messagesRead",
+    "activeTab",
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "background": {
+    "scripts": ["background.js"]
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "js": ["content.js"]
+    }
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
+  "icons": {
+    "48": "icons/icon-48.png",
+    "96": "icons/icon-96.png"
+  }
+} 

@@ -1,0 +1,25 @@
+# Build artifacts
+*.xpi
+*.zip
+
+# IDE files
+.vscode/
+.idea/
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Node.js (if used for development)
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log 
