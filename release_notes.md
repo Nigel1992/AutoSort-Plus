@@ -12,10 +12,11 @@
 - Improved UI with detailed AI description
 - Updated terminology from labels to categories/folders
 
-### Installation
+### Installation in Thunderbird
 1. Download the autosortplus.xpi file
-2. Open Firefox
-3. Go to about:debugging
-4. Click "This Firefox"
-5. Click "Load Temporary Add-on"
-6. Select the downloaded XPI file 
+2. Open Thunderbird
+3. Click the Menu button (☰) and select "Add-ons and Themes"
+4. Click the gear icon and select "Install Add-on From File..."
+5. Select the downloaded autosortplus.xpi file
+6. Click "Add" when prompted to install the add-on
+7. Restart Thunderbird when prompted 

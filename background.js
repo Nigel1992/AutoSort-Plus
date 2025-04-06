@@ -20,23 +20,28 @@ async function showNotification(title, message, type = "basic") {
             title: title,
             message: message,
             eventTime: Date.now(),
-            priority: 2
+            priority: 2,
+            requireInteraction: true  // This will make the notification stay until dismissed
         });
         return id;
     } catch (error) {
         console.error("Error showing notification:", error);
+        // Fallback to console if notification fails
+        console.log(`[AutoSort+] ${title}: ${message}`);
     }
 }
 
 // Function to update existing notification
 async function updateNotification(id, title, message) {
     try {
-        await browser.notifications.update(id, {
-            title: title,
-            message: message
-        });
+        // Close the old notification
+        await browser.notifications.clear(id);
+        // Create a new notification
+        return await showNotification(title, message);
     } catch (error) {
         console.error("Error updating notification:", error);
+        // Fallback to console if notification fails
+        console.log(`[AutoSort+] ${title}: ${message}`);
     }
 }
 
@@ -52,10 +57,10 @@ async function analyzeEmailContent(emailContent) {
         console.log("Settings retrieved:", {
             hasApiKey: !!settings.geminiApiKey,
             labels: settings.labels,
-            enableAi: settings.enableAi
+            enableAi: settings.enableAi !== false
         });
         
-        if (!settings.enableAi || !settings.geminiApiKey || !settings.labels || settings.labels.length === 0) {
+        if (settings.enableAi === false || !settings.geminiApiKey || !settings.labels || settings.labels.length === 0) {
             console.error("Missing configuration");
             await updateNotification(
                 notificationId,
@@ -84,7 +89,8 @@ async function analyzeEmailContent(emailContent) {
         ${emailContent}`;
 
         console.log("Making API request to Gemini...");
-        console.log("API URL:", 'https://generativelanguage.googleapis.com/v1/models/gemini-1.0-pro:generateContent');
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${settings.geminiApiKey}`;
+        console.log("API URL:", apiUrl);
         
         await updateNotification(
             notificationId,
@@ -107,11 +113,10 @@ async function analyzeEmailContent(emailContent) {
         };
         console.log("Request body:", JSON.stringify(requestBody));
 
-        const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-1.0-pro:generateContent', {
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': settings.geminiApiKey
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(requestBody)
         });
@@ -174,10 +179,28 @@ async function analyzeEmailContent(emailContent) {
     }
 }
 
+// Function to store move history
+async function storeMoveHistory(result) {
+    try {
+        const data = await browser.storage.local.get('moveHistory');
+        const history = data.moveHistory || [];
+        history.unshift({
+            timestamp: new Date().toISOString(),
+            ...result
+        });
+        // Keep only the last 100 entries
+        if (history.length > 100) {
+            history.pop();
+        }
+        await browser.storage.local.set({ moveHistory: history });
+    } catch (error) {
+        console.error("Error storing move history:", error);
+    }
+}
+
 // Function to apply labels to selected messages
 async function applyLabelsToMessages(messages, label) {
     try {
-        const settings = await browser.storage.local.get(['bulkMove']);
         const messageCount = messages.length;
         const notificationId = await showNotification(
             "AutoSort+ Processing",
@@ -186,138 +209,144 @@ async function applyLabelsToMessages(messages, label) {
         
         let successCount = 0;
         let errorCount = 0;
+        const moveResults = [];
 
         for (const message of messages) {
-            if (settings.bulkMove) {
-                // Get all folders to find the destination folder
-                const account = await browser.accounts.get(message.folder.accountId);
-                console.log("Account info:", account);
+            console.log("Processing message:", message.id);
+            console.log("Target label/folder:", label);
+            
+            // Get all folders to find the destination folder
+            const account = await browser.accounts.get(message.folder.accountId);
+            console.log("Account info:", account);
+
+            await updateNotification(
+                notificationId,
+                "AutoSort+ Processing",
+                `Finding destination folder for message ${successCount + errorCount + 1}/${messageCount}...`
+            );
+
+            // Find the folder with matching name
+            const findFolder = (folders, targetName) => {
+                for (const folder of folders) {
+                    console.log("Checking folder:", folder.name);
+                    if (folder.name === targetName) {
+                        return folder;
+                    }
+                    if (folder.subFolders) {
+                        const found = findFolder(folder.subFolders, targetName);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            };
+
+            // First try to find the category folder
+            const categories = [
+                "Financiën",
+                "Werk en Carrière",
+                "Persoonlijke Communicatie en Sociale Leven",
+                "Gezondheid en Welzijn",
+                "Online Activiteiten en E-commerce",
+                "Reizen en Evenementen",
+                "Informatie en Media",
+                "Beveiliging en IT",
+                "Klantensupport en Acties",
+                "Overheid en Gemeenschap"
+            ];
+
+            let categoryFolder = null;
+            let targetFolder = null;
+
+            // Find the category and target folder
+            for (const category of categories) {
+                if (label.startsWith(category)) {
+                    console.log("Found matching category:", category);
+                    categoryFolder = findFolder(account.folders, category);
+                    if (categoryFolder) {
+                        console.log("Found category folder:", categoryFolder.name);
+                        // Try to find the subfolder
+                        const subfolderName = label.replace(category + "/", "");
+                        console.log("Looking for subfolder:", subfolderName);
+                        targetFolder = findFolder(categoryFolder.subFolders || [], subfolderName);
+                        break;
+                    }
+                }
+            }
+
+            // If no target folder found, try direct match
+            if (!targetFolder) {
+                console.log("No category match found, trying direct folder match");
+                targetFolder = findFolder(account.folders, label);
+            }
+
+            console.log("Moving message to folder:", targetFolder ? targetFolder.name : "not found");
+
+            try {
+                if (!targetFolder) {
+                    console.error(`Folder "${label}" not found in account ${account.name}`);
+                    await updateNotification(
+                        notificationId,
+                        "AutoSort+ Error",
+                        `Folder "${label}" not found. Please create it first in Thunderbird.`
+                    );
+                    errorCount++;
+                    const result = {
+                        subject: message.subject || "(No subject)",
+                        status: "Error",
+                        destination: "Folder not found",
+                        timestamp: new Date().toISOString()
+                    };
+                    moveResults.push(result);
+                    await storeMoveHistory(result);
+                    continue;
+                }
 
                 await updateNotification(
                     notificationId,
                     "AutoSort+ Processing",
-                    `Finding destination folder for message ${successCount + errorCount + 1}/${messageCount}...`
+                    `Moving message ${successCount + errorCount + 1}/${messageCount} to ${targetFolder.name}...`
                 );
 
-                // Find the folder with matching name
-                const findFolder = (folders, targetName) => {
-                    for (const folder of folders) {
-                        if (folder.name === targetName) {
-                            return folder;
-                        }
-                        if (folder.subFolders) {
-                            const found = findFolder(folder.subFolders, targetName);
-                            if (found) return found;
-                        }
-                    }
-                    return null;
+                // Move the message using the folder ID
+                await browser.messages.move(
+                    [message.id], 
+                    targetFolder.id
+                );
+                
+                successCount++;
+                const result = {
+                    subject: message.subject || "(No subject)",
+                    status: "Success",
+                    destination: targetFolder.name,
+                    timestamp: new Date().toISOString()
                 };
-
-                // First try to find the category folder
-                const categories = [
-                    "Financiën",
-                    "Werk en Carrière",
-                    "Persoonlijke Communicatie en Sociale Leven",
-                    "Gezondheid en Welzijn",
-                    "Online Activiteiten en E-commerce",
-                    "Reizen en Evenementen",
-                    "Informatie en Media",
-                    "Beveiliging en IT",
-                    "Klantensupport en Acties",
-                    "Overheid en Gemeenschap"
-                ];
-
-                let categoryFolder = null;
-                let targetFolder = null;
-
-                // Find the category and target folder
-                for (const category of categories) {
-                    if (label.startsWith(category)) {
-                        categoryFolder = findFolder(account.folders, category);
-                        if (categoryFolder) {
-                            // Try to find the subfolder
-                            const subfolderName = label.replace(category + "/", "");
-                            targetFolder = findFolder(categoryFolder.subFolders || [], subfolderName);
-                            break;
-                        }
-                    }
-                }
-
-                // If no target folder found, try direct match
-                if (!targetFolder) {
-                    targetFolder = findFolder(account.folders, label);
-                }
-
-                console.log("Moving message to folder:", targetFolder);
-
-                try {
-                    if (!targetFolder) {
-                        console.error(`Folder "${label}" not found in account ${account.name}`);
-                        await updateNotification(
-                            notificationId,
-                            "AutoSort+ Error",
-                            `Folder "${label}" not found. Please create it first in Thunderbird.`
-                        );
-                        errorCount++;
-                        continue;
-                    }
-
-                    await updateNotification(
-                        notificationId,
-                        "AutoSort+ Processing",
-                        `Moving message ${successCount + errorCount + 1}/${messageCount} to ${targetFolder.name}...`
-                    );
-
-                    // Move the message using the folder ID
-                    await browser.messages.move(
-                        [message.id], 
-                        targetFolder.id
-                    );
-                    
-                    successCount++;
-                    console.log(`Moved message ${message.id} to folder ${targetFolder.name} (${targetFolder.id})`);
-                } catch (moveError) {
-                    console.error("Error moving message:", moveError);
-                    errorCount++;
-                    await updateNotification(
-                        notificationId,
-                        "AutoSort+ Error",
-                        `Error moving message: ${moveError.message}`
-                    );
-                }
-            } else {
-                // Add the tag to the message
-                try {
-                    await updateNotification(
-                        notificationId,
-                        "AutoSort+ Processing",
-                        `Applying tag to message ${successCount + errorCount + 1}/${messageCount}...`
-                    );
-
-                    const currentTags = message.tags || [];
-                    if (!currentTags.includes(label)) {
-                        const newTags = [...currentTags, label];
-                        await browser.messages.setTags(message.id, newTags);
-                        successCount++;
-                        console.log(`Added tag ${label} to message ${message.id}`);
-                    } else {
-                        successCount++;
-                        console.log(`Message ${message.id} already has tag ${label}`);
-                    }
-                } catch (tagError) {
-                    errorCount++;
-                    console.error("Error applying tag:", tagError);
-                }
+                moveResults.push(result);
+                await storeMoveHistory(result);
+            } catch (moveError) {
+                console.error("Error moving message:", moveError);
+                errorCount++;
+                const result = {
+                    subject: message.subject || "(No subject)",
+                    status: "Error",
+                    destination: moveError.message,
+                    timestamp: new Date().toISOString()
+                };
+                moveResults.push(result);
+                await storeMoveHistory(result);
+                await updateNotification(
+                    notificationId,
+                    "AutoSort+ Error",
+                    `Error moving message: ${moveError.message}`
+                );
             }
         }
 
         // Show final status
-        const action = settings.bulkMove ? 'moved' : 'tagged';
         if (errorCount === 0) {
             await updateNotification(
                 notificationId,
                 "AutoSort+ Success",
-                `Successfully ${action} ${successCount} message(s) with ${label}`
+                `Successfully moved ${successCount} message(s) to ${label}`
             );
         } else {
             await updateNotification(
@@ -326,11 +355,51 @@ async function applyLabelsToMessages(messages, label) {
                 `Processed ${messageCount} message(s): ${successCount} successful, ${errorCount} failed`
             );
         }
+
+        // Create and show the results popup
+        await showMoveResultsPopup(moveResults);
     } catch (error) {
         console.error("Error applying labels:", error);
         await showNotification(
             "AutoSort+ Error",
             `Error processing messages: ${error.message}`
+        );
+    }
+}
+
+// Function to create and show the move results popup
+async function showMoveResultsPopup(results) {
+    try {
+        const successCount = results.filter(r => r.status === "Success").length;
+        const errorCount = results.filter(r => r.status === "Error").length;
+        
+        // Create a detailed message
+        let message = `Processed ${results.length} messages:\n`;
+        message += `✅ Successfully moved: ${successCount}\n`;
+        message += `❌ Failed to move: ${errorCount}\n\n`;
+        
+        // Add details for each message
+        results.forEach((result, index) => {
+            message += `${index + 1}. ${result.subject}\n`;
+            message += `   Status: ${result.status}\n`;
+            message += `   Destination: ${result.destination}\n`;
+            message += `   Timestamp: ${result.timestamp}\n\n`;
+        });
+
+        // Show the notification with higher priority and require interaction
+        await showNotification(
+            "AutoSort+ Results",
+            message,
+            "basic"
+        );
+
+        // Also log to console for debugging
+        console.log("[AutoSort+] Results:", message);
+    } catch (error) {
+        console.error("Error showing results:", error);
+        await showNotification(
+            "AutoSort+ Error",
+            "Failed to show detailed results. Check console for more information."
         );
     }
 }

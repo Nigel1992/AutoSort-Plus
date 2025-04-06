@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     const labelsContainer = document.getElementById('labels-container');
     const addLabelButton = document.getElementById('add-label');
     const saveButton = document.getElementById('save-settings');
@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const bulkImportTextarea = document.getElementById('bulk-import-text');
 
     // Load saved settings
-    browser.storage.local.get(['labels', 'geminiApiKey']).then(result => {
+    browser.storage.local.get(['labels', 'geminiApiKey', 'enableAi']).then(result => {
         if (result.labels) {
             result.labels.forEach(label => {
                 addLabelInput(label);
@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (result.geminiApiKey) {
             geminiApiKeyInput.value = result.geminiApiKey;
         }
+        // Set enableAi to true by default if not set
+        document.getElementById('enable-ai').checked = result.enableAi !== false;
     });
 
     // Test API connection
@@ -93,7 +95,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const settings = {
             labels: labels,
-            geminiApiKey: geminiApiKeyInput.value
+            geminiApiKey: geminiApiKeyInput.value,
+            enableAi: document.getElementById('enable-ai').checked
         };
 
         browser.storage.local.set(settings).then(() => {
@@ -144,4 +147,41 @@ document.addEventListener('DOMContentLoaded', function() {
             messageDiv.remove();
         }, 3000);
     }
+
+    // Function to format timestamp
+    function formatTimestamp(timestamp) {
+        const date = new Date(timestamp);
+        return date.toLocaleString();
+    }
+
+    // Function to update history table
+    async function updateHistoryTable() {
+        const historyBody = document.getElementById('history-body');
+        const data = await browser.storage.local.get('moveHistory');
+        const history = data.moveHistory || [];
+        
+        historyBody.innerHTML = history.map(entry => `
+            <tr>
+                <td class="timestamp">${formatTimestamp(entry.timestamp)}</td>
+                <td>${entry.subject}</td>
+                <td class="${entry.status.toLowerCase()}">${entry.status}</td>
+                <td>${entry.destination}</td>
+            </tr>
+        `).join('');
+    }
+
+    // Function to clear history
+    async function clearHistory() {
+        if (confirm('Are you sure you want to clear the move history?')) {
+            await browser.storage.local.set({ moveHistory: [] });
+            await updateHistoryTable();
+        }
+    }
+
+    // Initialize the page
+    await updateHistoryTable();
+
+    // Add event listeners for history controls
+    document.getElementById('clear-history').addEventListener('click', clearHistory);
+    document.getElementById('refresh-history').addEventListener('click', updateHistoryTable);
 }); 
