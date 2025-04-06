@@ -23,7 +23,6 @@ AutoSort+ is an AI-powered email organization addon for Thunderbird that automat
 - **AI-Powered Classification**: Leverages Google's Gemini AI to understand email content and context
 - **Smart Folder Organization**: Automatically moves emails to the appropriate folders based on your custom categories
 - **Bulk Processing**: Process multiple emails at once to save time
-- **Privacy Conscious**: Only email subjects and minimal content are sent to Google's Gemini AI for classification. No attachments, sender information, or full email bodies are transmitted.
 - **Move History**: Track all email moves with detailed information including:
   - Timestamp of move
   - Email subject
