@@ -451,6 +451,9 @@ async function applyLabelsToMessages(messages, label) {
                         console.log("Looking for subfolder:", subfolderName);
                         targetFolder = findFolder(categoryFolder.subFolders || [], subfolderName);
                         break;
+                    } else {
+                        console.log("Category folder not found:", category, "- skipping to next category");
+                        continue;
                     }
                 }
             }
