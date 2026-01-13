@@ -464,6 +464,28 @@ async function applyLabelsToMessages(messages, label) {
                 targetFolder = findFolder(account.folders, label);
             }
 
+            // Auto-create missing folder when it's a custom label (skip imported/structured labels)
+            if (!targetFolder) {
+                const looksImported = label.includes('/') || label.includes('\\');
+                if (looksImported) {
+                    console.warn(`Folder "${label}" looks imported/structured; skipping auto-create.`);
+                } else {
+                    try {
+                        const parentFolder = account.folders && account.folders.length > 0 ? account.folders[0] : null;
+                        if (parentFolder && browser.folders && browser.folders.create) {
+                            console.log(`Creating missing folder "${label}" under ${parentFolder.name || 'root'}`);
+                            const created = await browser.folders.create(parentFolder, label);
+                            if (created) {
+                                targetFolder = created;
+                                console.log("Created folder:", created);
+                            }
+                        }
+                    } catch (createError) {
+                        console.error(`Failed to create folder "${label}":`, createError);
+                    }
+                }
+            }
+
             console.log("Moving message to folder:", targetFolder ? targetFolder.name : "not found");
 
             try {
