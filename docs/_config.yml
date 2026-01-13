@@ -1,22 +1,67 @@
+# GitHub Pages Configuration
 remote_theme: pages-themes/cayman@v0.2.0
 plugins:
-- jekyll-remote-theme
+  - jekyll-remote-theme
+  - jekyll-seo-tag
+  - jekyll-sitemap
 
-title: AutoSort+
-description: Fully customizable AI-powered email organization for Thunderbird. Create your own folder structure and let the AI adapt to your organizational system.
-show_downloads: true
-google_analytics:
+# Site Settings
+title: "AutoSort+ | AI-Powered Email Organization"
+description: "Multi-provider AI email organization for Thunderbird. Smart rate limiting, usage tracking, and support for Gemini, OpenAI, Claude, Groq, and Mistral."
+author: Nigel
+url: "https://nigel1992.github.io"
+baseurl: "/AutoSort-Plus"
+repository: Nigel1992/AutoSort-Plus
+
+# Theme Settings
 theme: jekyll-theme-cayman
+show_downloads: true
 
-# Navigation
-nav:
-  - title: Installation
-    url: /installation
-  - title: Your Custom Setup
-    url: /custom-setup
-  - title: Usage Guide
-    url: /usage
-  - title: FAQ
-    url: /faq
-  - title: Contributing
-    url: /contributing 
+# SEO
+lang: en-US
+logo: /AutoSort-Plus/icon-48.png
+twitter:
+  card: summary
+  username: 
+social:
+  name: AutoSort+
+  links:
+    - https://github.com/Nigel1992/AutoSort-Plus
+
+# Display Settings  
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  syntax_highlighter_opts:
+    css_class: 'highlight'
+
+# Features
+show_excerpts: true
+date_format: "%B %-d, %Y"
+
+# Analytics (optional - add your tracking ID)
+google_analytics: 
+
+# Build Settings
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - .gitignore
+  - README.md
+
+# Collections (for future docs expansion)
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:path/
+
+defaults:
+  - scope:
+      path: ""
+      type: "docs"
+    values:
+      layout: "default"
+      author: "Nigel" 
