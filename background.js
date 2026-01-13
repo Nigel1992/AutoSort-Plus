@@ -753,15 +753,16 @@ browser.menus.onClicked.addListener(async (info, tab) => {
 
                 console.log("Analyzing message content");
                 const label = await analyzeEmailContent(emailContent);
-                
-                if (label) {
-                    console.log("Applying label:", label);
-                    await applyLabelsToMessages([message], label);
-                    await showNotification("AutoSort+", `Successfully applied label: ${label}`);
-                } else {
-                    console.log("No label generated from analysis");
-                    await showNotification("AutoSort+ Error", "Could not generate label from analysis");
+
+                // Skip if AI returned null/no label
+                if (!label || String(label).trim().toLowerCase() === "null") {
+                    console.log("Skipping message because generated label was null/empty");
+                    continue;
                 }
+
+                console.log("Applying label:", label);
+                await applyLabelsToMessages([message], label);
+                await showNotification("AutoSort+", `Successfully applied label: ${label}`);
             }
         } catch (error) {
             console.error("Error during AI analysis:", error);
