@@ -49,6 +49,29 @@
                 <label for="gemini-paid-plan">I have a Gemini paid plan (removes rate limits)</label>
             </div>
             
+            <div id="gemini-usage-container" class="usage-info" style="display: none;">
+                <h3>Gemini API Usage (Current Key)</h3>
+                <div class="usage-stats">
+                    <div class="usage-item">
+                        <strong>Today's Usage:</strong> <span id="gemini-daily-count">0</span>/20 requests
+                    </div>
+                    <div class="usage-item">
+                        <strong>Last Request:</strong> <span id="gemini-last-request">Never</span>
+                    </div>
+                    <div class="usage-item">
+                        <strong>Daily Limit Resets:</strong> <span id="gemini-reset-time">--</span>
+                    </div>
+                    <div class="usage-item">
+                        <strong>Status:</strong> <span id="gemini-status">Ready</span>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button id="reset-gemini-counter" class="button">Reset Counter (New API Key)</button>
+                    <button id="refresh-usage" class="button">Refresh Usage</button>
+                </div>
+                <div id="usage-message" class="usage-message"></div>
+            </div>
+            
             <div class="ai-description">
                 <p>AutoSort+ uses AI to analyze your emails and automatically sort them into categories/folders based on their content. The AI will:</p>
                 <ul>

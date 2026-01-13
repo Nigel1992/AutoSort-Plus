@@ -61,11 +61,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         const provider = aiProviderSelect.value;
         const config = aiProviders[provider];
         
-        // Show/hide Gemini paid plan option
+        // Show/hide Gemini paid plan option and usage display
         if (provider === 'gemini') {
             geminiPaidContainer.style.display = 'block';
+            document.getElementById('gemini-usage-container').style.display = 'block';
+            updateGeminiUsageDisplay();
         } else {
             geminiPaidContainer.style.display = 'none';
+            document.getElementById('gemini-usage-container').style.display = 'none';
         }
         
         providerInfo.innerHTML = `
@@ -78,9 +81,93 @@ document.addEventListener('DOMContentLoaded', async function() {
         apiKeyInput.placeholder = `Enter your ${config.name} API key`;
     }
     
+    // Update Gemini usage display
+    async function updateGeminiUsageDisplay() {
+        const data = await browser.storage.local.get(['geminiRateLimit']);
+        const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: Date.now() };
+        const now = Date.now();
+        
+        // Update daily count
+        document.getElementById('gemini-daily-count').textContent = rateLimit.dailyCount;
+        
+        // Update last request time
+        if (rateLimit.requests && rateLimit.requests.length > 0) {
+            const lastRequest = Math.max(...rateLimit.requests);
+            const minutesAgo = Math.floor((now - lastRequest) / 60000);
+            if (minutesAgo < 1) {
+                document.getElementById('gemini-last-request').textContent = 'Just now';
+            } else if (minutesAgo < 60) {
+                document.getElementById('gemini-last-request').textContent = `${minutesAgo} minute${minutesAgo > 1 ? 's' : ''} ago`;
+            } else {
+                const hoursAgo = Math.floor(minutesAgo / 60);
+                document.getElementById('gemini-last-request').textContent = `${hoursAgo} hour${hoursAgo > 1 ? 's' : ''} ago`;
+            }
+        } else {
+            document.getElementById('gemini-last-request').textContent = 'Never';
+        }
+        
+        // Update reset time
+        if (rateLimit.dailyResetTime > now) {
+            const hoursUntil = Math.ceil((rateLimit.dailyResetTime - now) / (1000 * 60 * 60));
+            document.getElementById('gemini-reset-time').textContent = `In ${hoursUntil} hour${hoursUntil > 1 ? 's' : ''}`;
+        } else {
+            document.getElementById('gemini-reset-time').textContent = 'Expired (will reset on next request)';
+        }
+        
+        // Update status and show warnings
+        const usageMessage = document.getElementById('usage-message');
+        const statusSpan = document.getElementById('gemini-status');
+        
+        if (rateLimit.dailyCount >= 20) {
+            statusSpan.textContent = '🔴 Limit Reached';
+            statusSpan.style.color = '#dc3545';
+            usageMessage.className = 'usage-message warning';
+            usageMessage.textContent = '⚠️ Daily limit reached! Create a new API key in a different project and update it above to continue processing emails.';
+        } else if (rateLimit.dailyCount >= 15) {
+            statusSpan.textContent = '🟡 Nearly Full';
+            statusSpan.style.color = '#ffc107';
+            usageMessage.className = 'usage-message warning';
+            usageMessage.textContent = `⚠️ Only ${20 - rateLimit.dailyCount} requests remaining today. Consider switching to a new API key soon.`;
+        } else {
+            statusSpan.textContent = '🟢 Ready';
+            statusSpan.style.color = '#28a745';
+            usageMessage.style.display = 'none';
+        }
+    }
+    
     // Initialize provider info
     updateProviderInfo();
     aiProviderSelect.addEventListener('change', updateProviderInfo);
+    
+    // Reset Gemini counter button
+    document.getElementById('reset-gemini-counter').addEventListener('click', async () => {
+        if (confirm('Reset usage counter? Do this only after switching to a new API key.')) {
+            await browser.storage.local.set({ 
+                geminiRateLimit: { 
+                    requests: [], 
+                    dailyCount: 0, 
+                    dailyResetTime: Date.now() + (24 * 60 * 60 * 1000)
+                } 
+            });
+            await updateGeminiUsageDisplay();
+            const usageMessage = document.getElementById('usage-message');
+            usageMessage.className = 'usage-message info';
+            usageMessage.textContent = '✓ Usage counter reset. You can now process up to 20 more emails today with your new API key.';
+        }
+    });
+    
+    // Refresh usage button
+    document.getElementById('refresh-usage').addEventListener('click', async () => {
+        await updateGeminiUsageDisplay();
+        const usageMessage = document.getElementById('usage-message');
+        usageMessage.className = 'usage-message info';
+        usageMessage.textContent = '✓ Usage information refreshed.';
+        setTimeout(() => {
+            if (usageMessage.classList.contains('info')) {
+                usageMessage.style.display = 'none';
+            }
+        }, 3000);
+    });
     
     // Get API Key button
     getApiKeyButton.addEventListener('click', async () => {
