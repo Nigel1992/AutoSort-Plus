@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         gemini: {
             name: 'Google Gemini',
             signupUrl: 'https://aistudio.google.com/app/apikey',
-            info: '✓ Free tier: 5 requests/minute, 20/day per project (enforced by addon)<br>✓ Tip: Create multiple projects for more quota<br>✓ Best for: General use, multilingual support<br>✓ Models: Gemini 2.5 Flash<br>✓ Check "paid plan" option to remove limits',
+            info: '✓ Free tier: 5 requests/minute, 20/day per API key (enforced by addon)<br>✓ Tip: Create multiple API keys in different projects, switch keys when limit reached<br>✓ Check usage: <a href="https://aistudio.google.com/usage" target="_blank">AI Studio Usage</a><br>✓ Best for: General use, multilingual support<br>✓ Models: Gemini 2.5 Flash<br>✓ Check "paid plan" option to remove limits',
             isFree: true
         },
         openai: {
