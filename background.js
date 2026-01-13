@@ -10,6 +10,70 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
+// Gemini rate limiting functions (free tier: 5/min, 20/day)
+async function checkGeminiRateLimit() {
+    const now = Date.now();
+    const data = await browser.storage.local.get(['geminiRateLimit']);
+    const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: now };
+    
+    // Reset daily count if it's a new day
+    if (now > rateLimit.dailyResetTime) {
+        rateLimit.dailyCount = 0;
+        rateLimit.dailyResetTime = now + (24 * 60 * 60 * 1000); // 24 hours from now
+    }
+    
+    // Check daily limit (20 per day)
+    if (rateLimit.dailyCount >= 20) {
+        const hoursUntilReset = Math.ceil((rateLimit.dailyResetTime - now) / (1000 * 60 * 60));
+        return {
+            allowed: false,
+            message: `Gemini free tier daily limit reached (20/day). Resets in ${hoursUntilReset} hours. Upgrade to paid plan in settings to remove limits.`
+        };
+    }
+    
+    // Remove requests older than 1 minute
+    const oneMinuteAgo = now - 60000;
+    rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
+    
+    // Check if we need to wait (12 seconds between requests = 5 per minute)
+    if (rateLimit.requests.length > 0) {
+        const lastRequest = Math.max(...rateLimit.requests);
+        const timeSinceLastRequest = now - lastRequest;
+        const minInterval = 12000; // 12 seconds
+        
+        if (timeSinceLastRequest < minInterval) {
+            const waitTime = Math.ceil((minInterval - timeSinceLastRequest) / 1000);
+            return {
+                allowed: true,
+                waitTime: waitTime
+            };
+        }
+    }
+    
+    return {
+        allowed: true,
+        waitTime: 0
+    };
+}
+
+async function trackGeminiRequest() {
+    const now = Date.now();
+    const data = await browser.storage.local.get(['geminiRateLimit']);
+    const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: now + (24 * 60 * 60 * 1000) };
+    
+    // Add current request
+    rateLimit.requests.push(now);
+    rateLimit.dailyCount += 1;
+    
+    // Clean old requests
+    const oneMinuteAgo = now - 60000;
+    rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
+    
+    await browser.storage.local.set({ geminiRateLimit: rateLimit });
+    
+    console.log(`Gemini requests: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
+}
+
 // Function to show notification
 async function showNotification(title, message, type = "basic") {
     // Log to console (Thunderbird doesn't support browser.notifications)
@@ -60,8 +124,31 @@ async function analyzeEmailContent(emailContent) {
             "Starting email analysis..."
         );
 
-        const settings = await browser.storage.local.get(['apiKey', 'aiProvider', 'labels', 'enableAi']);
+        const settings = await browser.storage.local.get(['apiKey', 'aiProvider', 'labels', 'enableAi', 'geminiPaidPlan', 'geminiRateLimit']);
         const provider = settings.aiProvider || 'gemini';
+        
+        // Check Gemini rate limits (free tier only)
+        if (provider === 'gemini' && !settings.geminiPaidPlan) {
+            const rateLimitCheck = await checkGeminiRateLimit();
+            if (!rateLimitCheck.allowed) {
+                await updateNotification(
+                    notificationId,
+                    "AutoSort+ Rate Limit",
+                    rateLimitCheck.message
+                );
+                return null;
+            }
+            
+            // Wait if needed for rate limiting (12 seconds between requests)
+            if (rateLimitCheck.waitTime > 0) {
+                await updateNotification(
+                    notificationId,
+                    "AutoSort+ Rate Limiting",
+                    `Waiting ${rateLimitCheck.waitTime} seconds for rate limit...`
+                );
+                await new Promise(resolve => setTimeout(resolve, rateLimitCheck.waitTime * 1000));
+            }
+        }
         
         console.log("Settings retrieved:", {
             hasApiKey: !!settings.apiKey,
@@ -124,6 +211,11 @@ async function analyzeEmailContent(emailContent) {
         if (provider === 'gemini') {
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.apiKey}`;
             console.log("Making API request to Gemini...");
+            
+            // Track request for rate limiting (free tier only)
+            if (!settings.geminiPaidPlan) {
+                await trackGeminiRequest();
+            }
             
             await updateNotification(
                 notificationId,

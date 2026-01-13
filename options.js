@@ -8,6 +8,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     const getApiKeyButton = document.getElementById('get-api-key');
     const testApiButton = document.getElementById('test-api');
     const apiTestResult = document.getElementById('api-test-result');
+    const geminiPaidContainer = document.getElementById('gemini-paid-container');
+    const geminiPaidCheckbox = document.getElementById('gemini-paid-plan');
     const importLabelsButton = document.getElementById('import-labels');
     const bulkImportTextarea = document.getElementById('bulk-import-text');
     const loadImapFoldersButton = document.getElementById('load-imap-folders');
@@ -58,6 +60,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     function updateProviderInfo() {
         const provider = aiProviderSelect.value;
         const config = aiProviders[provider];
+        
+        // Show/hide Gemini paid plan option
+        if (provider === 'gemini') {
+            geminiPaidContainer.style.display = 'block';
+        } else {
+            geminiPaidContainer.style.display = 'none';
+        }
         
         providerInfo.innerHTML = `
             <div class="provider-details">
@@ -120,7 +129,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Load saved settings
-    browser.storage.local.get(['labels', 'apiKey', 'aiProvider', 'enableAi']).then(result => {
+    browser.storage.local.get(['labels', 'apiKey', 'aiProvider', 'enableAi', 'geminiPaidPlan']).then(result => {
         if (result.labels && result.labels.length > 0) {
             result.labels.forEach(label => {
                 addLabelInput(label);
@@ -138,6 +147,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         // Set enableAi to true by default if not set
         document.getElementById('enable-ai').checked = result.enableAi !== false;
+        
+        // Set gemini paid plan checkbox
+        geminiPaidCheckbox.checked = result.geminiPaidPlan === true;
         
         updateSaveButtonState();
     });
@@ -393,7 +405,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             labels: labels,
             apiKey: apiKey,
             aiProvider: aiProviderSelect.value,
-            enableAi: document.getElementById('enable-ai').checked
+            enableAi: document.getElementById('enable-ai').checked,
+            geminiPaidPlan: geminiPaidCheckbox.checked
         };
 
         browser.storage.local.set(settings).then(() => {
