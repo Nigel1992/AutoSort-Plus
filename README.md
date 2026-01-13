@@ -224,6 +224,10 @@ None currently known. Please report any issues on GitHub.
 
 MIT License - See [LICENSE](LICENSE) file for details
 
+## 🎨 Credits
+
+Icon Attribution: <a href="https://www.flaticon.com/free-icons/email-filtering" title="email filtering icons">Email filtering icons created by Fantasyou - Flaticon</a>
+
 ## 🙏 Contributing
 
 Pull requests welcome! For major changes, please open an issue first to discuss.
