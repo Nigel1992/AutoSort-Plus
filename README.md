@@ -5,7 +5,7 @@
 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Development Status](https://img.shields.io/badge/status-active-green)](https://github.com/nigelhagen/AutoSort-Plus)
+[![Development Status](https://img.shields.io/badge/status-active-green)](https://github.com/Nigel1992/AutoSort-Plus)
 
 **Automatically sort and label your emails with AI intelligence**
 
@@ -47,14 +47,14 @@ AutoSort+ is a powerful Thunderbird addon that uses artificial intelligence to a
 ## 📦 Installation
 
 ### From Release File
-1. Download `autosortplus.xpi` from [Latest Release](https://github.com/nigelhagen/AutoSort-Plus/releases)
+1. Download `autosortplus.xpi` from [Latest Release](https://github.com/Nigel1992/AutoSort-Plus/releases)
 2. In Thunderbird: **Tools → Add-ons and Extensions**
 3. Click gear icon (⚙️) → **Install Add-on From File**
 4. Select `autosortplus.xpi`
 
 ### Build from Source
 ```bash
-git clone https://github.com/nigelhagen/AutoSort-Plus.git
+git clone https://github.com/Nigel1992/AutoSort-Plus.git
 cd AutoSort-Plus
 zip -r autosortplus.xpi manifest.json background.js options.js options.html styles.css content.js icons/
 ```
@@ -217,7 +217,7 @@ None currently known. Please report any issues on GitHub.
 ## 💬 Support
 
 - **Questions?** Check [Troubleshooting](#troubleshooting) above
-- **Found a bug?** Open an issue on [GitHub](https://github.com/nigelhagen/AutoSort-Plus/issues)
+- **Found a bug?** Open an issue on [GitHub](https://github.com/Nigel1992/AutoSort-Plus/issues)
 - **Feature request?** Create a discussion or issue
 
 ## 📄 License
@@ -232,4 +232,4 @@ Pull requests welcome! For major changes, please open an issue first to discuss.
 
 **Made with ❤️ to help you organize email faster**
 
-[GitHub](https://github.com/nigelhagen/AutoSort-Plus) • [Issues](https://github.com/nigelhagen/AutoSort-Plus/issues) • [Latest Release](https://github.com/nigelhagen/AutoSort-Plus/releases)
+[GitHub](https://github.com/Nigel1992/AutoSort-Plus) • [Issues](https://github.com/Nigel1992/AutoSort-Plus/issues) • [Latest Release](https://github.com/Nigel1992/AutoSort-Plus/releases)
