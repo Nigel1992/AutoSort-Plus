@@ -97,6 +97,47 @@ Click **"Get API Key"** in AutoSort+ settings to open signup page instantly.
 2. Enter label names (one per field)
 3. These become your email categories
 
+<details>
+<summary><strong>📚 Example Folder Categories</strong></summary>
+
+**Work & Professional:**
+- Meetings
+- Project Updates
+- Invoices
+- HR & Benefits
+
+**Financial:**
+- Bills & Payments
+- Bank Statements
+- Receipts
+- Tax Documents
+
+**Personal:**
+- Family
+- Friends
+- Health
+- Travel
+
+**Online Services:**
+- Shopping Confirmations
+- Social Media Notifications
+- Subscriptions
+- Password Resets
+
+**Promotions:**
+- Newsletters
+- Sales & Discounts
+- Offers
+- Marketing
+
+**Support:**
+- Tickets & Help
+- Documentation
+- Updates
+- Complaints
+
+</details>
+
 ### Step 5: Save Settings
 1. Review your configuration
 2. Click **"Save Settings"**
