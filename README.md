@@ -78,6 +78,28 @@ zip -r autosortplus.xpi manifest.json background.js options.js options.html styl
 
 Click **"Get API Key"** in AutoSort+ settings to open signup page instantly.
 
+**⚠️ Important Rate Limit Warning:**
+Free API tiers are **severely limited** when processing emails due to large text content. You may only be able to analyze **5-20 emails** before hitting rate limits. 
+
+**Email processing estimates on free tiers:**
+- **Gemini**: 15-20 emails (best free option for email)
+- **Groq**: 20-30 emails (fastest, highest free limits)
+- **Anthropic**: 10-15 emails
+- **OpenAI**: 5-10 emails (very restrictive on free tier)
+- **Mistral**: 10-15 emails
+
+**For daily email processing, paid API plans are strongly recommended** ($5-20/month).
+
+Free tiers are suitable for:
+- Occasional use (a few emails per day)
+- Testing and evaluation
+- Light personal inbox management
+
+For regular use, consider:
+- **Paid API tiers**: Unlimited or high-volume processing
+- **Batch processing**: Process emails in small groups with delays between batches
+- **Best free option**: Start with Groq or Gemini for highest limits
+
 ### Step 3: Add Your API Key
 1. Paste API key into the **"API Key"** field
 2. Click **"Test API Connection"** to verify

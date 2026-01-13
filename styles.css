@@ -111,6 +111,19 @@ h2 {
     color: white;
 }
 
+.warning-box {
+    background-color: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin: 15px 0;
+    color: #856404;
+}
+
+.warning-box strong {
+    color: #856404;
+}
+
 .button {
     background-color: var(--primary-color);
     color: white;
