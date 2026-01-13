@@ -1,125 +1,252 @@
-# AutoSort+ - AI-Powered Email Organization for Thunderbird
+<div align="center">
 
-<img width="96" height="96" alt="icon-96" src="https://github.com/user-attachments/assets/32e8e1fb-7cb0-4b65-9bcc-e1cf693bf5e5" />
+# 🎯 AutoSort+ 
 
+### AI-Powered Email Organization for Thunderbird
 
+<img width="120" height="120" alt="AutoSort+ Logo" src="https://github.com/user-attachments/assets/32e8e1fb-7cb0-4b65-9bcc-e1cf693bf5e5" />
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Development Status](https://img.shields.io/badge/status-active-green)](https://github.com/Nigel1992/AutoSort-Plus)
+[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/Nigel1992/AutoSort-Plus/releases)
+[![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0%2B-0a84ff.svg)](https://www.thunderbird.net/)
+[![Development Status](https://img.shields.io/badge/status-active-success)](https://github.com/Nigel1992/AutoSort-Plus)
 
-**Automatically sort and label your emails with AI intelligence**
+**Stop manually sorting emails. Let AI do it for you.**
 
-AutoSort+ is a powerful Thunderbird addon that uses artificial intelligence to automatically classify and organize your emails. Select an AI provider, configure your email labels, and let the addon handle the rest.
+[📥 Download](https://github.com/Nigel1992/AutoSort-Plus/releases) • [📖 Documentation](#-setup-guide) • [🐛 Report Bug](https://github.com/Nigel1992/AutoSort-Plus/issues) • [💡 Request Feature](https://github.com/Nigel1992/AutoSort-Plus/issues)
+
+</div>
+
+---
+
+## 📌 Table of Contents
+
+- [✨ Features](#-features)
+- [📥 Installation](#-installation)
+- [🚀 Quick Start](#-quick-start)
+- [⚙️ AI Provider Setup](#️-ai-provider-setup)
+- [💡 Usage](#-usage)
+- [🔧 Technical Details](#-technical-details)
+- [⚠️ Troubleshooting](#️-troubleshooting)
+- [📝 Changelog](#-changelog)
+- [🤝 Contributing](#-contributing)
+
+---
+
+---
 
 ## ✨ Features
 
-### 🤖 Multi-Provider AI Support
-- **Google Gemini** - Latest gemini-2.5-flash model
-- **OpenAI** - gpt-4o-mini (excellent reasoning)
-- **Anthropic Claude** - claude-3-haiku (nuanced understanding)
-- **Groq** - llama-3.3-70b (fastest free option - 30 req/min)
-- **Mistral AI** - mistral-small-latest (GDPR-friendly)
+<table>
+<tr>
+<td width="50%">
 
-### 📁 Smart Folder Discovery
-- Automatically load folders from IMAP mail accounts
-- Choose between system folders or custom labels
-- Bulk import with confirmation dialogs
-- Recursive folder traversal
+### 🤖 Multi-Provider AI
+Choose from **5 leading AI providers**:
+- **Google Gemini** - Best free tier
+- **OpenAI** - Superior accuracy  
+- **Anthropic Claude** - Privacy-focused
+- **Groq** - Fastest processing
+- **Mistral AI** - GDPR compliant
 
-### 🎯 Intelligent Email Classification
-- Analyzes email content using AI
-- Matches emails to your configured labels
-- Respects your existing folder structure
-- Move history tracking
+</td>
+<td width="50%">
 
-### 💾 Persistent Settings
-- API keys stored securely in browser storage
-- Settings survive addon restarts
-- 100-entry move history
-- Easy settings restoration
+### 📊 Usage Tracking
+- Real-time usage monitoring
+- Daily limit tracking
+- Automatic warnings
+- API key switching alerts
 
-### 🎨 Professional UI
-- Clean, modern settings interface
-- Provider information cards with capabilities
-- Real-time validation
-- Helpful instruction messages
+</td>
+</tr>
+<tr>
+<td width="50%">
 
-## 📦 Installation
+### 📁 Smart Folder Management
+- IMAP folder auto-discovery
+- Bulk label import
+- Custom folder creation
+- Recursive traversal
 
-### From Release File
-1. Download `autosortplus.xpi` from [Latest Release](https://github.com/Nigel1992/AutoSort-Plus/releases)
-2. In Thunderbird: **Tools → Add-ons and Extensions**
-3. Click gear icon (⚙️) → **Install Add-on From File**
-4. Select `autosortplus.xpi`
+</td>
+<td width="50%">
 
-### Build from Source
+### 🎯 Intelligent Classification
+- Content analysis
+- Context-aware sorting
+- Multi-label support
+- 100-entry history
+
+</td>
+</tr>
+</table>
+
+<details>
+<summary><b>🔥 Additional Features</b></summary>
+
+- ✅ **Secure Storage** - Encrypted API key storage
+- ✅ **Batch Processing** - Sort multiple emails at once
+- ✅ **Rate Limiting** - Built-in quota management (Gemini)
+- ✅ **Professional UI** - Clean, intuitive interface
+- ✅ **Move History** - Track all email movements
+- ✅ **Real-time Validation** - Instant feedback
+- ✅ **Open Source** - Transparent, auditable code
+
+</details>
+
+---
+
+---
+
+## 📥 Installation
+
+### Option 1: Download Release (Recommended)
+
+```bash
+1. Visit: https://github.com/Nigel1992/AutoSort-Plus/releases
+2. Download: autosortplus.xpi
+3. Thunderbird: Tools → Add-ons and Extensions
+4. Click: ⚙️ → Install Add-on From File
+5. Select: autosortplus.xpi
+6. Restart Thunderbird
+```
+
+### Option 2: Build from Source
+
 ```bash
 git clone https://github.com/Nigel1992/AutoSort-Plus.git
 cd AutoSort-Plus
 zip -r autosortplus.xpi manifest.json background.js options.js options.html styles.css content.js icons/
 ```
 
-## 🚀 Setup Guide
+<div align="center">
 
-### Step 1: Choose Your AI Provider
-1. Open AutoSort+ settings (Tools → Add-ons → AutoSort+ → Preferences)
-2. Select your AI provider from the dropdown
-3. Read provider info card to understand its strengths
+**[📥 Download Latest Release](https://github.com/Nigel1992/AutoSort-Plus/releases) • [📖 View Changelog](#-changelog)**
 
-### Step 2: Get an API Key
+</div>
 
-| Provider | Link | Free? | Notes |
-|----------|------|-------|-------|
-| **Gemini** | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | Yes | No credit card required |
-| **OpenAI** | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) | Paid | $5-10 startup credit |
-| **Anthropic** | [console.anthropic.com](https://console.anthropic.com/) | Yes | Limited free tier |
-| **Groq** | [console.groq.com](https://console.groq.com/) | Yes | 30 requests/minute |
-| **Mistral** | [console.mistral.ai](https://console.mistral.ai/) | Yes | EU-focused |
+---
 
-Click **"Get API Key"** in AutoSort+ settings to open signup page instantly.
+## 🚀 Quick Start
 
-**⚠️ Important Rate Limit Warning:**
-Free API tiers are **severely limited** when processing emails due to large text content. You may only be able to analyze **5-20 emails** before hitting rate limits. 
+### 1️⃣ Choose AI Provider
+Open settings and select from Gemini, OpenAI, Claude, Groq, or Mistral
 
-**Email processing estimates on free tiers:**
-- **Gemini**: 20 emails/day per API key (addon enforces: 5/min, 20/day limit)
-- **Groq**: 20-30 emails (fastest, highest free limits)
-- **Anthropic**: 10-15 emails
-- **OpenAI**: 5-10 emails (very restrictive on free tier)
-- **Mistral**: 10-15 emails
+### 2️⃣ Get API Key
+Click "Get API Key" button → Create free account → Copy key
 
-**Note:** Gemini free tier limits (5 requests/min, 20/day) are **per API key** and **enforced by the addon** to prevent API quota errors. When you reach the limit, create a new API key in a different project and update it in settings. Check your usage at [Google AI Studio Usage](https://aistudio.google.com/usage). Check "Gemini paid plan" in settings to remove addon limits.
+### 3️⃣ Configure Folders
+Load folders from IMAP or add custom labels
 
-**For daily email processing, paid API plans are strongly recommended** ($5-20/month).
+### 4️⃣ Start Sorting
+Select emails → Let AI categorize them automatically
 
-Free tiers are suitable for:
-- Occasional use (a few emails per day)
-- Testing and evaluation
-- Light personal inbox management
+---
 
-For regular use, consider:
-- **Paid API tiers**: Unlimited or high-volume processing
-- **Batch processing**: Process emails in small groups with delays between batches
-- **Best free option**: Start with Groq or Gemini for highest limits
+## ⚙️ AI Provider Setup
 
-### Step 3: Add Your API Key
-1. Paste API key into the **"API Key"** field
-2. Click **"Test API Connection"** to verify
-3. You should see a ✓ success message
+## ⚙️ AI Provider Setup
 
-### Step 4: Configure Labels/Folders
+<table>
+<tr>
+<th>Provider</th>
+<th>Get API Key</th>
+<th>Free Tier</th>
+<th>Best For</th>
+</tr>
+<tr>
+<td><b>🔹 Gemini</b></td>
+<td><a href="https://aistudio.google.com/apikey">Get Key</a></td>
+<td>✅ 20/day per key</td>
+<td>Best overall free option</td>
+</tr>
+<tr>
+<td><b>🔹 Groq</b></td>
+<td><a href="https://console.groq.com">Get Key</a></td>
+<td>✅ 30/min</td>
+<td>Speed & high limits</td>
+</tr>
+<tr>
+<td><b>🔹 Claude</b></td>
+<td><a href="https://console.anthropic.com">Get Key</a></td>
+<td>✅ Limited</td>
+<td>Privacy & safety</td>
+</tr>
+<tr>
+<td><b>🔹 OpenAI</b></td>
+<td><a href="https://platform.openai.com/api-keys">Get Key</a></td>
+<td>⚠️ $5 credit</td>
+<td>Highest accuracy</td>
+</tr>
+<tr>
+<td><b>🔹 Mistral</b></td>
+<td><a href="https://console.mistral.ai">Get Key</a></td>
+<td>✅ Limited</td>
+<td>GDPR compliance</td>
+</tr>
+</table>
 
-#### Option A: Load from Mail Account (Recommended)
-1. Click **"Load Folders from Mail Account"**
-2. Select your email account
-3. AutoSort+ discovers folders automatically
-4. Review folder list
-5. Click **"Use These Folders"**
+### 📊 Usage Limits & Recommendations
 
-#### Option B: Add Custom Labels
-1. Click **"Add Label"** button
-2. Enter label names (one per field)
-3. These become your email categories
+> **⚠️ IMPORTANT:** Free tiers are limited for email processing due to large text content.
+
+| Provider | Free Limit | Recommendation |
+|----------|-----------|----------------|
+| **Gemini** | 20 emails/day per API key | ⭐ Create multiple keys in different projects |
+| **Groq** | 20-30 emails/day | ⭐ Best free tier overall |
+| **Claude** | 10-15 emails/day | Good for privacy-conscious users |
+| **OpenAI** | 5-10 emails/day | Consider paid plan ($5-20/mo) |
+| **Mistral** | 10-15 emails/day | Best for EU users |
+
+<details>
+<summary><b>💡 Tips for Managing Free Tier Limits</b></summary>
+
+**For Gemini users:**
+- Each API key = 20 requests/day
+- Create keys in different projects for more quota
+- Switch keys when limit reached (Reset Counter button)
+- Check usage: [AI Studio Usage](https://aistudio.google.com/usage)
+- Addon tracks usage automatically
+
+**For all providers:**
+- Process emails in small batches
+- Use "Gemini paid plan" checkbox to disable limits (if you have paid tier)
+- Consider paid plans for daily use ($5-20/month)
+
+</details>
+
+---
+
+## 💡 Usage
+
+### Basic Operation
+
+1. **Select Emails** - Click one or more emails in Thunderbird
+2. **Auto-Analyze** - Addon analyzes content automatically
+3. **Smart Sorting** - Emails moved to appropriate folders
+4. **Track History** - View last 100 moves in settings
+
+### Advanced Features
+
+**📊 Usage Monitoring (Gemini)**
+- Real-time usage display in settings
+- Automatic warnings at 15/20 limit
+- Reset counter when switching API keys
+
+**📁 Folder Management**
+- Load folders from IMAP accounts
+- Bulk import from text list
+- Create custom categories
+- Auto-create missing folders
+
+**🔍 Move History**
+- Last 100 email moves
+- Timestamps and destinations
+- Success/failure status
+- Clear history option
+
+---
 
 <details>
 <summary><strong>📚 Example Folder Categories</strong></summary>
@@ -162,153 +289,384 @@ For regular use, consider:
 
 </details>
 
-### Step 5: Save Settings
-1. Review your configuration
-2. Click **"Save Settings"**
-3. ✅ You're ready to go!
-
-## 💡 How to Use
-
-### Manual Email Analysis
-1. Select one or more emails in Thunderbird
-2. The addon will analyze and auto-organize them
-3. Monitor move history to verify classifications
-
-### View Move History
-1. Open AutoSort+ settings
-2. Scroll to **"Move History"** section
-3. See timestamps, subjects, and destinations
-4. Last 100 moves stored
-
-## 🎯 Recommended Providers
-
-**Best Overall:** Gemini - Free, fast, accurate
-**Most Capable:** OpenAI - Superior reasoning
-**Privacy-Focused:** Claude (Anthropic) - Strong safety guardrails
-**Fastest:** Groq - 30+ requests per minute free
-**Europe-Friendly:** Mistral - GDPR compliant
+---
 
 ## 🔧 Technical Details
 
-### Architecture
-- **background.js** - Email analysis engine, AI provider routing
-- **options.js** - Settings UI and configuration management
-- **content.js** - Message extraction from Thunderbird
-- **manifest.json** - Addon metadata and permissions
+### System Architecture
 
-### Storage Format
+```
+┌─────────────────────────────────────────┐
+│         Thunderbird Email Client        │
+└──────────────┬──────────────────────────┘
+               │
+┌──────────────▼──────────────────────────┐
+│        AutoSort+ Extension              │
+│                                         │
+│  ┌──────────┐  ┌──────────┐           │
+│  │ UI Layer │  │ Background│           │
+│  │(options) │◄─┤  Script   │           │
+│  └──────────┘  └─────┬─────┘           │
+│                      │                  │
+│              ┌───────▼────────┐        │
+│              │  Rate Limiter  │        │
+│              │  (Gemini only) │        │
+│              └───────┬────────┘        │
+└──────────────────────┼─────────────────┘
+                       │
+         ┌─────────────┴─────────────┐
+         │                           │
+    ┌────▼────┐  ┌────────┐  ┌─────▼─────┐
+    │ Gemini  │  │  Groq  │  │  Claude   │
+    │   API   │  │  API   │  │   API     │
+    └─────────┘  └────────┘  └───────────┘
+```
+
+### File Structure
+
+| File | Purpose | Key Functions |
+|------|---------|---------------|
+| `background.js` | AI analysis engine | `analyzeEmailContent()`, rate limiting |
+| `options.js` | Settings UI | Provider config, usage display |
+| `content.js` | Email extraction | Message content parsing |
+| `manifest.json` | Extension config | Permissions, metadata |
+
+### Storage Schema
+
 ```javascript
-// Settings stored in browser.storage.local
 {
-  apiKey: "your-api-key",
-  aiProvider: "groq",  // or: gemini, openai, anthropic, mistral
-  labels: ["Work", "Personal", "Archive"],
-  enableAi: true,
-  moveHistory: [ /* array of moves */ ]
+  // User Configuration
+  apiKey: "string",
+  aiProvider: "gemini|openai|anthropic|groq|mistral",
+  labels: ["Work", "Personal", ...],
+  enableAi: boolean,
+  geminiPaidPlan: boolean,
+  
+  // Rate Limiting (Gemini)
+  geminiRateLimit: {
+    requests: [timestamp, ...],
+    dailyCount: number,
+    dailyResetTime: timestamp
+  },
+  
+  // History
+  moveHistory: [
+    {
+      timestamp: string,
+      subject: string,
+      status: string,
+      destination: string
+    },
+    ...
+  ]
 }
 ```
 
-### Supported Models
-| Provider | Model | Context | Speed | Free Tier |
-|----------|-------|---------|-------|-----------|
-| Gemini | gemini-2.5-flash | 1M tokens | ⚡⚡⚡ | Yes |
-| OpenAI | gpt-4o-mini | 128K tokens | ⚡⚡ | Limited |
-| Claude | claude-3-haiku | 200K tokens | ⚡⚡⚡ | Yes |
-| Groq | llama-3.3-70b | 8K tokens | ⚡⚡⚡⚡ | Yes (30/min) |
-| Mistral | mistral-small | 32K tokens | ⚡⚡⚡ | Yes |
+### Supported AI Models
+
+| Provider | Model | Context Window | Speed | Cost |
+|----------|-------|----------------|-------|------|
+| Gemini | gemini-2.5-flash | 1M tokens | ⚡⚡⚡ | Free/Paid |
+| OpenAI | gpt-4o-mini | 128K tokens | ⚡⚡ | Paid |
+| Claude | claude-3-haiku | 200K tokens | ⚡⚡⚡ | Free/Paid |
+| Groq | llama-3.3-70b | 8K tokens | ⚡⚡⚡⚡ | Free |
+| Mistral | mistral-small-latest | 32K tokens | ⚡⚡⚡ | Free/Paid |
+
+---
 
 ## 🔒 Privacy & Security
 
-- ✅ API keys stored in browser storage (OS-encrypted)
-- ✅ Email content never stored permanently
-- ✅ Analysis requests sent directly to AI providers
-- ✅ No telemetry or tracking
-- ✅ No external dependencies
-- ✅ Open source for transparency
+| Feature | Status | Details |
+|---------|--------|---------|
+| **🔐 API Key Storage** | ✅ Encrypted | OS-level encryption via browser storage |
+| **📧 Email Content** | ✅ Not Stored | Analyzed in memory, never persisted |
+| **🌐 Data Transmission** | ✅ Direct to AI | No intermediary servers |
+| **📊 Telemetry** | ✅ None | Zero tracking or analytics |
+| **🔍 Open Source** | ✅ Auditable | Full transparency |
+| **🛡️ Permissions** | ✅ Minimal | Only required APIs |
+
+**Your privacy matters:** All email analysis happens directly between your Thunderbird and chosen AI provider. No data passes through our servers because we don't have any!
+
+---
 
 ## ⚠️ Troubleshooting
 
-### Settings Page Won't Load
+<details>
+<summary><b>🔧 Settings Page Won't Load</b></summary>
+
 ```bash
-# Clear cache and reload addon
-1. Thunderbird → Settings → Privacy → Cookies and Site Data → Clear Data
-2. Tools → Add-ons → AutoSort+ → Reload
+1. Thunderbird → Settings → Privacy → Cookies and Site Data
+2. Click "Clear Data"
+3. Tools → Add-ons → AutoSort+ → Reload
 ```
 
-### "API Key Not Configured"
-- Paste your API key in the settings page
-- Click **"Test API Connection"**
-- Ensure key is from the correct provider
+</details>
 
-### Email Analysis Fails
-- ✓ Check internet connection
-- ✓ Verify API key is valid (use Test button)
-- ✓ Check provider's status page
-- ✓ Ensure API hasn't hit rate limits
-- ✓ Review error message for guidance
+<details>
+<summary><b>🔑 API Key Not Working</b></summary>
 
-### Wrong Labels Applied
-- Verify labels match exactly (case-sensitive)
-- Check folders don't have special characters
-- Ensure labels saved (green checkmark visible)
+- Verify key is copied correctly (no spaces)
+- Click "Test API Connection" button
+- Check key is from correct provider
+- Ensure API key has proper permissions
+- For Gemini: Check [usage page](https://aistudio.google.com/usage)
 
-## 📋 Requirements
+</details>
 
-- **Thunderbird** 78.0+
-- **Internet connection** (for API calls)
-- **Valid API key** from your chosen provider
+<details>
+<summary><b>❌ Email Analysis Fails</b></summary>
 
-## 📝 Version History
+**Check:**
+- ✓ Internet connection active
+- ✓ API key is valid
+- ✓ Provider status page for outages
+- ✓ Rate limits not exceeded
+- ✓ Email content isn't empty
 
-### v1.2.0 (2026-01-13) - Multi-Provider Release ⭐
-- ✅ Multi-provider AI support (Gemini, OpenAI, Anthropic, Groq, Mistral)
-- ✅ Groq API updated to llama-3.3-70b (Mixtral deprecated)
-- ✅ IMAP folder discovery with recursive traversal
-- ✅ Professional UI with provider info cards
-- ✅ Settings validation and state management
-- ✅ Move history tracking (last 100 entries)
-- ✅ Professional funnel/envelope icons
+**For Gemini users:**
+- Check usage counter in settings
+- Verify daily limit not reached (20/day)
+- Switch to new API key if needed
+
+</details>
+
+<details>
+<summary><b>📁 Wrong Labels Applied</b></summary>
+
+- Ensure labels are case-sensitive matches
+- Avoid special characters in folder names
+- Verify labels are saved (green checkmark)
+- Check move history for patterns
+
+</details>
+
+<details>
+<summary><b>⏱️ Rate Limit Errors</b></summary>
+
+**Gemini (20/day per key):**
+- Create new API key in different project
+- Reset counter after switching keys
+- Enable "paid plan" option if you have one
+
+**Other Providers:**
+- Wait for rate limit window to reset
+- Consider upgrading to paid tier
+- Use provider's usage dashboard
+
+</details>
+
+---
+
+## 📋 System Requirements
+
+| Component | Requirement |
+|-----------|-------------|
+| **Thunderbird** | 78.0 or later |
+| **Internet** | Active connection for API calls |
+| **API Key** | Valid key from chosen provider |
+| **Storage** | ~1MB for extension data |
+| **OS** | Windows, macOS, Linux |
+
+---
+
+## 📝 Changelog
+
+### 🎉 v1.2.0 (2026-01-13) - Multi-Provider Release
+
+<details open>
+<summary><b>🆕 New Features</b></summary>
+
+- ✅ Multi-provider AI support (5 providers)
+- ✅ Gemini rate limiting (5/min, 20/day enforcement)
+- ✅ Real-time usage tracking dashboard
+- ✅ IMAP folder auto-discovery
 - ✅ Bulk label import
-- ✅ Fixed batch email processing (all selected emails)
-- ✅ Added example email folder categories
-- ✅ Skip null categories and try next one
-- ✅ Auto-create missing custom folders (skips imported/structured)
-- ✅ Fixed syntax errors in options.js
-- ✅ Unified API key storage
+- ✅ Move history (last 100 entries)
+- ✅ Professional UI redesign
+- ✅ Provider info cards
 
-### v1.0.0 (2026-01-10)
+</details>
+
+<details>
+<summary><b>🔧 Improvements</b></summary>
+
+- ✅ Groq updated to llama-3.3-70b
+- ✅ Better error handling and validation
+- ✅ Auto-create missing folders
+- ✅ Skip null categories
+- ✅ Batch email processing fixes
+- ✅ Professional funnel/envelope icons
+- ✅ Example folder categories
+
+</details>
+
+<details>
+<summary><b>⚙️ Technical Changes</b></summary>
+
+- ✅ Unified API key storage
+- ✅ Settings validation system
+- ✅ Recursive folder traversal
+- ✅ Fixed syntax errors in options.js
+- ✅ Improved state management
+
+</details>
+
+### v1.0.0 (2026-01-10) - Initial Release
 - Initial release with Gemini support
+
+---
+
+## 🚧 Roadmap & TODO
+
+<table>
+<tr>
+<th>Priority</th>
+<th>Feature</th>
+<th>Status</th>
+</tr>
+<tr>
+<td>🔴 High</td>
+<td><strong>Detailed Logging</strong> - Debug mode with console output</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td>🔴 High</td>
+<td><strong>API Response Headers</strong> - Extract rate limit info from API</td>
+<td>📋 Planned</td>
+</tr>
+<tr>
+<td>🟡 Medium</td>
+<td><strong>Smart Key Switching</strong> - Auto-suggest when to switch keys</td>
+<td>💡 Proposed</td>
+</tr>
+<tr>
+<td>🟡 Medium</td>
+<td><strong>Scheduled Processing</strong> - Auto-sort at specific times</td>
+<td>💡 Proposed</td>
+</tr>
+<tr>
+<td>🟢 Low</td>
+<td><strong>Custom Rules</strong> - User-defined sorting logic</td>
+<td>💡 Proposed</td>
+</tr>
+<tr>
+<td>🟢 Low</td>
+<td><strong>Statistics Dashboard</strong> - Email sorting analytics</td>
+<td>💡 Proposed</td>
+</tr>
+</table>
+
+---
 
 ## 🐛 Known Issues
 
-None currently known. Please report any issues on GitHub.
+**None currently reported!** 🎉
 
-## � TODO
+If you encounter any issues, please [open an issue on GitHub](https://github.com/Nigel1992/AutoSort-Plus/issues).
 
-- Add detailed logging for debugging
-- Grab rate limit info from API response headers
-- Warn user to switch API keys based on actual API limits
+---
 
-## �💬 Support
+## 💬 Support & Community
 
-- **Questions?** Check [Troubleshooting](#troubleshooting) above
-- **Found a bug?** Open an issue on [GitHub](https://github.com/Nigel1992/AutoSort-Plus/issues)
-- **Feature request?** Create a discussion or issue
+<div align="center">
 
-## 📄 License
+| 💡 Questions | 🐛 Bug Reports | ✨ Feature Requests |
+|--------------|----------------|---------------------|
+| [Discussions](https://github.com/Nigel1992/AutoSort-Plus/discussions) | [Issues](https://github.com/Nigel1992/AutoSort-Plus/issues) | [Issues](https://github.com/Nigel1992/AutoSort-Plus/issues) |
 
-MIT License - See [LICENSE](LICENSE) file for details
+</div>
 
-## 🎨 Credits
+**Before reporting:**
+1. Check [Troubleshooting](#troubleshooting) section
+2. Search existing issues
+3. Include Thunderbird version and extension version
 
-Icon Attribution: <a href="https://www.flaticon.com/free-icons/email-filtering" title="email filtering icons">Email filtering icons created by Fantasyou - Flaticon</a>
+---
 
 ## 🙏 Contributing
 
-Pull requests welcome! For major changes, please open an issue first to discuss.
+We welcome contributions! Here's how to help:
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to branch (`git push origin feature/amazing`)
+5. **Open** a Pull Request
+
+**Guidelines:**
+- Follow existing code style
+- Add comments for complex logic
+- Test with multiple AI providers
+- Update README for new features
+
+---
+
+## 📄 License
+
+```
+MIT License
+
+Copyright (c) 2026 Nigel
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+See [LICENSE](LICENSE) file for full text.
+
+---
+
+## 🎨 Credits & Acknowledgments
+
+**Icon Design:**  
+[Email filtering icons created by Fantasyou - Flaticon](https://www.flaticon.com/free-icons/email-filtering)
+
+**AI Providers:**
+- [Google Gemini](https://ai.google.dev/)
+- [OpenAI](https://openai.com/)
+- [Anthropic Claude](https://www.anthropic.com/)
+- [Groq](https://groq.com/)
+- [Mistral AI](https://mistral.ai/)
+
+**Built with:**
+- [Thunderbird WebExtension APIs](https://webextension-api.thunderbird.net/)
+- JavaScript ES6+
+- Manifest v2
+
+---
+
+<div align="center">
+
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Nigel1992/AutoSort-Plus&type=Date)](https://star-history.com/#Nigel1992/AutoSort-Plus&Date)
 
 ---
 
 **Made with ❤️ to help you organize email faster**
 
-[GitHub](https://github.com/Nigel1992/AutoSort-Plus) • [Issues](https://github.com/Nigel1992/AutoSort-Plus/issues) • [Latest Release](https://github.com/Nigel1992/AutoSort-Plus/releases)
+[⬆ Back to Top](#autosort) • [🏠 GitHub](https://github.com/Nigel1992/AutoSort-Plus) • [📦 Latest Release](https://github.com/Nigel1992/AutoSort-Plus/releases) • [📖 Documentation](https://nigel1992.github.io/AutoSort-Plus/)
+
+---
+
+![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=for-the-badge&logo=thunderbird&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.2.0-blue?style=for-the-badge)
+
+</div>
+
