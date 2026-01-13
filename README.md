@@ -82,13 +82,13 @@ Click **"Get API Key"** in AutoSort+ settings to open signup page instantly.
 Free API tiers are **severely limited** when processing emails due to large text content. You may only be able to analyze **5-20 emails** before hitting rate limits. 
 
 **Email processing estimates on free tiers:**
-- **Gemini**: 20 emails/day maximum (addon enforces: 5/min, 20/day limit)
+- **Gemini**: 20 emails/day per project (addon enforces: 5/min, 20/day limit)
 - **Groq**: 20-30 emails (fastest, highest free limits)
 - **Anthropic**: 10-15 emails
 - **OpenAI**: 5-10 emails (very restrictive on free tier)
 - **Mistral**: 10-15 emails
 
-**Note:** Gemini free tier limits (5 requests/min, 20/day) are **enforced by the addon** to prevent API quota errors. Check "Gemini paid plan" in settings to remove these limits.
+**Note:** Gemini free tier limits (5 requests/min, 20/day) are **per project** and **enforced by the addon** to prevent API quota errors. You can create multiple projects in Google AI Studio to get additional quota. Check "Gemini paid plan" in settings to remove addon limits.
 
 **For daily email processing, paid API plans are strongly recommended** ($5-20/month).
 
