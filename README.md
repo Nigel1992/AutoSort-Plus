@@ -236,13 +236,7 @@ Click **"Get API Key"** in AutoSort+ settings to open signup page instantly.
 
 ## 📝 Version History
 
-### v1.2.1 (2026-01-13) - Bug Fixes & Documentation ⭐
-- ✅ Fixed manual label menu processing more than 2 emails
-- ✅ Added example email folder categories with spoiler
-- ✅ Improved message handling for batch operations
-- ✅ Better error handling in manual label application
-
-### v1.2.0 (2026-01-13) - Multi-Provider Release
+### v1.2.0 (2026-01-13) - Multi-Provider Release ⭐
 - ✅ Multi-provider AI support (Gemini, OpenAI, Anthropic, Groq, Mistral)
 - ✅ Groq API updated to llama-3.3-70b (Mixtral deprecated)
 - ✅ IMAP folder discovery with recursive traversal
@@ -251,6 +245,9 @@ Click **"Get API Key"** in AutoSort+ settings to open signup page instantly.
 - ✅ Move history tracking (last 100 entries)
 - ✅ Professional funnel/envelope icons
 - ✅ Bulk label import
+- ✅ Fixed batch email processing (all selected emails)
+- ✅ Added example email folder categories
+- ✅ Skip null categories and try next one
 - ✅ Fixed syntax errors in options.js
 - ✅ Unified API key storage
 
