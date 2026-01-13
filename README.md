@@ -1,5 +1,9 @@
 # AutoSort+ - AI-Powered Email Organization for Thunderbird
 
+<img width="96" height="96" alt="icon-96" src="https://github.com/user-attachments/assets/32e8e1fb-7cb0-4b65-9bcc-e1cf693bf5e5" />
+
+
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Development Status](https://img.shields.io/badge/status-active-green)](https://github.com/nigelhagen/AutoSort-Plus)
 
