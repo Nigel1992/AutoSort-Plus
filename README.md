@@ -283,7 +283,13 @@ For regular use, consider:
 
 None currently known. Please report any issues on GitHub.
 
-## 💬 Support
+## � TODO
+
+- Add detailed logging for debugging
+- Grab rate limit info from API response headers
+- Warn user to switch API keys based on actual API limits
+
+## �💬 Support
 
 - **Questions?** Check [Troubleshooting](#troubleshooting) above
 - **Found a bug?** Open an issue on [GitHub](https://github.com/Nigel1992/AutoSort-Plus/issues)
