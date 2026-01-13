@@ -620,10 +620,29 @@ browser.menus.onClicked.addListener(async (info, tab) => {
         const label = info.menuItemId.replace("label-", "");
         console.log(`Manual label selected: ${label}`);
         await showNotification("AutoSort+", `Applying label: ${label}`);
-        browser.tabs.sendMessage(tab.id, {
-            action: "getSelectedMessages",
-            label: label
-        });
+        try {
+            // Get selected messages from content script
+            const response = await browser.tabs.sendMessage(tab.id, {
+                action: "getSelectedMessages",
+                label: label
+            });
+            console.log("Got selected messages from content script:", response);
+            
+            if (response && response.length > 0) {
+                // Get the current mail tab for processing
+                const mailTabs = await browser.mailTabs.query({ active: true, currentWindow: true });
+                if (mailTabs && mailTabs.length > 0) {
+                    // Get full message objects
+                    const messages = await browser.mailTabs.getSelectedMessages(mailTabs[0].id);
+                    if (messages && messages.messages && messages.messages.length > 0) {
+                        await applyLabelsToMessages(messages.messages, label);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error("Error applying manual label:", error);
+            await showNotification("AutoSort+ Error", `Error applying label: ${error.message}`);
+        }
     } else if (info.menuItemId === "autosort-analyze") {
         console.log("AI analysis selected - starting process");
         await showNotification("AutoSort+", "Starting AI analysis of selected messages...");
