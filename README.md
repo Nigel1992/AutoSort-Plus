@@ -248,6 +248,7 @@ Click **"Get API Key"** in AutoSort+ settings to open signup page instantly.
 - ✅ Fixed batch email processing (all selected emails)
 - ✅ Added example email folder categories
 - ✅ Skip null categories and try next one
+- ✅ Auto-create missing custom folders (skips imported/structured)
 - ✅ Fixed syntax errors in options.js
 - ✅ Unified API key storage
 
