@@ -524,6 +524,16 @@ input[type="checkbox"] {
     border-radius: 4px;
 }
 
+.gemini-key-item input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+}
+
+.gemini-key-item input[style*="border-color: #dc3545"] {
+    border-color: #dc3545 !important;
+    background-color: #fff5f5;
+}
+
 .gemini-key-item .key-status {
     font-size: 0.85em;
     padding: 3px 8px;

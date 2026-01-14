@@ -268,13 +268,47 @@ document.addEventListener('DOMContentLoaded', async function() {
         input.value = value;
         input.dataset.index = index;
         input.addEventListener('input', (e) => {
-            geminiKeys[index] = e.target.value.trim();
+            const newKey = e.target.value.trim();
+            geminiKeys[index] = newKey;
+            
+            // Check for duplicates in real-time
+            if (newKey) {
+                const isDuplicate = geminiKeys.some((key, i) => i !== index && key.trim() === newKey);
+                if (isDuplicate) {
+                    input.style.borderColor = '#dc3545';
+                    input.title = '⚠️ This key is already added!';
+                } else {
+                    input.style.borderColor = '';
+                    input.title = '';
+                }
+            } else {
+                input.style.borderColor = '';
+                input.title = '';
+            }
         });
         
         const testButton = document.createElement('button');
         testButton.className = 'button';
         testButton.textContent = 'Test';
-        testButton.addEventListener('click', () => testGeminiKey(input.value.trim(), index, keyItem));
+        testButton.addEventListener('click', () => {
+            const keyValue = input.value.trim();
+            if (!keyValue) {
+                statusSpan.textContent = '⚠️ Enter key first';
+                statusSpan.className = 'key-test-result error';
+                return;
+            }
+            
+            // Check for duplicates before testing
+            const isDuplicate = geminiKeys.some((key, i) => i !== index && key.trim() === keyValue);
+            if (isDuplicate) {
+                statusSpan.textContent = '⚠️ Duplicate key';
+                statusSpan.className = 'key-test-result error';
+                statusSpan.title = 'This key is already added in the list';
+                return;
+            }
+            
+            testGeminiKey(keyValue, index, keyItem);
+        });
         
         const removeButton = document.createElement('button');
         removeButton.className = 'button';
@@ -755,6 +789,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             if (validGeminiKeys.length === 0) {
                 showMessage('Please add at least one Gemini API key before saving.', false);
+                return;
+            }
+            
+            // Check for duplicate keys
+            const uniqueKeys = new Set(validGeminiKeys.map(key => key.trim().toLowerCase()));
+            if (uniqueKeys.size !== validGeminiKeys.length) {
+                showMessage('⚠️ Duplicate API keys detected! Each key must be unique. Please remove duplicates before saving.', false);
                 return;
             }
             
