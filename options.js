@@ -91,8 +91,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Update Gemini usage display
     async function updateGeminiUsageDisplay() {
-        const data = await browser.storage.local.get(['geminiRateLimits', 'currentGeminiKeyIndex', 'geminiApiKeys']);
-        const rateLimits = data.geminiRateLimits || [];
+        const data = await browser.storage.local.get(['geminiRateLimits', 'currentGeminiKeyIndex', 'geminiApiKeys', 'geminiRateLimit']);
         const currentIndex = data.currentGeminiKeyIndex || 0;
         const keys = data.geminiApiKeys || geminiKeys;
         
@@ -100,19 +99,25 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Multi-key mode
             document.getElementById('single-key-usage').style.display = 'none';
             document.getElementById('multi-key-usage').style.display = 'block';
+            const rateLimits = data.geminiRateLimits || [];
             updateMultiKeyUsageDisplay(keys, rateLimits, currentIndex);
-        } else {
-            // Single-key mode (backward compatibility)
+        } else if (keys.length === 1) {
+            // Single-key mode but stored in new format
             document.getElementById('single-key-usage').style.display = 'block';
             document.getElementById('multi-key-usage').style.display = 'none';
-            updateSingleKeyUsageDisplay();
+            const rateLimits = data.geminiRateLimits || [{ requests: [], dailyCount: 0, dailyResetTime: Date.now() }];
+            updateSingleKeyUsageDisplay(rateLimits[0]);
+        } else {
+            // Legacy single-key mode (backward compatibility)
+            document.getElementById('single-key-usage').style.display = 'block';
+            document.getElementById('multi-key-usage').style.display = 'none';
+            const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: Date.now() };
+            updateSingleKeyUsageDisplay(rateLimit);
         }
     }
     
     // Update single key usage display (backward compatibility)
-    async function updateSingleKeyUsageDisplay() {
-        const data = await browser.storage.local.get(['geminiRateLimit']);
-        const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: Date.now() };
+    async function updateSingleKeyUsageDisplay(rateLimit) {
         const now = Date.now();
         
         // Update daily count

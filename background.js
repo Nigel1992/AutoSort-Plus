@@ -256,9 +256,12 @@ async function analyzeEmailContent(emailContent) {
         if (provider === 'gemini' && !settings.geminiPaidPlan) {
             const rateLimitCheck = await checkGeminiRateLimit();
             if (!rateLimitCheck.allowed) {
-                // Show persistent notification for all keys limit reached
+                // Show persistent notification for limit reached
+                const isSingleKey = !settings.geminiApiKeys || settings.geminiApiKeys.length <= 1;
+                const notifTitle = isSingleKey ? "⛔ Gemini API Limit Reached" : "⛔ All Gemini Keys at Limit";
+                
                 const notifId = await showNotification(
-                    "⛔ All Gemini Keys at Limit",
+                    notifTitle,
                     rateLimitCheck.message,
                     "list"
                 );
@@ -277,8 +280,7 @@ async function analyzeEmailContent(emailContent) {
                     notificationId,
                     "AutoSort+ Rate Limit",
                     `Rate limit reached. Waiting ${rateLimitCheck.waitTime} seconds...`
-                );
-                await new Promise(resolve => setTimeout(resolve, rateLimitCheck.waitTime * 1000));
+                );                await new Promise(resolve => setTimeout(resolve, rateLimitCheck.waitTime * 1000));
             }
             
             keyIndexToUse = rateLimitCheck.keyIndex;
