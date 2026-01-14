@@ -10,6 +10,11 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
+// Click handler for browser action icon - opens settings
+browser.browserAction.onClicked.addListener(() => {
+    browser.runtime.openOptionsPage();
+});
+
 // Gemini rate limiting functions (free tier: 5/min, 20/day per key)
 async function checkGeminiRateLimit() {
     const now = Date.now();
