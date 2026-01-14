@@ -342,11 +342,20 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (response.ok) {
                 statusSpan.textContent = '✓ Valid';
                 statusSpan.className = 'key-test-result success';
+            } else if (response.status === 429) {
+                statusSpan.textContent = '⚠️ Limit reached';
+                statusSpan.className = 'key-test-result error';
+                statusSpan.title = 'This key has reached its daily rate limit (20/day). Will reset in ~24 hours.';
+                console.error(`Key #${index + 1} has reached rate limit (429)`);
+            } else if (response.status === 401 || response.status === 403) {
+                statusSpan.textContent = '✗ Invalid key';
+                statusSpan.className = 'key-test-result error';
+                statusSpan.title = 'API key is invalid or expired. Check your key in Google AI Studio.';
+                console.error(`Key #${index + 1} test failed: ${response.status}`);
             } else {
-                const error = await response.text();
                 statusSpan.textContent = `✗ Failed (${response.status})`;
                 statusSpan.className = 'key-test-result error';
-                console.error(`Key #${index + 1} test failed:`, error);
+                console.error(`Key #${index + 1} test failed:`, response.status);
             }
         } catch (error) {
             statusSpan.textContent = `✗ Error`;
