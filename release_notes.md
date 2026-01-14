@@ -1,4 +1,20 @@
 ## AutoSort+ v1.2.3 - January 14, 2026
+## AutoSort+ v1.2.3.1 - January 14, 2026
+
+### ✨ Quality Improvements
+- **Duplicate API Key Detection** - Prevents adding the same API key multiple times
+  - Real-time validation as you type keys
+  - Duplicate keys highlighted in red
+  - Clear error messages in tooltip and status
+  - Cannot save or test duplicate keys
+- **Better Key Management** - Users notified if key is already added
+  - Visual indicator with red border and background
+  - Test button blocked for duplicates
+  - Save prevented with helpful error message
+
+---
+
+## AutoSort+ v1.2.3 - January 14, 2026
 
 ### ✨ New Features
 - **Toolbar Icon** - Quick access button in top-right of Thunderbird
