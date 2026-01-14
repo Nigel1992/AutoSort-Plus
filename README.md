@@ -11,7 +11,9 @@
 [![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0%2B-0a84ff.svg)](https://www.thunderbird.net/)
 [![Development Status](https://img.shields.io/badge/status-active-success)](https://github.com/Nigel1992/AutoSort-Plus)
 
-**Stop manually sorting emails. Let AI do it for you.**
+**Let AI help you organize your emails intelligently.**
+
+> ⚠️ **Not yet in Thunderbird Add-on Store** - Manual installation required. Official store submission in progress.
 
 [📥 Download](https://github.com/Nigel1992/AutoSort-Plus/releases) • [📖 Documentation](#-setup-guide) • [🐛 Report Bug](https://github.com/Nigel1992/AutoSort-Plus/issues) • [💡 Request Feature](https://github.com/Nigel1992/AutoSort-Plus/issues)
 
@@ -140,7 +142,9 @@ Click "Get API Key" button → Create free account → Copy key
 Load folders from IMAP or add custom labels
 
 ### 4️⃣ Start Sorting
-Select emails → Let AI categorize them automatically
+Select emails → Right-click → **AutoSort+ → Analyze with AI**
+
+> 📌 **Note:** Currently requires manual selection and right-click. Automatic background sorting coming in future update!
 
 ---
 
@@ -224,9 +228,11 @@ Select emails → Let AI categorize them automatically
 ### Basic Operation
 
 1. **Select Emails** - Click one or more emails in Thunderbird
-2. **Auto-Analyze** - Addon analyzes content automatically
-3. **Smart Sorting** - Emails moved to appropriate folders
+2. **Right-Click Menu** - Right-click → **AutoSort+ → Analyze with AI**
+3. **Smart Sorting** - AI analyzes and moves emails to appropriate folders
 4. **Track History** - View last 100 moves in settings
+
+> 🔄 **Coming Soon:** Automatic background sorting (currently manual via right-click)
 
 ### Advanced Features
 
