@@ -7,7 +7,7 @@
 <img width="120" height="120" alt="AutoSort+ Logo" src="https://github.com/user-attachments/assets/32e8e1fb-7cb0-4b65-9bcc-e1cf693bf5e5" />
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)](https://github.com/Nigel1992/AutoSort-Plus/releases)
+[![Version](https://img.shields.io/badge/version-1.2.1-blue.svg)](https://github.com/Nigel1992/AutoSort-Plus/releases)
 [![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0%2B-0a84ff.svg)](https://www.thunderbird.net/)
 [![Development Status](https://img.shields.io/badge/status-active-success)](https://github.com/Nigel1992/AutoSort-Plus)
 
@@ -43,7 +43,7 @@
 
 ### 🤖 Multi-Provider AI
 Choose from **5 leading AI providers**:
-- **Google Gemini** - Best free tier
+- **Google Gemini** - Best free tier + **Multi-key support**
 - **OpenAI** - Superior accuracy  
 - **Anthropic Claude** - Privacy-focused
 - **Groq** - Fastest processing
@@ -52,11 +52,11 @@ Choose from **5 leading AI providers**:
 </td>
 <td width="50%">
 
-### 📊 Usage Tracking
-- Real-time usage monitoring
-- Daily limit tracking
-- Automatic warnings
-- API key switching alerts
+### 🔑 Multiple API Keys (Gemini)
+- Add keys from multiple projects
+- Automatic rotation on limit
+- Per-key usage tracking
+- 5 keys = 100 requests/day
 
 </td>
 </tr>
@@ -202,12 +202,13 @@ Select emails → Let AI categorize them automatically
 <details>
 <summary><b>💡 Tips for Managing Free Tier Limits</b></summary>
 
-**For Gemini users:**
-- Each API key = 20 requests/day
-- Create keys in different projects for more quota
-- Switch keys when limit reached (Reset Counter button)
+**For Gemini users (NEW in v1.2.1!):**
+- 🆕 **Multiple API Keys**: Add keys from different Google Cloud projects
+- 🔄 **Automatic Rotation**: Extension switches keys when limits are reached
+- 📊 **Per-Key Tracking**: Monitor usage for each key independently
+- ✨ **Example**: 5 keys = 100 requests/day total (20 per key)
+- 🔧 **How to add**: Settings → Add Another Gemini Key
 - Check usage: [AI Studio Usage](https://aistudio.google.com/usage)
-- Addon tracks usage automatically
 
 **For all providers:**
 - Process emails in small batches
@@ -229,10 +230,18 @@ Select emails → Let AI categorize them automatically
 
 ### Advanced Features
 
+**� Multiple API Keys (Gemini - NEW!)**
+- Add unlimited keys from different projects
+- Automatic rotation when limits reached
+- Individual testing and status tracking
+- Visual indicators (Active, Ready, Near Limit)
+- Combined quota = keys × 20 requests/day
+
 **📊 Usage Monitoring (Gemini)**
 - Real-time usage display in settings
+- Per-key usage statistics
 - Automatic warnings at 15/20 limit
-- Reset counter when switching API keys
+- Smart key rotation
 
 **📁 Folder Management**
 - Load folders from IMAP accounts

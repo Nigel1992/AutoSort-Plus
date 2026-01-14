@@ -39,6 +39,17 @@
                 <div id="api-test-result" class="api-test-result"></div>
             </div>
             
+            <div id="gemini-multi-keys-container" style="display: none;">
+                <div class="multi-keys-header">
+                    <h3>Gemini API Keys (Multiple Projects)</h3>
+                    <p class="info-text">Add multiple API keys from different Google Cloud projects. The extension will automatically rotate between them when rate limits are reached.</p>
+                </div>
+                <div id="gemini-keys-list" class="gemini-keys-list"></div>
+                <div class="button-group">
+                    <button id="add-gemini-key" class="button">+ Add Another Gemini Key</button>
+                </div>
+            </div>
+            
             <div class="checkbox-container">
                 <input type="checkbox" id="enable-ai" checked>
                 <label for="enable-ai">Enable AI-powered sorting</label>
@@ -50,26 +61,34 @@
             </div>
             
             <div id="gemini-usage-container" class="usage-info" style="display: none;">
-                <h3>Gemini API Usage (Current Key)</h3>
-                <div class="usage-stats">
-                    <div class="usage-item">
-                        <strong>Today's Usage:</strong> <span id="gemini-daily-count">0</span>/20 requests
+                <h3>Gemini API Usage</h3>
+                <div id="single-key-usage" style="display: none;">
+                    <div class="usage-stats">
+                        <div class="usage-item">
+                            <strong>Today's Usage:</strong> <span id="gemini-daily-count">0</span>/20 requests
+                        </div>
+                        <div class="usage-item">
+                            <strong>Last Request:</strong> <span id="gemini-last-request">Never</span>
+                        </div>
+                        <div class="usage-item">
+                            <strong>Daily Limit Resets:</strong> <span id="gemini-reset-time">--</span>
+                        </div>
+                        <div class="usage-item">
+                            <strong>Status:</strong> <span id="gemini-status">Ready</span>
+                        </div>
                     </div>
-                    <div class="usage-item">
-                        <strong>Last Request:</strong> <span id="gemini-last-request">Never</span>
+                    <div class="button-group">
+                        <button id="reset-gemini-counter" class="button">Reset Counter (New API Key)</button>
+                        <button id="refresh-usage" class="button">Refresh Usage</button>
                     </div>
-                    <div class="usage-item">
-                        <strong>Daily Limit Resets:</strong> <span id="gemini-reset-time">--</span>
-                    </div>
-                    <div class="usage-item">
-                        <strong>Status:</strong> <span id="gemini-status">Ready</span>
+                    <div id="usage-message" class="usage-message"></div>
+                </div>
+                <div id="multi-key-usage" style="display: none;">
+                    <div id="all-keys-usage-stats" class="all-keys-usage"></div>
+                    <div class="button-group">
+                        <button id="refresh-all-usage" class="button">Refresh All Usage</button>
                     </div>
                 </div>
-                <div class="button-group">
-                    <button id="reset-gemini-counter" class="button">Reset Counter (New API Key)</button>
-                    <button id="refresh-usage" class="button">Refresh Usage</button>
-                </div>
-                <div id="usage-message" class="usage-message"></div>
             </div>
             
             <div class="ai-description">

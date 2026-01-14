@@ -19,8 +19,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     const folderCount = document.getElementById('folder-count');
     const useImapFoldersButton = document.getElementById('use-imap-folders');
     const useCustomFoldersButton = document.getElementById('use-custom-folders');
+    const geminiMultiKeysContainer = document.getElementById('gemini-multi-keys-container');
+    const geminiKeysList = document.getElementById('gemini-keys-list');
+    const addGeminiKeyButton = document.getElementById('add-gemini-key');
     
     let loadedFolders = [];
+    let geminiKeys = []; // Array to store multiple Gemini API keys
     
     // AI Provider configurations
     const aiProviders = {
@@ -61,14 +65,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         const provider = aiProviderSelect.value;
         const config = aiProviders[provider];
         
-        // Show/hide Gemini paid plan option and usage display
+        // Show/hide Gemini-specific elements
         if (provider === 'gemini') {
             geminiPaidContainer.style.display = 'block';
+            geminiMultiKeysContainer.style.display = 'block';
             document.getElementById('gemini-usage-container').style.display = 'block';
+            apiKeyInput.parentElement.style.display = 'none'; // Hide single key input for Gemini
             updateGeminiUsageDisplay();
         } else {
             geminiPaidContainer.style.display = 'none';
+            geminiMultiKeysContainer.style.display = 'none';
             document.getElementById('gemini-usage-container').style.display = 'none';
+            apiKeyInput.parentElement.style.display = 'block'; // Show single key input for other providers
         }
         
         providerInfo.innerHTML = `
@@ -83,6 +91,26 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Update Gemini usage display
     async function updateGeminiUsageDisplay() {
+        const data = await browser.storage.local.get(['geminiRateLimits', 'currentGeminiKeyIndex', 'geminiApiKeys']);
+        const rateLimits = data.geminiRateLimits || [];
+        const currentIndex = data.currentGeminiKeyIndex || 0;
+        const keys = data.geminiApiKeys || geminiKeys;
+        
+        if (keys.length > 1) {
+            // Multi-key mode
+            document.getElementById('single-key-usage').style.display = 'none';
+            document.getElementById('multi-key-usage').style.display = 'block';
+            updateMultiKeyUsageDisplay(keys, rateLimits, currentIndex);
+        } else {
+            // Single-key mode (backward compatibility)
+            document.getElementById('single-key-usage').style.display = 'block';
+            document.getElementById('multi-key-usage').style.display = 'none';
+            updateSingleKeyUsageDisplay();
+        }
+    }
+    
+    // Update single key usage display (backward compatibility)
+    async function updateSingleKeyUsageDisplay() {
         const data = await browser.storage.local.get(['geminiRateLimit']);
         const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: Date.now() };
         const now = Date.now();
@@ -135,9 +163,201 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
+    // Update multi-key usage display
+    function updateMultiKeyUsageDisplay(keys, rateLimits, currentIndex) {
+        const container = document.getElementById('all-keys-usage-stats');
+        const now = Date.now();
+        container.innerHTML = '';
+        
+        keys.forEach((key, index) => {
+            const rateLimit = rateLimits[index] || { requests: [], dailyCount: 0, dailyResetTime: now };
+            const isActive = index === currentIndex;
+            
+            const card = document.createElement('div');
+            card.className = `key-usage-card${isActive ? ' active' : ''}`;
+            
+            // Determine status
+            let statusBadge = '';
+            if (isActive) {
+                statusBadge = '<span class="key-status active">🔵 ACTIVE</span>';
+            } else if (rateLimit.dailyCount >= 20) {
+                statusBadge = '<span class="key-status limit">🔴 LIMIT</span>';
+            } else if (rateLimit.dailyCount >= 15) {
+                statusBadge = '<span class="key-status warning">🟡 NEAR LIMIT</span>';
+            } else {
+                statusBadge = '<span class="key-status ready">🟢 READY</span>';
+            }
+            
+            // Calculate reset time
+            let resetText = '--';
+            if (rateLimit.dailyResetTime > now) {
+                const hoursUntil = Math.ceil((rateLimit.dailyResetTime - now) / (1000 * 60 * 60));
+                resetText = `${hoursUntil}h`;
+            }
+            
+            // Last request time
+            let lastRequestText = 'Never';
+            if (rateLimit.requests && rateLimit.requests.length > 0) {
+                const lastRequest = Math.max(...rateLimit.requests);
+                const minutesAgo = Math.floor((now - lastRequest) / 60000);
+                if (minutesAgo < 1) {
+                    lastRequestText = 'Just now';
+                } else if (minutesAgo < 60) {
+                    lastRequestText = `${minutesAgo}m ago`;
+                } else {
+                    lastRequestText = `${Math.floor(minutesAgo / 60)}h ago`;
+                }
+            }
+            
+            // Mask key for display
+            const maskedKey = key ? `...${key.slice(-8)}` : 'Not set';
+            
+            card.innerHTML = `
+                <div class="key-header">
+                    <span class="key-title">Key ${index + 1}: ${maskedKey}</span>
+                    ${statusBadge}
+                </div>
+                <div class="key-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Usage:</span>
+                        <span class="stat-value">${rateLimit.dailyCount}/20</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Last:</span>
+                        <span class="stat-value">${lastRequestText}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Resets:</span>
+                        <span class="stat-value">${resetText}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Available:</span>
+                        <span class="stat-value">${20 - rateLimit.dailyCount}</span>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(card);
+        });
+    }
+    
+    // Add Gemini key input field
+    function addGeminiKeyInput(value = '', index = -1) {
+        if (index === -1) {
+            index = geminiKeys.length;
+            geminiKeys.push(value);
+        }
+        
+        const keyItem = document.createElement('div');
+        keyItem.className = 'gemini-key-item';
+        keyItem.dataset.index = index;
+        
+        const keyIndex = document.createElement('span');
+        keyIndex.className = 'key-index';
+        keyIndex.textContent = `#${index + 1}`;
+        
+        const input = document.createElement('input');
+        input.type = 'password';
+        input.className = 'gemini-api-key-input';
+        input.placeholder = 'Enter Gemini API key from another project';
+        input.value = value;
+        input.dataset.index = index;
+        input.addEventListener('input', (e) => {
+            geminiKeys[index] = e.target.value.trim();
+        });
+        
+        const testButton = document.createElement('button');
+        testButton.className = 'button';
+        testButton.textContent = 'Test';
+        testButton.addEventListener('click', () => testGeminiKey(input.value.trim(), index, keyItem));
+        
+        const removeButton = document.createElement('button');
+        removeButton.className = 'button';
+        removeButton.textContent = '×';
+        removeButton.addEventListener('click', () => removeGeminiKey(index));
+        
+        const statusSpan = document.createElement('span');
+        statusSpan.className = 'key-test-result';
+        statusSpan.dataset.index = index;
+        
+        keyItem.appendChild(keyIndex);
+        keyItem.appendChild(input);
+        keyItem.appendChild(testButton);
+        keyItem.appendChild(removeButton);
+        keyItem.appendChild(statusSpan);
+        geminiKeysList.appendChild(keyItem);
+    }
+    
+    // Remove Gemini key
+    function removeGeminiKey(index) {
+        if (geminiKeys.length <= 1) {
+            alert('You must have at least one API key configured.');
+            return;
+        }
+        
+        if (confirm(`Remove API key #${index + 1}?`)) {
+            geminiKeys.splice(index, 1);
+            refreshGeminiKeysList();
+        }
+    }
+    
+    // Refresh Gemini keys list display
+    function refreshGeminiKeysList() {
+        geminiKeysList.innerHTML = '';
+        geminiKeys.forEach((key, index) => {
+            addGeminiKeyInput(key, index);
+        });
+    }
+    
+    // Test individual Gemini key
+    async function testGeminiKey(apiKey, index, keyItemElement) {
+        const statusSpan = keyItemElement.querySelector('.key-test-result');
+        
+        if (!apiKey) {
+            statusSpan.textContent = '⚠️ Enter key first';
+            statusSpan.className = 'key-test-result error';
+            return;
+        }
+        
+        try {
+            statusSpan.textContent = 'Testing...';
+            statusSpan.className = 'key-test-result testing';
+            
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: "Test" }] }],
+                    generationConfig: { maxOutputTokens: 10 }
+                })
+            });
+            
+            if (response.ok) {
+                statusSpan.textContent = '✓ Valid';
+                statusSpan.className = 'key-test-result success';
+            } else {
+                const error = await response.text();
+                statusSpan.textContent = `✗ Failed (${response.status})`;
+                statusSpan.className = 'key-test-result error';
+                console.error(`Key #${index + 1} test failed:`, error);
+            }
+        } catch (error) {
+            statusSpan.textContent = `✗ Error`;
+            statusSpan.className = 'key-test-result error';
+            console.error(`Key #${index + 1} test error:`, error);
+        }
+    }
+    
     // Initialize provider info
     updateProviderInfo();
     aiProviderSelect.addEventListener('change', updateProviderInfo);
+    
+    // Add Gemini key button
+    addGeminiKeyButton.addEventListener('click', () => {
+        addGeminiKeyInput('');
+    });
     
     // Reset Gemini counter button
     document.getElementById('reset-gemini-counter').addEventListener('click', async () => {
@@ -156,7 +376,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
     
-    // Refresh usage button
+    // Refresh usage button (single key)
     document.getElementById('refresh-usage').addEventListener('click', async () => {
         await updateGeminiUsageDisplay();
         const usageMessage = document.getElementById('usage-message');
@@ -167,6 +387,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                 usageMessage.style.display = 'none';
             }
         }, 3000);
+    });
+    
+    // Refresh all usage button (multi key)
+    document.getElementById('refresh-all-usage').addEventListener('click', async () => {
+        await updateGeminiUsageDisplay();
+        showMessage('✓ All usage information refreshed.', true);
     });
     
     // Get API Key button
@@ -197,15 +423,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             .map(input => input.value.trim())
             .filter(label => label !== '');
         
-        const apiKey = apiKeyInput.value.trim();
+        const provider = aiProviderSelect.value;
+        let hasValidApiKey = false;
         
-        if (labels.length === 0 || !apiKey) {
+        if (provider === 'gemini') {
+            const validGeminiKeys = geminiKeys.filter(key => key && key.trim() !== '');
+            hasValidApiKey = validGeminiKeys.length > 0;
+        } else {
+            const apiKey = apiKeyInput.value.trim();
+            hasValidApiKey = !!apiKey;
+        }
+        
+        if (labels.length === 0 || !hasValidApiKey) {
             saveButton.disabled = true;
             saveButton.classList.add('disabled');
             
             let missingItems = [];
             if (labels.length === 0) missingItems.push('folders/labels');
-            if (!apiKey) missingItems.push('API key');
+            if (!hasValidApiKey) missingItems.push('API key');
             
             saveButton.title = `Please configure: ${missingItems.join(' and ')}`;
         } else {
@@ -216,7 +451,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Load saved settings
-    browser.storage.local.get(['labels', 'apiKey', 'aiProvider', 'enableAi', 'geminiPaidPlan']).then(result => {
+    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan']).then(result => {
         if (result.labels && result.labels.length > 0) {
             result.labels.forEach(label => {
                 addLabelInput(label);
@@ -225,9 +460,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Show instruction if no labels
             labelsContainer.innerHTML = '<div class="instruction-message">No folders/labels configured. Click "Load Folders from Mail Account" above or add custom labels below.</div>';
         }
-        if (result.apiKey) {
+        
+        // Load API keys
+        if (result.geminiApiKeys && result.geminiApiKeys.length > 0) {
+            // Multi-key mode
+            geminiKeys = result.geminiApiKeys;
+            geminiKeys.forEach((key, index) => {
+                addGeminiKeyInput(key, index);
+            });
+        } else if (result.apiKey) {
+            // Migrate from single key to multi-key
+            geminiKeys = [result.apiKey];
+            addGeminiKeyInput(result.apiKey, 0);
             apiKeyInput.value = result.apiKey;
+        } else {
+            // No keys configured yet - add one empty field
+            addGeminiKeyInput('', 0);
         }
+        
         if (result.aiProvider) {
             aiProviderSelect.value = result.aiProvider;
             updateProviderInfo();
@@ -476,6 +726,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             .filter(label => label !== '');
         
         const apiKey = apiKeyInput.value.trim();
+        const provider = aiProviderSelect.value;
         
         // Validation
         if (labels.length === 0) {
@@ -483,25 +734,64 @@ document.addEventListener('DOMContentLoaded', async function() {
             return;
         }
         
-        if (!apiKey) {
-            showMessage('Please enter your API key before saving. Click "Get API Key" to obtain one.', false);
-            return;
+        // Validate API keys based on provider
+        if (provider === 'gemini') {
+            // Filter out empty Gemini keys
+            const validGeminiKeys = geminiKeys.filter(key => key && key.trim() !== '');
+            
+            if (validGeminiKeys.length === 0) {
+                showMessage('Please add at least one Gemini API key before saving.', false);
+                return;
+            }
+            
+            const settings = {
+                labels: labels,
+                geminiApiKeys: validGeminiKeys,
+                currentGeminiKeyIndex: 0, // Start with first key
+                aiProvider: provider,
+                enableAi: document.getElementById('enable-ai').checked,
+                geminiPaidPlan: geminiPaidCheckbox.checked
+            };
+            
+            // Initialize rate limits array for all keys if not exists
+            browser.storage.local.get(['geminiRateLimits']).then(result => {
+                if (!result.geminiRateLimits || result.geminiRateLimits.length !== validGeminiKeys.length) {
+                    settings.geminiRateLimits = validGeminiKeys.map(() => ({
+                        requests: [],
+                        dailyCount: 0,
+                        dailyResetTime: Date.now() + (24 * 60 * 60 * 1000)
+                    }));
+                }
+                
+                browser.storage.local.set(settings).then(() => {
+                    showMessage('✓ Settings saved successfully! Multiple Gemini API keys configured for automatic rotation.', true);
+                    updateSaveButtonState();
+                }).catch(error => {
+                    showMessage('Error saving settings: ' + error, false);
+                });
+            });
+        } else {
+            // Other providers use single key
+            if (!apiKey) {
+                showMessage('Please enter your API key before saving. Click "Get API Key" to obtain one.', false);
+                return;
+            }
+
+            const settings = {
+                labels: labels,
+                apiKey: apiKey,
+                aiProvider: provider,
+                enableAi: document.getElementById('enable-ai').checked,
+                geminiPaidPlan: geminiPaidCheckbox.checked
+            };
+
+            browser.storage.local.set(settings).then(() => {
+                showMessage('✓ Settings saved successfully! You can now use AutoSort+ to analyze emails.', true);
+                updateSaveButtonState();
+            }).catch(error => {
+                showMessage('Error saving settings: ' + error, false);
+            });
         }
-
-        const settings = {
-            labels: labels,
-            apiKey: apiKey,
-            aiProvider: aiProviderSelect.value,
-            enableAi: document.getElementById('enable-ai').checked,
-            geminiPaidPlan: geminiPaidCheckbox.checked
-        };
-
-        browser.storage.local.set(settings).then(() => {
-            showMessage('✓ Settings saved successfully! You can now use AutoSort+ to analyze emails.', true);
-            updateSaveButtonState();
-        }).catch(error => {
-            showMessage('Error saving settings: ' + error, false);
-        });
     });
 
     // Add category/folder input field

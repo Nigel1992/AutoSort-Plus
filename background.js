@@ -10,16 +10,100 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     }
 });
 
-// Gemini rate limiting functions (free tier: 5/min, 20/day)
+// Gemini rate limiting functions (free tier: 5/min, 20/day per key)
 async function checkGeminiRateLimit() {
     const now = Date.now();
-    const data = await browser.storage.local.get(['geminiRateLimit']);
+    const data = await browser.storage.local.get([
+        'geminiApiKeys', 
+        'geminiRateLimits', 
+        'currentGeminiKeyIndex', 
+        'geminiPaidPlan',
+        'geminiRateLimit' // Legacy single-key support
+    ]);
+    
+    // Handle paid plan - no limits
+    if (data.geminiPaidPlan) {
+        return { allowed: true, waitTime: 0 };
+    }
+    
+    // Multi-key mode
+    if (data.geminiApiKeys && data.geminiApiKeys.length > 0) {
+        const keys = data.geminiApiKeys;
+        const rateLimits = data.geminiRateLimits || keys.map(() => ({
+            requests: [],
+            dailyCount: 0,
+            dailyResetTime: now + (24 * 60 * 60 * 1000)
+        }));
+        let currentIndex = data.currentGeminiKeyIndex || 0;
+        
+        // Try to find an available key
+        const startIndex = currentIndex;
+        let attempts = 0;
+        
+        while (attempts < keys.length) {
+            const rateLimit = rateLimits[currentIndex];
+            
+            // Reset daily count if it's a new day
+            if (now > rateLimit.dailyResetTime) {
+                rateLimit.dailyCount = 0;
+                rateLimit.dailyResetTime = now + (24 * 60 * 60 * 1000);
+                rateLimit.requests = [];
+            }
+            
+            // Remove requests older than 1 minute
+            const oneMinuteAgo = now - 60000;
+            rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
+            
+            // Check if this key is available
+            if (rateLimit.dailyCount < 20) {
+                // Check if we need to wait
+                if (rateLimit.requests.length > 0) {
+                    const lastRequest = Math.max(...rateLimit.requests);
+                    const timeSinceLastRequest = now - lastRequest;
+                    const minInterval = 12000; // 12 seconds
+                    
+                    if (timeSinceLastRequest < minInterval) {
+                        const waitTime = Math.ceil((minInterval - timeSinceLastRequest) / 1000);
+                        return {
+                            allowed: true,
+                            waitTime: waitTime,
+                            keyIndex: currentIndex
+                        };
+                    }
+                }
+                
+                // This key is ready to use
+                await browser.storage.local.set({ 
+                    currentGeminiKeyIndex: currentIndex,
+                    geminiRateLimits: rateLimits
+                });
+                
+                return {
+                    allowed: true,
+                    waitTime: 0,
+                    keyIndex: currentIndex
+                };
+            }
+            
+            // This key has reached its limit, try next one
+            currentIndex = (currentIndex + 1) % keys.length;
+            attempts++;
+        }
+        
+        // All keys have reached their limits
+        return {
+            allowed: false,
+            message: `All ${keys.length} Gemini API keys have reached their daily limit (20/day each). Please wait for reset or add more API keys in settings.`
+        };
+    }
+    
+    // Legacy single-key mode (backward compatibility)
     const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: now };
     
     // Reset daily count if it's a new day
     if (now > rateLimit.dailyResetTime) {
         rateLimit.dailyCount = 0;
-        rateLimit.dailyResetTime = now + (24 * 60 * 60 * 1000); // 24 hours from now
+        rateLimit.dailyResetTime = now + (24 * 60 * 60 * 1000);
     }
     
     // Check daily limit (20 per day)
@@ -27,7 +111,7 @@ async function checkGeminiRateLimit() {
         const hoursUntilReset = Math.ceil((rateLimit.dailyResetTime - now) / (1000 * 60 * 60));
         return {
             allowed: false,
-            message: `Gemini free tier daily limit reached (20/day). Resets in ${hoursUntilReset} hours. Upgrade to paid plan in settings to remove limits.`
+            message: `Gemini free tier daily limit reached (20/day). Resets in ${hoursUntilReset} hours. Upgrade to paid plan or add multiple API keys in settings to remove limits.`
         };
     }
     
@@ -56,22 +140,52 @@ async function checkGeminiRateLimit() {
     };
 }
 
-async function trackGeminiRequest() {
+async function trackGeminiRequest(keyIndex = null) {
     const now = Date.now();
-    const data = await browser.storage.local.get(['geminiRateLimit']);
-    const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: now + (24 * 60 * 60 * 1000) };
+    const data = await browser.storage.local.get([
+        'geminiApiKeys',
+        'geminiRateLimits',
+        'currentGeminiKeyIndex',
+        'geminiRateLimit' // Legacy
+    ]);
     
-    // Add current request
-    rateLimit.requests.push(now);
-    rateLimit.dailyCount += 1;
-    
-    // Clean old requests
-    const oneMinuteAgo = now - 60000;
-    rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
-    
-    await browser.storage.local.set({ geminiRateLimit: rateLimit });
-    
-    console.log(`Gemini requests: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
+    // Multi-key mode
+    if (data.geminiApiKeys && data.geminiApiKeys.length > 0 && keyIndex !== null) {
+        const rateLimits = data.geminiRateLimits || data.geminiApiKeys.map(() => ({
+            requests: [],
+            dailyCount: 0,
+            dailyResetTime: now + (24 * 60 * 60 * 1000)
+        }));
+        
+        const rateLimit = rateLimits[keyIndex];
+        
+        // Add current request
+        rateLimit.requests.push(now);
+        rateLimit.dailyCount += 1;
+        
+        // Clean old requests
+        const oneMinuteAgo = now - 60000;
+        rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
+        
+        await browser.storage.local.set({ geminiRateLimits: rateLimits });
+        
+        console.log(`Gemini Key #${keyIndex + 1}: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
+    } else {
+        // Legacy single-key mode
+        const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: now + (24 * 60 * 60 * 1000) };
+        
+        // Add current request
+        rateLimit.requests.push(now);
+        rateLimit.dailyCount += 1;
+        
+        // Clean old requests
+        const oneMinuteAgo = now - 60000;
+        rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
+        
+        await browser.storage.local.set({ geminiRateLimit: rateLimit });
+        
+        console.log(`Gemini requests: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
+    }
 }
 
 // Function to show notification
@@ -124,10 +238,21 @@ async function analyzeEmailContent(emailContent) {
             "Starting email analysis..."
         );
 
-        const settings = await browser.storage.local.get(['apiKey', 'aiProvider', 'labels', 'enableAi', 'geminiPaidPlan', 'geminiRateLimit']);
+        const settings = await browser.storage.local.get([
+            'apiKey', 
+            'geminiApiKeys',
+            'currentGeminiKeyIndex',
+            'aiProvider', 
+            'labels', 
+            'enableAi', 
+            'geminiPaidPlan', 
+            'geminiRateLimit',
+            'geminiRateLimits'
+        ]);
         const provider = settings.aiProvider || 'gemini';
         
         // Check Gemini rate limits (free tier only)
+        let keyIndexToUse = null;
         if (provider === 'gemini' && !settings.geminiPaidPlan) {
             const rateLimitCheck = await checkGeminiRateLimit();
             if (!rateLimitCheck.allowed) {
@@ -136,22 +261,23 @@ async function analyzeEmailContent(emailContent) {
                     "AutoSort+ Rate Limit",
                     rateLimitCheck.message
                 );
-                return null;
+                throw new Error(rateLimitCheck.message);
             }
             
-            // Wait if needed for rate limiting (12 seconds between requests)
             if (rateLimitCheck.waitTime > 0) {
                 await updateNotification(
                     notificationId,
-                    "AutoSort+ Rate Limiting",
-                    `Waiting ${rateLimitCheck.waitTime} seconds for rate limit...`
+                    "AutoSort+ Rate Limit",
+                    `Rate limit reached. Waiting ${rateLimitCheck.waitTime} seconds...`
                 );
                 await new Promise(resolve => setTimeout(resolve, rateLimitCheck.waitTime * 1000));
             }
+            
+            keyIndexToUse = rateLimitCheck.keyIndex;
         }
         
         console.log("Settings retrieved:", {
-            hasApiKey: !!settings.apiKey,
+            hasApiKey: !!(settings.apiKey || (settings.geminiApiKeys && settings.geminiApiKeys.length > 0)),
             provider: provider,
             labels: settings.labels,
             enableAi: settings.enableAi !== false
@@ -167,7 +293,22 @@ async function analyzeEmailContent(emailContent) {
             return null;
         }
         
-        if (!settings.apiKey) {
+        // Check API key availability based on provider
+        let apiKeyToUse = null;
+        if (provider === 'gemini') {
+            if (settings.geminiApiKeys && settings.geminiApiKeys.length > 0) {
+                const keyIndex = keyIndexToUse !== null ? keyIndexToUse : (settings.currentGeminiKeyIndex || 0);
+                apiKeyToUse = settings.geminiApiKeys[keyIndex];
+                console.log(`Using Gemini API Key #${keyIndex + 1} of ${settings.geminiApiKeys.length}`);
+            } else if (settings.apiKey) {
+                // Legacy single key
+                apiKeyToUse = settings.apiKey;
+            }
+        } else {
+            apiKeyToUse = settings.apiKey;
+        }
+        
+        if (!apiKeyToUse) {
             console.error("Missing API key");
             await updateNotification(
                 notificationId,
@@ -209,12 +350,12 @@ async function analyzeEmailContent(emailContent) {
         let data;
 
         if (provider === 'gemini') {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${settings.apiKey}`;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKeyToUse}`;
             console.log("Making API request to Gemini...");
             
             // Track request for rate limiting (free tier only)
             if (!settings.geminiPaidPlan) {
-                await trackGeminiRequest();
+                await trackGeminiRequest(keyIndexToUse);
             }
             
             await updateNotification(
@@ -281,7 +422,7 @@ async function analyzeEmailContent(emailContent) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${settings.apiKey}`
+                    'Authorization': `Bearer ${apiKeyToUse}`
                 },
                 body: JSON.stringify({
                     model: 'gpt-4o-mini',
@@ -304,7 +445,7 @@ async function analyzeEmailContent(emailContent) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'x-api-key': settings.apiKey,
+                    'x-api-key': apiKeyToUse,
                     'anthropic-version': '2023-06-01'
                 },
                 body: JSON.stringify({
@@ -327,7 +468,7 @@ async function analyzeEmailContent(emailContent) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${settings.apiKey}`
+                    'Authorization': `Bearer ${apiKeyToUse}`
                 },
                 body: JSON.stringify({
                     model: 'llama-3.3-70b-versatile',
@@ -350,7 +491,7 @@ async function analyzeEmailContent(emailContent) {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${settings.apiKey}`
+                    'Authorization': `Bearer ${apiKeyToUse}`
                 },
                 body: JSON.stringify({
                     model: 'mistral-small-latest',

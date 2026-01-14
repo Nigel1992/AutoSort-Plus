@@ -473,4 +473,160 @@ input[type="checkbox"] {
     display: flex;
     gap: 10px;
     margin-top: 15px;
-} 
+}
+
+/* Multiple Gemini API Keys */
+.multi-keys-header {
+    margin-bottom: 15px;
+}
+
+.multi-keys-header h3 {
+    margin: 0 0 5px 0;
+    font-size: 1.1em;
+}
+
+.multi-keys-header .info-text {
+    margin: 0;
+    font-size: 0.9em;
+    color: #666;
+}
+
+.gemini-keys-list {
+    margin: 15px 0;
+}
+
+.gemini-key-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.gemini-key-item.active {
+    border-left: 4px solid #28a745;
+    background-color: #f0fff0;
+}
+
+.gemini-key-item .key-index {
+    font-weight: bold;
+    min-width: 30px;
+    color: #666;
+}
+
+.gemini-key-item input {
+    flex: 1;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.gemini-key-item .key-status {
+    font-size: 0.85em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+}
+
+.gemini-key-item .key-status.ready {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.gemini-key-item .key-status.warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.gemini-key-item .key-status.limit {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.gemini-key-item .key-status.active {
+    background-color: #d1ecf1;
+    color: #0c5460;
+    font-weight: bold;
+}
+
+.gemini-key-item button {
+    padding: 5px 10px;
+    font-size: 0.9em;
+}
+
+.key-test-result {
+    font-size: 0.85em;
+    padding: 3px 8px;
+    border-radius: 3px;
+    white-space: nowrap;
+    min-width: 70px;
+    text-align: center;
+}
+
+.key-test-result.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.key-test-result.error {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.key-test-result.testing {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.all-keys-usage {
+    margin-bottom: 15px;
+}
+
+.key-usage-card {
+    margin-bottom: 10px;
+    padding: 12px;
+    background-color: #f9f9f9;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+.key-usage-card.active {
+    border-left: 4px solid #28a745;
+    background-color: #f0fff0;
+}
+
+.key-usage-card .key-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.key-usage-card .key-title {
+    font-weight: bold;
+    color: #333;
+}
+
+.key-usage-card .key-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 0.9em;
+}
+
+.key-usage-card .stat-item {
+    display: flex;
+    justify-content: space-between;
+}
+
+.key-usage-card .stat-label {
+    color: #666;
+}
+
+.key-usage-card .stat-value {
+    font-weight: 600;
+}
+ 

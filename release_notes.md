@@ -1,3 +1,32 @@
+## AutoSort+ v1.2.1 - January 14, 2026
+
+### 🆕 New Features
+- **Multiple Gemini API Key Support** - Add multiple API keys from different Google Cloud projects
+- **Automatic Key Rotation** - Seamlessly switches between keys when rate limits are reached
+- **Per-Key Usage Tracking** - Monitor usage statistics for each API key individually
+- **Smart Key Management** - Visual indicators show which key is active and available
+
+### 💡 How Multiple Keys Work
+Free Gemini tier provides 20 requests/day per project. With multiple keys:
+- Add keys from different Google Cloud projects
+- Extension automatically rotates to next available key
+- Example: 5 keys = 100 requests/day total
+- Each key tracks its own rate limit independently
+
+### 🔧 Improvements
+- Enhanced UI for multi-key management
+- Individual test buttons for each API key
+- Real-time status indicators (Active, Ready, Near Limit, Limit Reached)
+- Better error messages when all keys are exhausted
+- Backward compatible with single-key configurations
+
+### 🐛 Bug Fixes
+- Fixed API key test function for Gemini keys
+- Fixed test result display to show inline status per key
+- Improved key validation feedback
+
+---
+
 ## AutoSort+ v1.2.0
 
 ### ⚠️ Important Rate Limit Warning
