@@ -256,6 +256,14 @@ async function analyzeEmailContent(emailContent) {
         if (provider === 'gemini' && !settings.geminiPaidPlan) {
             const rateLimitCheck = await checkGeminiRateLimit();
             if (!rateLimitCheck.allowed) {
+                // Show persistent notification for all keys limit reached
+                const notifId = await showNotification(
+                    "⛔ All Gemini Keys at Limit",
+                    rateLimitCheck.message,
+                    "list"
+                );
+                
+                // Also try to update the current notification
                 await updateNotification(
                     notificationId,
                     "AutoSort+ Rate Limit",
