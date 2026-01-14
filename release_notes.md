@@ -1,3 +1,22 @@
+## AutoSort+ v1.2.2 - January 14, 2026
+
+### 🐛 Bug Fixes
+- **Fixed single-key usage tracking** - Now properly displays "Today's Usage:" when using only 1 Gemini API key
+- **Fixed rate limit notification** - Persistent notification now shows when limit is reached on single or multiple keys
+- **Improved API test feedback** - Shows specific error messages:
+  - 429 error: "⛔ Limit reached" (key has exhausted daily quota)
+  - 401/403 error: "✗ Invalid key" (key is invalid or expired)
+  - Other errors: "✗ Failed (status code)"
+- **Added tooltips** - Hover over test results to see detailed error explanations
+
+### ✨ Improvements
+- Better error messaging for API key testing
+- More intuitive status indicators with help text
+- Cursor changes to "help" icon when hovering over test results
+- Single-key configurations now display in new multi-key format
+
+---
+
 ## AutoSort+ v1.2.1 - January 14, 2026
 
 ### 🆕 New Features
