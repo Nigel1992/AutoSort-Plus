@@ -1,3 +1,18 @@
+## AutoSort+ v1.2.3 - January 14, 2026
+
+### ✨ New Features
+- **Toolbar Icon** - Quick access button in top-right of Thunderbird
+  - Click the AutoSort+ icon to instantly open settings
+  - Hover for tooltip "AutoSort+ Settings"
+  - No need to navigate through menus anymore
+
+### 🎯 User Experience
+- Faster settings access - one click from anywhere in Thunderbird
+- Better addon visibility - always accessible in toolbar
+- Tooltip provides clear button function
+
+---
+
 ## AutoSort+ v1.2.2 - January 14, 2026
 
 ### 🐛 Bug Fixes
