@@ -1,4 +1,31 @@
 document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize collapsible sections
+    const sectionHeaders = document.querySelectorAll('.section-header');
+    sectionHeaders.forEach(header => {
+        header.addEventListener('click', function() {
+            const sectionId = this.getAttribute('data-section');
+            const content = document.getElementById(sectionId);
+            const section = this.parentElement;
+            const icon = this.querySelector('.collapse-icon');
+            
+            if (section.classList.contains('collapsed')) {
+                // Expand
+                section.classList.remove('collapsed');
+                content.style.display = 'block';
+                icon.textContent = '▼';
+                // Trigger animation
+                setTimeout(() => {
+                    content.style.animation = 'slideDown 0.3s ease-out';
+                }, 0);
+            } else {
+                // Collapse
+                section.classList.add('collapsed');
+                content.style.display = 'none';
+                icon.textContent = '▶';
+            }
+        });
+    });
+    
     const labelsContainer = document.getElementById('labels-container');
     const addLabelButton = document.getElementById('add-label');
     const saveButton = document.getElementById('save-settings');
@@ -22,6 +49,35 @@ document.addEventListener('DOMContentLoaded', async function() {
     const geminiMultiKeysContainer = document.getElementById('gemini-multi-keys-container');
     const geminiKeysList = document.getElementById('gemini-keys-list');
     const addGeminiKeyButton = document.getElementById('add-gemini-key');
+    
+    // Ollama-specific elements  
+    const ollamaModelSelect = document.getElementById('ollama-model');
+    const ollamaCustomModelInput = document.getElementById('ollama-custom-model');
+    const ollamaUrlInput = document.getElementById('ollama-url');
+    const ollamaAuthTokenInput = document.getElementById('ollama-auth-token');
+    const ollamaCpuOnlyCheckbox = document.getElementById('ollama-cpu-only');
+    const testOllamaButton = document.getElementById('test-ollama');
+    const listOllamaModelsButton = document.getElementById('list-ollama-models');
+    const downloadOllamaModelButton = document.getElementById('download-ollama-model');
+    const ollamaDownloadModelInput = document.getElementById('ollama-download-model');
+    const ollamaDownloadStatus = document.getElementById('ollama-download-status');
+    const ollamaTestResult = document.getElementById('ollama-test-result');
+    const diagnoseOllamaButton = document.getElementById('diagnose-ollama');
+    const ollamaDiagnostics = document.getElementById('ollama-diagnostics');
+    
+    // Update endpoint URLs when Ollama URL changes
+    if (ollamaUrlInput) {
+        ollamaUrlInput.addEventListener('input', () => {
+            const url = ollamaUrlInput.value.trim() || 'http://localhost:11434';
+            const chatEndpoint = document.getElementById('ollama-chat-endpoint');
+            const pullEndpoint = document.getElementById('ollama-pull-endpoint');
+            const tagsEndpoint = document.getElementById('ollama-tags-endpoint');
+            
+            if (chatEndpoint) chatEndpoint.textContent = `${url}/api/chat`;
+            if (pullEndpoint) pullEndpoint.textContent = `${url}/api/pull`;
+            if (tagsEndpoint) tagsEndpoint.textContent = `${url}/api/tags`;
+        });
+    }
     
     let loadedFolders = [];
     let geminiKeys = []; // Array to store multiple Gemini API keys
@@ -57,6 +113,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             signupUrl: 'https://console.mistral.ai/',
             info: '✓ Free tier: Limited requests<br>✓ Best for: European users, GDPR compliance<br>✓ Models: Mistral Small',
             isFree: true
+        },
+        ollama: {
+            name: 'Ollama (Local LLM)',
+            signupUrl: 'https://ollama.ai/',
+            info: '✓ 100% Free: Runs locally on your machine<br>✓ Privacy: No data sent to external servers<br>✓ No rate limits: Process unlimited emails<br>✓ Models: Llama 2/3, Mistral, Phi, Gemma, Qwen, and more<br>✓ Requires: <a href="https://ollama.ai/download" target="_blank">Ollama installed</a> and running locally<br>✓ Setup: Install Ollama, run "ollama pull llama3.2" to download a model',
+            isFree: true
         }
     };
     
@@ -65,18 +127,39 @@ document.addEventListener('DOMContentLoaded', async function() {
         const provider = aiProviderSelect.value;
         const config = aiProviders[provider];
         
+        // Get subsection elements
+        const ollamaSubsection = document.getElementById('ollama-settings-subsection');
+        const apiKeySubsection = document.getElementById('api-key-subsection');
+        const geminiMultiKeysSubsection = document.getElementById('gemini-multi-keys-subsection');
+        const geminiUsageSubsection = document.getElementById('gemini-usage-subsection');
+        const rateLimitWarning = document.getElementById('rate-limit-warning');
+        
+        // Show/hide rate limit warning (not for Ollama)
+        if (rateLimitWarning) {
+            rateLimitWarning.style.display = provider === 'ollama' ? 'none' : 'block';
+        }
+        
         // Show/hide Gemini-specific elements
         if (provider === 'gemini') {
             geminiPaidContainer.style.display = 'block';
-            geminiMultiKeysContainer.style.display = 'block';
-            document.getElementById('gemini-usage-container').style.display = 'block';
-            apiKeyInput.parentElement.style.display = 'none'; // Hide single key input for Gemini
+            if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'block';
+            if (geminiUsageSubsection) geminiUsageSubsection.style.display = 'block';
+            if (apiKeySubsection) apiKeySubsection.style.display = 'none';
+            if (ollamaSubsection) ollamaSubsection.style.display = 'none';
             updateGeminiUsageDisplay();
+        } else if (provider === 'ollama') {
+            // Show Ollama settings, hide API key and Gemini sections
+            geminiPaidContainer.style.display = 'none';
+            if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'none';
+            if (geminiUsageSubsection) geminiUsageSubsection.style.display = 'none';
+            if (apiKeySubsection) apiKeySubsection.style.display = 'none';
+            if (ollamaSubsection) ollamaSubsection.style.display = 'block';
         } else {
             geminiPaidContainer.style.display = 'none';
-            geminiMultiKeysContainer.style.display = 'none';
-            document.getElementById('gemini-usage-container').style.display = 'none';
-            apiKeyInput.parentElement.style.display = 'block'; // Show single key input for other providers
+            if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'none';
+            if (geminiUsageSubsection) geminiUsageSubsection.style.display = 'none';
+            if (apiKeySubsection) apiKeySubsection.style.display = 'block';
+            if (ollamaSubsection) ollamaSubsection.style.display = 'none';
         }
         
         providerInfo.innerHTML = `
@@ -86,7 +169,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             </div>
         `;
         
-        apiKeyInput.placeholder = `Enter your ${config.name} API key`;
+        if (provider !== 'ollama') {
+            apiKeyInput.placeholder = `Enter your ${config.name} API key`;
+        }
     }
     
     // Update Gemini usage display
@@ -472,15 +557,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             .filter(label => label !== '');
         
         const provider = aiProviderSelect.value;
-        let hasValidApiKey = false;
+        let hasValidApiKey = true; // Default to true for Ollama and other providers
         
         if (provider === 'gemini') {
             const validGeminiKeys = geminiKeys.filter(key => key && key.trim() !== '');
             hasValidApiKey = validGeminiKeys.length > 0;
-        } else {
+        } else if (provider !== 'ollama') {
+            // Non-Ollama providers (OpenAI, Anthropic, Groq, Mistral) require API key
             const apiKey = apiKeyInput.value.trim();
             hasValidApiKey = !!apiKey;
         }
+        // Ollama doesn't require an API key, so hasValidApiKey stays true
         
         if (labels.length === 0 || !hasValidApiKey) {
             saveButton.disabled = true;
@@ -499,7 +586,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Load saved settings
-    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan']).then(result => {
+    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly']).then(result => {
         if (result.labels && result.labels.length > 0) {
             result.labels.forEach(label => {
                 addLabelInput(label);
@@ -526,6 +613,24 @@ document.addEventListener('DOMContentLoaded', async function() {
             addGeminiKeyInput('', 0);
         }
         
+        // Load Ollama settings
+        if (result.ollamaUrl && ollamaUrlInput) {
+            ollamaUrlInput.value = result.ollamaUrl;
+        }
+        if (result.ollamaAuthToken && ollamaAuthTokenInput) {
+            ollamaAuthTokenInput.value = result.ollamaAuthToken;
+        }
+        if (result.ollamaModel && ollamaModelSelect) {
+            ollamaModelSelect.value = result.ollamaModel;
+            if (result.ollamaModel === 'custom' && result.ollamaCustomModel && ollamaCustomModelInput) {
+                ollamaCustomModelInput.value = result.ollamaCustomModel;
+                ollamaCustomModelInput.style.display = 'block';
+            }
+        }
+        if (ollamaCpuOnlyCheckbox) {
+            ollamaCpuOnlyCheckbox.checked = result.ollamaCpuOnly === true;
+        }
+        
         if (result.aiProvider) {
             aiProviderSelect.value = result.aiProvider;
             updateProviderInfo();
@@ -547,6 +652,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     testApiButton.addEventListener('click', async () => {
         const apiKey = apiKeyInput.value.trim();
         const provider = aiProviderSelect.value;
+        
+        // Skip for Ollama as it has its own test button
+        if (provider === 'ollama') {
+            showApiTestResult('Please use the "Test Ollama Connection" button below', false);
+            return;
+        }
         
         if (!apiKey) {
             showApiTestResult('Please enter an API key', false);
@@ -757,6 +868,273 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
     // Add new label input
+    
+    // Show/hide custom model input based on selection
+    if (ollamaModelSelect) {
+        ollamaModelSelect.addEventListener('change', () => {
+            if (ollamaModelSelect.value === 'custom') {
+                ollamaCustomModelInput.style.display = 'block';
+            } else {
+                ollamaCustomModelInput.style.display = 'none';
+            }
+        });
+    }
+    
+    // Test Ollama connection
+    if (testOllamaButton) {
+        testOllamaButton.addEventListener('click', async () => {
+            const ollamaUrl = ollamaUrlInput.value.trim() || 'http://localhost:11434';
+            let selectedModel = ollamaModelSelect.value;
+            
+            if (selectedModel === 'custom') {
+                selectedModel = ollamaCustomModelInput.value.trim();
+                if (!selectedModel) {
+                    ollamaTestResult.textContent = '⚠️ Please enter a custom model name first';
+                    ollamaTestResult.className = 'api-test-result error';
+                    return;
+                }
+            }
+            
+            try {
+                ollamaTestResult.textContent = 'Testing connection and checking model...';
+                ollamaTestResult.className = 'api-test-result';
+                
+                const testUrl = `${ollamaUrl}/api/tags`;
+                console.log('[Ollama Test] Connecting to:', testUrl);
+                
+                const headers = {};
+                if (ollamaAuthTokenInput && ollamaAuthTokenInput.value.trim()) {
+                    headers['Authorization'] = `Bearer ${ollamaAuthTokenInput.value.trim()}`;
+                }
+
+                const response = await fetch(testUrl, {
+                    method: 'GET',
+                    headers
+                });
+                
+                console.log('[Ollama Test] Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('[Ollama Test] Success:', data);
+                    const installedModels = data.models && data.models.length > 0 
+                        ? data.models.map(m => m.name)
+                        : [];
+                    
+                    if (installedModels.length === 0) {
+                        ollamaTestResult.textContent = `⚠️ Ollama is running but no models installed. Enter a model name in "Download Model" and click "Download" to get started.`;
+                        ollamaTestResult.className = 'api-test-result error';
+                    } else {
+                        // Extract base model name (before colon) for regex matching
+                        const selectedBase = selectedModel.split(':')[0].toLowerCase();
+                        const installedBases = installedModels.map(m => m.split(':')[0].toLowerCase());
+                        
+                        const modelFound = installedBases.some(base => base === selectedBase);
+                        if (modelFound) {
+                            ollamaTestResult.textContent = `✓ Connected! Model "${selectedModel}" is installed and ready. Available: ${installedModels.join(', ')}`;
+                            ollamaTestResult.className = 'api-test-result success';
+                        } else {
+                            ollamaTestResult.textContent = `✗ Model "${selectedModel}" not installed. Available models: ${installedModels.join(', ')}. Use "Download Model" to install it.`;
+                            ollamaTestResult.className = 'api-test-result error';
+                        }
+                    }
+                } else {
+                    const errorText = await response.text();
+                    console.error('[Ollama Test] Error response:', errorText);
+                    let errorMsg = 'Connection failed';
+                    if (response.status === 403) {
+                        errorMsg = 'Access denied (403). Check if Ollama is running and the URL is correct.';
+                    } else if (response.status === 404) {
+                        errorMsg = 'Ollama not found (404). Check the server URL.';
+                    } else {
+                        try {
+                            const errorData = JSON.parse(errorText);
+                            errorMsg = errorData.error || errorText;
+                        } catch (e) {
+                            errorMsg = errorText || `HTTP ${response.status}`;
+                        }
+                    }
+                    ollamaTestResult.textContent = `✗ Error: ${errorMsg}`;
+                    ollamaTestResult.className = 'api-test-result error';
+                }
+            } catch (error) {
+                console.error('[Ollama Test] Exception:', error);
+                ollamaTestResult.textContent = `✗ Connection failed: ${error.message}. Make sure Ollama is running (try: ollama serve)`;
+                ollamaTestResult.className = 'api-test-result error';
+            }
+        });
+    }
+    
+    // Run comprehensive Ollama diagnostics
+    if (diagnoseOllamaButton) {
+        diagnoseOllamaButton.addEventListener('click', async () => {
+            const ollamaUrl = ollamaUrlInput.value.trim() || 'http://localhost:11434';
+            let diagnosticOutput = '🔍 OLLAMA DIAGNOSTICS\n' + '='.repeat(50) + '\n\n';
+            
+            ollamaDiagnostics.style.display = 'block';
+            ollamaDiagnostics.className = 'diagnostics-result';
+            ollamaDiagnostics.textContent = diagnosticOutput + 'Running tests...\n';
+            
+            try {
+                // Test 1: Check /api/tags endpoint
+                diagnosticOutput += '📋 Test 1: List Models Endpoint\n';
+                diagnosticOutput += `   URL: ${ollamaUrl}/api/tags\n`;
+                try {
+                    const tagsResponse = await fetch(`${ollamaUrl}/api/tags`);
+                    diagnosticOutput += `   Status: ${tagsResponse.status} ${tagsResponse.statusText}\n`;
+                    
+                    if (tagsResponse.ok) {
+                        const data = await tagsResponse.json();
+                        diagnosticOutput += `   ✓ SUCCESS - Found ${data.models?.length || 0} models\n`;
+                        if (data.models && data.models.length > 0) {
+                            diagnosticOutput += '   Installed models: ' + data.models.map(m => m.name).join(', ') + '\n';
+                        } else {
+                            diagnosticOutput += '   ⚠️ No models installed\n';
+                        }
+                    } else {
+                        diagnosticOutput += `   ✗ FAILED\n`;
+                    }
+                } catch (error) {
+                    diagnosticOutput += `   ✗ ERROR: ${error.message}\n`;
+                }
+                
+                // Test 2: Check /api/version endpoint
+                diagnosticOutput += '\n🔢 Test 2: Version Endpoint\n';
+                diagnosticOutput += `   URL: ${ollamaUrl}/api/version\n`;
+                try {
+                    const versionResponse = await fetch(`${ollamaUrl}/api/version`);
+                    diagnosticOutput += `   Status: ${versionResponse.status} ${versionResponse.statusText}\n`;
+                    
+                    if (versionResponse.ok) {
+                        const data = await versionResponse.json();
+                        diagnosticOutput += `   ✓ SUCCESS - Ollama version: ${data.version || 'unknown'}\n`;
+                    } else {
+                        diagnosticOutput += `   ⚠️ Endpoint not available (older Ollama version)\n`;
+                    }
+                } catch (error) {
+                    diagnosticOutput += `   ✗ ERROR: ${error.message}\n`;
+                }
+                
+                // Test 3: Test pull endpoint (without actually downloading)
+                diagnosticOutput += '\n⬇️ Test 3: Pull Endpoint Check\n';
+                diagnosticOutput += `   URL: ${ollamaUrl}/api/pull\n`;
+                diagnosticOutput += `   Note: This endpoint is used for downloading models\n`;
+                
+                // Summary
+                diagnosticOutput += '\n' + '='.repeat(50) + '\n';
+                diagnosticOutput += '📊 SUMMARY:\n\n';
+                
+                if (diagnosticOutput.includes('✓ SUCCESS - Found')) {
+                    diagnosticOutput += '✓ Ollama is running and accessible\n';
+                    diagnosticOutput += `✓ API base URL: ${ollamaUrl}\n`;
+                    ollamaDiagnostics.className = 'diagnostics-result success';
+                } else {
+                    diagnosticOutput += '✗ Cannot connect to Ollama\n';
+                    diagnosticOutput += '\nTroubleshooting:\n';
+                    diagnosticOutput += '1. Check if Ollama is running: ps aux | grep ollama\n';
+                    diagnosticOutput += '2. Start Ollama: ollama serve\n';
+                    diagnosticOutput += `3. Test manually: curl ${ollamaUrl}/api/tags\n`;
+                    diagnosticOutput += '4. Check if port 11434 is in use: lsof -i :11434\n';
+                    ollamaDiagnostics.className = 'diagnostics-result error';
+                }
+                
+            } catch (error) {
+                diagnosticOutput += '\n❌ CRITICAL ERROR:\n';
+                diagnosticOutput += error.message + '\n';
+                ollamaDiagnostics.className = 'diagnostics-result error';
+            }
+            
+            ollamaDiagnostics.textContent = diagnosticOutput;
+        });
+    }
+    
+    // List Ollama models
+    if (listOllamaModelsButton) {
+        listOllamaModelsButton.addEventListener('click', async () => {
+            const ollamaUrl = ollamaUrlInput.value.trim() || 'http://localhost:11434';
+            
+            try {
+                ollamaTestResult.textContent = 'Fetching models...';
+                ollamaTestResult.className = 'api-test-result';
+                
+                const response = await fetch(`${ollamaUrl}/api/tags`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.models && data.models.length > 0) {
+                        const modelNames = data.models.map(m => m.name).join(', ');
+                        ollamaTestResult.textContent = `✓ Available models: ${modelNames}`;
+                        ollamaTestResult.className = 'api-test-result success';
+                    } else {
+                        ollamaTestResult.textContent = '⚠️ No models installed. Run "ollama pull llama3.2" to download one.';
+                        ollamaTestResult.className = 'api-test-result error';
+                    }
+                } else {
+                    ollamaTestResult.textContent = '✗ Failed to fetch models';
+                    ollamaTestResult.className = 'api-test-result error';
+                }
+            } catch (error) {
+                ollamaTestResult.textContent = `✗ Connection failed: ${error.message}. Is Ollama running?`;
+                ollamaTestResult.className = 'api-test-result error';
+            }
+        });
+    }
+
+    // Download Ollama model via tab proxy
+    if (downloadOllamaModelButton) {
+        downloadOllamaModelButton.addEventListener('click', async () => {
+            const ollamaUrl = (ollamaUrlInput.value.trim() || 'http://localhost:11434').replace(/\/$/, '');
+            const modelName = ollamaDownloadModelInput.value.trim();
+            const token = ollamaAuthTokenInput && ollamaAuthTokenInput.value.trim();
+            if (!modelName) {
+                ollamaDownloadStatus.textContent = '⚠️ Please enter a model name to download';
+                ollamaDownloadStatus.className = 'api-test-result error';
+                ollamaDownloadStatus.style.display = 'block';
+                return;
+            }
+            try {
+                downloadOllamaModelButton.disabled = true;
+                ollamaDownloadStatus.textContent = `Starting download of ${modelName}...`;
+                ollamaDownloadStatus.className = 'api-test-result';
+                ollamaDownloadStatus.style.display = 'block';
+
+                // Ask background to open a hidden tab and start pull
+                const headers = token ? { Authorization: `Bearer ${token}` } : {};
+                await browser.runtime.sendMessage({
+                    action: 'startOllamaPull',
+                    ollamaUrl,
+                    model: modelName,
+                    headers
+                });
+            } catch (e) {
+                ollamaDownloadStatus.textContent = `✗ Failed to start: ${e.message}`;
+                ollamaDownloadStatus.className = 'api-test-result error';
+            } finally {
+                downloadOllamaModelButton.disabled = false;
+            }
+        });
+        // Listen for progress events from content.js
+        browser.runtime.onMessage.addListener((msg) => {
+            if (msg.action === 'ollamaPullProgress') {
+                const parts = [];
+                if (msg.status) parts.push(msg.status);
+                if (typeof msg.percent === 'number') parts.push(`${msg.percent}%`);
+                ollamaDownloadStatus.textContent = parts.join(' — ');
+                ollamaDownloadStatus.className = 'api-test-result';
+                ollamaDownloadStatus.style.display = 'block';
+            } else if (msg.action === 'ollamaPullComplete') {
+                if (msg.ok) {
+                    ollamaDownloadStatus.textContent = '✓ Download complete';
+                    ollamaDownloadStatus.className = 'api-test-result success';
+                } else {
+                    ollamaDownloadStatus.textContent = `✗ Download failed: ${msg.error || 'unknown error'}`;
+                    ollamaDownloadStatus.className = 'api-test-result error';
+                }
+                ollamaDownloadStatus.style.display = 'block';
+            }
+        });
+    }
+    
     addLabelButton.addEventListener('click', () => {
         // Clear instruction message if present
         const instructionMsg = labelsContainer.querySelector('.instruction-message');
@@ -824,6 +1202,35 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }).catch(error => {
                     showMessage('Error saving settings: ' + error, false);
                 });
+            });
+        } else if (provider === 'ollama') {
+            // Ollama doesn't need API key, just save URL and model
+            let ollamaModel = ollamaModelSelect.value;
+            if (ollamaModel === 'custom') {
+                ollamaModel = ollamaCustomModelInput.value.trim();
+                if (!ollamaModel) {
+                    showMessage('Please enter a custom model name for Ollama.', false);
+                    return;
+                }
+            }
+            
+            const settings = {
+                labels: labels,
+                aiProvider: provider,
+                enableAi: document.getElementById('enable-ai').checked,
+                ollamaUrl: ollamaUrlInput.value.trim() || 'http://localhost:11434',
+                ollamaModel: ollamaModel,
+                ollamaCustomModel: ollamaCustomModelInput.value.trim(),
+                ollamaAuthToken: ollamaAuthTokenInput ? ollamaAuthTokenInput.value.trim() : '',
+                ollamaCpuOnly: ollamaCpuOnlyCheckbox.checked
+            };
+
+            browser.storage.local.set(settings).then(() => {
+                const cpuMode = ollamaCpuOnlyCheckbox.checked ? ' (CPU-only mode)' : '';
+                showMessage(`✓ Settings saved successfully! Ollama is configured for local email processing${cpuMode}.`, true);
+                updateSaveButtonState();
+            }).catch(error => {
+                showMessage('Error saving settings: ' + error, false);
             });
         } else {
             // Other providers use single key

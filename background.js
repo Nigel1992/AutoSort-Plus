@@ -7,6 +7,22 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse({ label: label });
         });
         return true; // Required for async response
+    } else if (message.action === 'startOllamaPull') {
+        (async () => {
+            try {
+                const { ollamaUrl, model, headers } = message;
+                const { response } = await callOllamaViaTab(ollamaUrl, {
+                    action: 'ollamaFetch',
+                    fetchAction: 'pull',
+                    model,
+                    headers
+                });
+                sendResponse(response || { ok: true });
+            } catch (e) {
+                sendResponse({ ok: false, error: e.message });
+            }
+        })();
+        return true;
     }
 });
 
@@ -14,6 +30,138 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
 browser.browserAction.onClicked.addListener(() => {
     browser.runtime.openOptionsPage();
 });
+
+// Ollama handling using tab injection (runs fetch in browser context)
+
+async function ollamaChatViaTab(ollamaUrl, model, prompt, authToken) {
+    // Open a hidden tab at localhost to make the fetch (browser context, not restricted)
+    const tab = await browser.tabs.create({ url: ollamaUrl, active: false });
+    
+    // Wait for tab to load
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    try {
+        // Build the request headers
+        const headers = { 'Content-Type': 'application/json' };
+        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+        
+        // Inject code to make the fetch and store result
+        const scriptCode = `
+        (async () => {
+            try {
+                const headers = ${JSON.stringify(headers)};
+                const response = await fetch(window.location.origin + '/api/chat', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        model: ${JSON.stringify(model)},
+                        messages: [{ role: 'user', content: ${JSON.stringify(prompt)} }],
+                        stream: false
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                }
+                
+                const data = await response.json();
+                window.__ollama_result = { ok: true, data };
+            } catch (error) {
+                window.__ollama_result = { ok: false, error: error.message };
+            }
+        })();
+        `;
+        
+        await browser.tabs.executeScript(tab.id, { code: scriptCode });
+        
+        // Wait for result (with polling to be safe)
+        let result = null;
+        for (let i = 0; i < 60; i++) { // 30 seconds max
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            try {
+                const results = await browser.tabs.executeScript(tab.id, { 
+                    code: 'window.__ollama_result || null' 
+                });
+                if (results && results[0]) {
+                    result = results[0];
+                    break;
+                }
+            } catch (e) {
+                // Tab might be closing
+                break;
+            }
+        }
+        
+        if (!result) {
+            throw new Error('Ollama request timed out (30s) - no response from API');
+        }
+        
+        if (!result.ok) {
+            throw new Error(result.error || 'Ollama API error');
+        }
+        
+        return result.data;
+        
+    } finally {
+        // Close the tab
+        try { await browser.tabs.remove(tab.id); } catch (e) {}
+    }
+}
+
+async function callOllamaViaTab(ollamaUrl, payload) {
+    // Deprecated function kept for backward compatibility
+    // Now routes to direct API call via fetch
+    const { fetchAction, model, prompt, headers } = payload;
+    
+    if (fetchAction === 'chat') {
+        // For direct chat, we make a simple fetch call
+        const ollamaHeaders = Object.assign({}, headers, { 'Content-Type': 'application/json' });
+        
+        try {
+            const res = await fetch(`${ollamaUrl}/api/chat`, {
+                method: 'POST',
+                headers: ollamaHeaders,
+                body: JSON.stringify({
+                    model,
+                    messages: [{ role: 'user', content: prompt }],
+                    stream: false
+                })
+            });
+
+            if (!res.ok) {
+                return { 
+                    correlationId: '', 
+                    response: { ok: false, error: `HTTP ${res.status}: ${res.statusText}` } 
+                };
+            }
+
+            const data = await res.json();
+            return { correlationId: '', response: { ok: true, data } };
+        } catch (err) {
+            return { 
+                correlationId: '', 
+                response: { ok: false, error: err.message } 
+            };
+        }
+    } else if (fetchAction === 'pull') {
+        // For pull operations
+        const ollamaHeaders = Object.assign({}, headers, { 'Content-Type': 'application/json' });
+        
+        try {
+            const res = await fetch(`${ollamaUrl}/api/pull`, {
+                method: 'POST',
+                headers: ollamaHeaders,
+                body: JSON.stringify({ name: model, stream: true })
+            });
+
+            const text = await res.text();
+            return { correlationId: '', response: { ok: true, data: text } };
+        } catch (err) {
+            return { correlationId: '', response: { ok: false, error: err.message } };
+        }
+    }
+}
 
 // Gemini rate limiting functions (free tier: 5/min, 20/day per key)
 async function checkGeminiRateLimit() {
@@ -319,11 +467,12 @@ async function analyzeEmailContent(emailContent) {
                 // Legacy single key
                 apiKeyToUse = settings.apiKey;
             }
-        } else {
+        } else if (provider !== 'ollama') {
+            // Ollama doesn't need an API key; other providers do
             apiKeyToUse = settings.apiKey;
         }
         
-        if (!apiKeyToUse) {
+        if (!apiKeyToUse && provider !== 'ollama') {
             console.error("Missing API key");
             await updateNotification(
                 notificationId,
@@ -516,38 +665,113 @@ async function analyzeEmailContent(emailContent) {
                 })
             });
 
+        } else if (provider === 'ollama') {
+            console.log("Making API request to Ollama (local)...");
+            
+            await updateNotification(
+                notificationId,
+                "AutoSort+ AI Analysis",
+                "Analyzing email content with local Ollama..."
+            );
+
+            // Get Ollama settings
+            const ollamaSettings = await browser.storage.local.get(['ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'ollamaAuthToken', 'ollamaNumCtx']);
+            const ollamaUrl = ollamaSettings.ollamaUrl || 'http://localhost:11434';
+            let ollamaModel = ollamaSettings.ollamaModel || 'llama3.2';
+            const ollamaNumCtx = ollamaSettings.ollamaNumCtx || 0;
+            const cpuOnly = ollamaSettings.ollamaCpuOnly === true;
+            const ollamaAuthToken = ollamaSettings.ollamaAuthToken || '';
+            
+            // Use custom model if selected
+            if (ollamaModel === 'custom' && ollamaSettings.ollamaCustomModel) {
+                ollamaModel = ollamaSettings.ollamaCustomModel;
+            }
+            
+            console.log(`Using Ollama at ${ollamaUrl} with model ${ollamaModel}${cpuOnly ? ' (CPU-only)' : ''}`);
+
+            // Use tab injection to make the fetch (browser context, no restrictions)
+            try {
+                const ollamaResponse = await ollamaChatViaTab(ollamaUrl, ollamaModel, prompt, ollamaAuthToken);
+                
+                if (!ollamaResponse.message || !ollamaResponse.message.content) {
+                    throw new Error('Invalid Ollama response format');
+                }
+                
+                data = ollamaResponse;
+                response = null; // Mark as handled
+                
+            } catch (ollamaError) {
+                console.error('[Ollama] Tab injection chat failed:', ollamaError.message);
+                throw ollamaError;
+            }
+
         } else {
             throw new Error(`Unknown provider: ${provider}`);
         }
 
-        console.log("API response status:", response.status);
+        if (response) {
+            console.log("API response status:", response.status);
 
-        if (!response.ok) {
-            const error = await response.json();
-            console.error("API Error details:", error);
-            let errorMessage = error.error?.message || error.message || 'Unknown error';
-            
-            // Handle quota errors specifically
-            if (response.status === 429 || errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
-                errorMessage = "API quota exceeded. Please wait a while before trying again, or upgrade to a paid API key.";
+            if (!response.ok) {
+                let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                
+                // Try to parse error response body
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        const error = await response.json();
+                        errorMessage = error.error?.message || error.message || errorMessage;
+                    } else {
+                        const text = await response.text();
+                        if (text) errorMessage = text.substring(0, 200);
+                    }
+                } catch (parseErr) {
+                    console.warn('Could not parse error response:', parseErr.message);
+                }
+                
+                console.error("API Error details:", errorMessage);
+                
+                // Handle quota errors specifically
+                if (response.status === 429 || errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
+                    errorMessage = "API quota exceeded. Please wait a while before trying again, or upgrade to a paid API key.";
+                }
+                
+                // Handle Ollama auth errors
+                if (response.status === 403) {
+                    errorMessage = "Ollama authentication failed (403). Check your API key/token if Ollama requires authentication.";
+                }
+                
+                await updateNotification(
+                    notificationId,
+                    "AutoSort+ Error",
+                    `API Error: ${errorMessage}`
+                );
+                return null;
             }
-            
+
+            await updateNotification(
+                notificationId,
+                "AutoSort+ AI Analysis",
+                "Processing AI response..."
+            );
+
+            data = await response.json();
+            console.log("Full API response data:", JSON.stringify(data, null, 2));
+        } else if (data) {
+            await updateNotification(
+                notificationId,
+                "AutoSort+ AI Analysis",
+                "Processing AI response..."
+            );
+            console.log("Using response from native helper.");
+        } else {
             await updateNotification(
                 notificationId,
                 "AutoSort+ Error",
-                `API Error: ${errorMessage}`
+                "No response received from provider."
             );
             return null;
         }
-
-        await updateNotification(
-            notificationId,
-            "AutoSort+ AI Analysis",
-            "Processing AI response..."
-        );
-
-        data = await response.json();
-        console.log("Full API response data:", JSON.stringify(data, null, 2));
         
         // Parse the response based on provider
         let label = null;
@@ -571,6 +795,12 @@ async function analyzeEmailContent(emailContent) {
         } else if (provider === 'anthropic') {
             if (data.content && data.content.length > 0) {
                 label = data.content[0].text.trim();
+            }
+        } else if (provider === 'ollama') {
+            if (data.message && data.message.content) {
+                label = data.message.content.trim();
+            } else if (typeof data.message === 'string') {
+                label = data.message.trim();
             }
         }
         

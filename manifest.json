@@ -20,7 +20,9 @@
     "messagesMove",
     "messagesRead",
     "activeTab",
-    "https://generativelanguage.googleapis.com/*"
+    "https://generativelanguage.googleapis.com/*",
+    "http://localhost/*",
+    "http://127.0.0.1/*"
   ],
   "background": {
     "scripts": ["background.js"]
@@ -42,5 +44,11 @@
   "icons": {
     "48": "icons/icon-48.png",
     "96": "icons/icon-96.png"
-  }
+  },
+  "web_accessible_resources": [
+    "api_ollama/index.html",
+    "api_ollama/ollama-popup.js",
+    "js/ollama.js",
+    "js/workers/ollama-worker.js"
+  ]
 } 

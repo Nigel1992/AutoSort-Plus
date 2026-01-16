@@ -9,59 +9,112 @@
     <div class="container">
         <h1>AutoSort+ Settings</h1>
         
-        <div class="section">
-            <h2>AI Settings</h2>
+        <div class="section collapsible-section">
+            <div class="section-header" data-section="ai-settings">
+                <h2>🤖 AI Settings</h2>
+                <span class="collapse-icon">▼</span>
+            </div>
+            <div class="section-content" id="ai-settings">
             
-            <div class="input-group">
-                <label for="ai-provider">AI Provider:</label>
-                <select id="ai-provider" class="provider-select">
-                    <option value="gemini">Google Gemini (Recommended)</option>
-                    <option value="openai">OpenAI (ChatGPT)</option>
-                    <option value="anthropic">Anthropic Claude</option>
-                    <option value="groq">Groq (Fast & Free)</option>
-                    <option value="mistral">Mistral AI</option>
+            <div class="subsection">
+                <h3>Provider Selection</h3>
+                <div class="input-group">
+                    <label for="ai-provider">AI Provider:</label>
+                    <select id="ai-provider" class="provider-select">
+                        <option value="gemini">Google Gemini (Recommended)</option>
+                        <option value="openai">OpenAI (ChatGPT)</option>
+                        <option value="anthropic">Anthropic Claude</option>
+                        <option value="groq">Groq (Fast & Free)</option>
+                        <option value="mistral">Mistral AI</option>
+                        <option value="ollama">Ollama (Local LLM)</option>
+                    </select>
+                </div>
+                
+                <div id="provider-info" class="provider-info"></div>
+                
+                <div id="rate-limit-warning" class="warning-box" style="display: none;">
+                    <strong>⚠️ Rate Limit Warning:</strong> Free API tiers are severely limited when processing emails. You may only process 5-20 emails before hitting rate limits. Paid plans ($5-20/month) are recommended for daily email processing.
+                </div>
+            </div>
+            
+            <div class="subsection" id="ollama-settings-subsection" style="display: none;">
+                <h3>🏠 Local Ollama Configuration</h3>
+                <label for="ollama-url">Ollama Server URL:</label>
+                <input type="text" id="ollama-url" class="api-key-input" placeholder="http://localhost:11434" value="http://localhost:11434">
+                
+                <div class="checkbox-container">
+                    <input type="checkbox" id="ollama-cpu-only">
+                    <label for="ollama-cpu-only">Force CPU-only mode (disable GPU acceleration)</label>
+                </div>
+                
+                <label for="ollama-model">Ollama Model:</label>
+                <select id="ollama-model" class="provider-select">
+                    <option value="llama2">Llama 2</option>
+                    <option value="llama3.2">Llama 3.2</option>
+                    <option value="mistral">Mistral</option>
+                    <option value="phi">Phi</option>
+                    <option value="gemma">Gemma</option>
+                    <option value="qwen2.5">Qwen 2.5</option>
+                    <option value="custom">Custom (enter below)</option>
                 </select>
-            </div>
-            
-            <div id="provider-info" class="provider-info"></div>
-            
-            <div class="warning-box">
-                <strong>⚠️ Rate Limit Warning:</strong> Free API tiers are severely limited when processing emails. You may only process 5-20 emails before hitting rate limits. Paid plans ($5-20/month) are recommended for daily email processing.
-            </div>
-            
-            <div class="input-group">
-                <label for="api-key" id="api-key-label">API Key:</label>
-                <input type="password" id="api-key" class="api-key-input" placeholder="Enter your API key">
+                    <div class="input-group">
+                        <label for="ollama-auth-token">Ollama Auth Token (optional):</label>
+                        <input type="password" id="ollama-auth-token" class="api-key-input" placeholder="If your Ollama server requires a token, enter it here">
+                        <small class="help-text">Used for /api/chat and /api/pull requests when required.</small>
+                    </div>
+                <input type="text" id="ollama-custom-model" class="api-key-input" placeholder="Enter custom model name" style="display: none; margin-top: 10px;">
+                
                 <div class="button-group">
-                    <button id="test-api" class="button">Test API Connection</button>
-                    <button id="get-api-key" class="button button-link">Get API Key</button>
+                    <div class="input-group" style="flex:1">
+                        <label for="ollama-download-model">Download Model:</label>
+                        <input type="text" id="ollama-download-model" class="api-key-input" placeholder="e.g., llama3.2, mistral, qwen2.5:7b">
+                    </div>
+                    <button id="download-ollama-model" class="button">Download</button>
+                    <button id="list-ollama-models" class="button">List Installed Models</button>
+                    <button id="test-ollama" class="button">Test Connection</button>
+                    <button id="diagnose-ollama" class="button">Run Diagnostics</button>
                 </div>
-                <div id="api-test-result" class="api-test-result"></div>
+                <div id="ollama-download-status" class="api-test-result" style="display: none;"></div>
+                <div id="ollama-test-result" class="api-test-result"></div>
+                <div id="ollama-diagnostics" class="diagnostics-result" style="display: none;"></div>
             </div>
             
-            <div id="gemini-multi-keys-container" style="display: none;">
-                <div class="multi-keys-header">
-                    <h3>Gemini API Keys (Multiple Projects)</h3>
-                    <p class="info-text">Add multiple API keys from different Google Cloud projects. The extension will automatically rotate between them when rate limits are reached.</p>
+            <div class="subsection" id="api-key-subsection">
+                <h3>🔑 API Key Configuration</h3>
+                <div class="input-group">
+                    <label for="api-key" id="api-key-label">API Key:</label>
+                    <input type="password" id="api-key" class="api-key-input" placeholder="Enter your API key">
+                    <div class="button-group">
+                        <button id="test-api" class="button">Test API Connection</button>
+                        <button id="get-api-key" class="button button-link">Get API Key</button>
+                    </div>
+                    <div id="api-test-result" class="api-test-result"></div>
                 </div>
+            </div>
+            </div>
+            
+            <div class="subsection" id="gemini-multi-keys-subsection" style="display: none;">
+                <h3>🔄 Multiple Gemini API Keys</h3>
+                <p class="info-text">Add multiple API keys from different Google Cloud projects. The extension will automatically rotate between them when rate limits are reached.</p>
                 <div id="gemini-keys-list" class="gemini-keys-list"></div>
                 <div class="button-group">
                     <button id="add-gemini-key" class="button">+ Add Another Gemini Key</button>
                 </div>
             </div>
             
-            <div class="checkbox-container">
+            <div class="subsection" id="ai-general-subsection">
+                <h3>⚙️ General Settings</h3>
                 <input type="checkbox" id="enable-ai" checked>
                 <label for="enable-ai">Enable AI-powered sorting</label>
             </div>
-            
-            <div class="checkbox-container" id="gemini-paid-container" style="display: none;">
-                <input type="checkbox" id="gemini-paid-plan">
-                <label for="gemini-paid-plan">I have a Gemini paid plan (removes rate limits)</label>
+                <div class="checkbox-container" id="gemini-paid-container" style="display: none;">
+                    <input type="checkbox" id="gemini-paid-plan">
+                    <label for="gemini-paid-plan">I have a Gemini paid plan (removes rate limits)</label>
+                </div>
             </div>
             
-            <div id="gemini-usage-container" class="usage-info" style="display: none;">
-                <h3>Gemini API Usage</h3>
+            <div class="subsection" id="gemini-usage-subsection" style="display: none;">
+                <h3>📊 Gemini API Usage</h3>
                 <div id="single-key-usage" style="display: none;">
                     <div class="usage-stats">
                         <div class="usage-item">
@@ -89,21 +142,31 @@
                         <button id="refresh-all-usage" class="button">Refresh All Usage</button>
                     </div>
                 </div>
+                </div>
             </div>
             
-            <div class="ai-description">
-                <p>AutoSort+ uses AI to analyze your emails and automatically sort them into categories/folders based on their content. The AI will:</p>
-                <ul>
-                    <li>Read and understand email content</li>
-                    <li>Identify key topics and themes</li>
-                    <li>Match emails to appropriate categories/folders</li>
-                    <li>Learn from your manual corrections to improve accuracy</li>
-                </ul>
+            <div class="subsection ai-info-subsection">
+                <h3>ℹ️ How AI Sorting Works</h3>
+                <div class="ai-description">
+                    <p>AutoSort+ uses AI to analyze your emails and automatically sort them into categories/folders based on their content. The AI will:</p>
+                    <ul>
+                        <li>Read and understand email content</li>
+                        <li>Identify key topics and themes</li>
+                        <li>Match emails to appropriate categories/folders</li>
+                        <li>Learn from your manual corrections to improve accuracy</li>
+                    </ul>
+                </div>
+            </div>
+            </div>
             </div>
         </div>
 
-        <div class="section">
-            <h2>Custom Categories/Folders</h2>
+        <div class="section collapsible-section">
+            <div class="section-header" data-section="folders-settings">
+                <h2>📁 Custom Categories/Folders</h2>
+                <span class="collapse-icon">▼</span>
+            </div>
+            <div class="section-content" id="folders-settings">
             <div class="folder-source">
                 <h3>Folder Source</h3>
                 <button id="load-imap-folders" class="button">Load Folders from Mail Account</button>
@@ -129,10 +192,15 @@
                 </div>
             </div>
             <button id="add-label" class="button">Add</button>
+            </div>
         </div>
 
-        <div class="section">
-            <h2>Move History</h2>
+        <div class="section collapsible-section collapsed">
+            <div class="section-header" data-section="history-settings">
+                <h2>📜 Move History</h2>
+                <span class="collapse-icon">▶</span>
+            </div>
+            <div class="section-content" id="history-settings" style="display: none;">
             <div class="history-controls">
                 <button id="clear-history" class="button">Clear History</button>
                 <button id="refresh-history" class="button">Refresh</button>
@@ -152,9 +220,10 @@
                     </tbody>
                 </table>
             </div>
+            </div>
         </div>
 
-        <div class="section">
+        <div class="section save-section">
             <button id="save-settings" class="button primary">Save Settings</button>
         </div>
     </div>
