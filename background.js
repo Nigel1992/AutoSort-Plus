@@ -492,17 +492,16 @@ async function analyzeEmailContent(emailContent) {
             return null;
         }
 
-        const prompt = `You are an email classification assistant. Analyze this email content and choose the most appropriate label from this list: ${settings.labels.join(', ')}. 
-        Consider the following:
-        1. The main topic and purpose of the email
-        2. The sender and recipient context
-        3. The urgency and importance of the content
-        4. The type of communication (e.g., notification, request, update)
-        
-        Only respond with the exact label name that best fits the content. If no label fits well, respond with "null".
-        
-        Email content:
-        ${emailContent}`;
+        // Truncate very long emails to avoid provider prompt/truncation issues
+        const MAX_EMAIL_CHARS = 2000;
+        let trimmedEmail = emailContent;
+        if (trimmedEmail.length > MAX_EMAIL_CHARS) {
+            trimmedEmail = trimmedEmail.slice(0, MAX_EMAIL_CHARS) + "\n\n[TRUNCATED]";
+            console.log(`Email content truncated to ${MAX_EMAIL_CHARS} chars to avoid provider prompt limits`);
+        }
+
+        // Build a concise prompt and explicitly list available labels so models have a small, focused response space
+        const prompt = `You are an email classification assistant. Available labels: ${settings.labels.join(', ')}.\n\nOnly respond with exactly one of the labels above (case-insensitive match allowed) and nothing else. If no label fits, respond exactly with null (without quotes). Do not include any extra commentary or punctuation.\n\nEmail content:\n${trimmedEmail}`; 
 
         await updateNotification(
             notificationId,
@@ -773,9 +772,9 @@ async function analyzeEmailContent(emailContent) {
             return null;
         }
         
-        // Parse the response based on provider
-        let label = null;
-        
+        // Parse the response based on provider and capture the raw model output
+        let rawOutput = null;
+
         if (provider === 'gemini') {
             if (data.candidates && data.candidates.length > 0) {
                 const candidate = data.candidates[0];
@@ -785,50 +784,78 @@ async function analyzeEmailContent(emailContent) {
                     return null;
                 }
                 if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-                    label = candidate.content.parts[0].text.trim();
+                    rawOutput = candidate.content.parts[0].text;
                 }
             }
         } else if (provider === 'openai' || provider === 'groq' || provider === 'mistral') {
             if (data.choices && data.choices.length > 0) {
-                label = data.choices[0].message.content.trim();
+                rawOutput = data.choices[0].message.content;
             }
         } else if (provider === 'anthropic') {
             if (data.content && data.content.length > 0) {
-                label = data.content[0].text.trim();
+                rawOutput = data.content[0].text;
             }
         } else if (provider === 'ollama') {
             if (data.message && data.message.content) {
-                label = data.message.content.trim();
+                rawOutput = data.message.content;
             } else if (typeof data.message === 'string') {
-                label = data.message.trim();
+                rawOutput = data.message;
             }
         }
-        
-        if (!label) {
+
+        if (!rawOutput) {
             console.error("No label extracted from response:", data);
             await updateNotification(notificationId, "AutoSort+ Error", "No response from AI");
             return null;
         }
-        
-        console.log("Generated label:", label);
-        
-        // Verify the label exists in our list
-        if (settings.labels.includes(label)) {
-            await updateNotification(
-                notificationId,
-                "AutoSort+ Success",
-                `AI analysis complete. Selected label: ${label}`
-            );
-            return label;
-        } else {
-            console.log("Label not found in configured labels. Generated:", label);
+
+        // Normalize model output and attempt multiple matching strategies
+        let raw = String(rawOutput).trim();
+        // Strip wrapping quotes/backticks and extraneous punctuation
+        raw = raw.replace(/^["'`\s]+|["'`\s]+$/g, '').trim();
+        console.log("Raw AI output:", raw);
+
+        // If model returned the literal 'null', treat as no-label
+        if (raw.toLowerCase() === 'null') {
+            await updateNotification(notificationId, "AutoSort+ Info", "AI indicated no suitable label");
+            return null;
+        }
+
+        // Try exact match (case-sensitive)
+        let matched = settings.labels.find(l => l === raw);
+        // Case-insensitive exact
+        if (!matched) matched = settings.labels.find(l => l.toLowerCase() === raw.toLowerCase());
+        // If still not found, see if any configured label is contained within the model output
+        if (!matched) {
+            const lower = raw.toLowerCase();
+            matched = settings.labels.find(l => lower.includes(l.toLowerCase()));
+        }
+        // Token-level matching as a last attempt
+        if (!matched) {
+            const tokens = raw.split(/[^\w\-]+/).map(t => t.trim()).filter(Boolean);
+            for (const t of tokens) {
+                const m = settings.labels.find(l => l.toLowerCase() === t.toLowerCase());
+                if (m) { matched = m; break; }
+            }
+        }
+
+        if (!matched) {
+            console.log("Label not found in configured labels. AI output:", raw);
             await updateNotification(
                 notificationId,
                 "AutoSort+ Warning",
-                `AI suggested: "${label}" but it's not in your configured labels.`
+                `AI suggested: "${raw}" but it's not in your configured labels.`
             );
             return null;
         }
+
+        await updateNotification(
+            notificationId,
+            "AutoSort+ Success",
+            `AI analysis complete. Selected label: ${matched}`
+        );
+        console.log("Generated label:", matched);
+        return matched;
     } catch (error) {
         console.error("Error analyzing email:", error);
         await showNotification(
