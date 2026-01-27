@@ -41,12 +41,10 @@
                 <h3>🏠 Local Ollama Configuration</h3>
                 <label for="ollama-url">Ollama Server URL:</label>
                 <input type="text" id="ollama-url" class="api-key-input" placeholder="http://localhost:11434" value="http://localhost:11434">
-                
                 <div class="checkbox-container">
                     <input type="checkbox" id="ollama-cpu-only">
                     <label for="ollama-cpu-only">Force CPU-only mode (disable GPU acceleration)</label>
                 </div>
-                
                 <label for="ollama-model">Ollama Model:</label>
                 <select id="ollama-model" class="provider-select">
                     <option value="llama2">Llama 2</option>
@@ -57,18 +55,17 @@
                     <option value="qwen2.5">Qwen 2.5</option>
                     <option value="custom">Custom (enter below)</option>
                 </select>
-                    <div class="input-group">
-                        <label for="ollama-auth-token">Ollama Auth Token (optional):</label>
-                        <input type="password" id="ollama-auth-token" class="api-key-input" placeholder="If your Ollama server requires a token, enter it here">
-                        <small class="help-text">Used for /api/chat and /api/pull requests when required.</small>
-                    </div>
+                <div class="input-group">
+                    <label for="ollama-auth-token">Ollama Auth Token (optional):</label>
+                    <input type="password" id="ollama-auth-token" class="api-key-input" placeholder="If your Ollama server requires a token, enter it here">
+                    <small class="help-text">Used for /api/chat and /api/pull requests when required.</small>
+                </div>
                 <input type="text" id="ollama-custom-model" class="api-key-input" placeholder="Enter custom model name" style="display: none; margin-top: 10px;">
-                
+                <div class="input-group">
+                    <label for="ollama-download-model">Download Model:</label>
+                    <input type="text" id="ollama-download-model" class="api-key-input" placeholder="e.g., llama3.2, mistral, qwen2.5:7b">
+                </div>
                 <div class="button-group">
-                    <div class="input-group" style="flex:1">
-                        <label for="ollama-download-model">Download Model:</label>
-                        <input type="text" id="ollama-download-model" class="api-key-input" placeholder="e.g., llama3.2, mistral, qwen2.5:7b">
-                    </div>
                     <button id="download-ollama-model" class="button">Download</button>
                     <button id="list-ollama-models" class="button">List Installed Models</button>
                     <button id="test-ollama" class="button">Test Connection</button>

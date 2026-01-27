@@ -1,3 +1,9 @@
+## AutoSort+ v1.2.3.2 - January 27, 2026
+
+### 🛠️ Bug Fixes & UI Improvements
+- **Ollama Model Download UI**: Fixed layout so the Download, List Models, Test Connection, and Run Diagnostics buttons are now always positioned below the download input box and never overlap, for a cleaner and more usable experience.
+
+---
 ## AutoSort+ v1.2.3 - January 14, 2026
 ## AutoSort+ v1.2.3.1 - January 14, 2026
 
