@@ -1,7 +1,12 @@
 ## AutoSort+ v1.2.3.2 - January 27, 2026
 
-### 🛠️ Bug Fixes & UI Improvements
+### 🛠️ Bug Fixes & Improvements
 - **Ollama Model Download UI**: Fixed layout so the Download, List Models, Test Connection, and Run Diagnostics buttons are now always positioned below the download input box and never overlap, for a cleaner and more usable experience.
+- **Ollama Response Parsing**: Improved robustness in parsing Ollama API responses, handling arrays/objects and edge cases more gracefully.
+- **Tolerant Label Matching**: If the AI suggests a label not in your list, the extension now matches to the closest user label instead of skipping or failing. No more skipped messages due to label mismatches.
+- **404/Tag Issues Fixed**: Fixed issues where Ollama would return 404 if the model tag (e.g., `:latest`) was missing or mismatched. The extension now handles tags and model names more reliably.
+- **User Feedback & Diagnostics**: Added and improved diagnostics and error messages for easier troubleshooting, including suggestions for common Ollama/Thunderbird issues (see issue #1).
+- **General Stability**: Multiple small bugfixes and improvements based on user feedback in [issue #1](https://github.com/Nigel1992/AutoSort-Plus/issues/1).
 
 ---
 ## AutoSort+ v1.2.3 - January 14, 2026
