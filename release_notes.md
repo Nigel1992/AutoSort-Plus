@@ -1,24 +1,18 @@
 ## AutoSort+ v1.2.3.2 - January 27, 2026
 
-### 🛠️ Bug Fixes & Improvements
-- **Ollama Model Download UI**: Fixed layout so the Download, List Models, Test Connection, and Run Diagnostics buttons are now always positioned below the download input box and never overlap, for a cleaner and more usable experience.
-- **Ollama Response Parsing**: Improved robustness in parsing Ollama API responses, handling arrays/objects and edge cases more gracefully.
-- **Tolerant Label Matching**: If the AI suggests a label not in your list, the extension now matches to the closest user label instead of skipping or failing. No more skipped messages due to label mismatches.
-- **404/Tag Issues Fixed**: Fixed issues where Ollama would return 404 if the model tag (e.g., `:latest`) was missing or mismatched. The extension now handles tags and model names more reliably.
-- **User Feedback & Diagnostics**: Added and improved diagnostics and error messages for easier troubleshooting, including suggestions for common Ollama/Thunderbird issues (see issue #1).
-- **General Stability**: Multiple small bugfixes and improvements based on user feedback in [issue #1](https://github.com/Nigel1992/AutoSort-Plus/issues/1).
-
----
+### 🛠️ Latest Changes
+- Ollama Model Download UI: Buttons are now always below the download input and never overlap.
+- Ollama response parsing and label matching are more robust and tolerant (closest match if not exact).
+- Improved error handling for model/tag mismatches and 404s.
 ## AutoSort+ v1.2.3 - January 14, 2026
 ## AutoSort+ v1.2.3.1 - January 14, 2026
 
-### ✨ Quality Improvements
-- **Duplicate API Key Detection** - Prevents adding the same API key multiple times
-  - Real-time validation as you type keys
-  - Duplicate keys highlighted in red
   - Clear error messages in tooltip and status
   - Cannot save or test duplicate keys
 - **Better Key Management** - Users notified if key is already added
+ Ollama Model Download UI: Buttons are now always below the download input and never overlap.
+ Ollama response parsing and label matching are more robust and tolerant (closest match if not exact).
+ Improved error handling for model/tag mismatches and 404s.
   - Visual indicator with red border and background
   - Test button blocked for duplicates
   - Save prevented with helpful error message
