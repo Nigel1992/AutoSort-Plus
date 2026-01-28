@@ -416,6 +416,9 @@ You can also manually label emails without AI analysis:
 | Claude | claude-3-haiku | 200K tokens | ⚡⚡⚡ | Free/Paid |
 | Groq | llama-3.3-70b | 8K tokens | ⚡⚡⚡⚡ | Free |
 | Mistral | mistral-small-latest | 32K tokens | ⚡⚡⚡ | Free/Paid |
+| Ollama (Local) | llama3.2, phi, gemma, tinyllama (varies) | Varies by model (local) | ⚡ - ⚡⚡⚡ | Local (no external cost) |
+
+> **Note:** Ollama runs locally on your machine — no API key required. Models are downloaded via `ollama pull <model>` and can run in CPU-only mode for machines without GPU resources.
 
 ---
 
