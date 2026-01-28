@@ -265,6 +265,16 @@ Select emails → Right-click → **AutoSort+ → Analyze with AI**
 - Success/failure status
 - Clear history option
 
+### Manual Labeling (Right-Click)
+
+You can also manually label emails without AI analysis:
+
+1. **Select Emails** - Click one or more emails in Thunderbird.
+2. **Right-Click Menu** - Right-click → **AutoSort+ → AutoSort Label → [Pick any label]**
+3. **Label Applied** - The selected label/category will be applied to all selected emails instantly.
+
+> **Note:** If you add or change labels in the settings menu, you must restart Thunderbird for the new labels to appear in the right-click menu.
+
 ---
 
 <details>
