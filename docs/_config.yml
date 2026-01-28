@@ -7,7 +7,7 @@ plugins:
 
 # Site Settings
 title: "AutoSort+ | AI-Powered Email Organization"
-description: "Multi-provider AI email organization for Thunderbird. Smart rate limiting, usage tracking, and support for Gemini, OpenAI, Claude, Groq, and Mistral."
+description: "Multi-provider AI email organization for Thunderbird. Smart rate limiting, usage tracking, and support for Gemini, OpenAI, Claude, Groq, Mistral, and local Ollama deployments."
 author: Nigel
 url: "https://nigel1992.github.io"
 baseurl: "/AutoSort-Plus"

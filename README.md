@@ -48,12 +48,13 @@
 <td width="50%">
 
 ### 🤖 Multi-Provider AI
-Choose from **5 leading AI providers**:
+Choose from **5 leading cloud AI providers** or run a **local Ollama** model:
 - **Google Gemini** - Best free tier + **Multi-key support**
 - **OpenAI** - Superior accuracy  
 - **Anthropic Claude** - Privacy-focused
 - **Groq** - Fastest processing
 - **Mistral AI** - GDPR compliant
+- **Ollama (Local)** - Run LLMs locally (llama3.2, tinyllama, phi, gemma). No API key required; supports model download and CPU-only mode
 
 </td>
 <td width="50%">
@@ -137,10 +138,10 @@ zip -r autosortplus.xpi manifest.json background.js options.js options.html styl
 ## 🚀 Quick Start
 
 ### 1️⃣ Choose AI Provider
-Open settings and select from Gemini, OpenAI, Claude, Groq, or Mistral
+Open settings and select from Gemini, OpenAI, Claude, Groq, Mistral, or Ollama (Local LLM)
 
-### 2️⃣ Get API Key
-Click "Get API Key" button → Create free account → Copy key
+### 2️⃣ Get API Key (or install local Ollama)
+Click "Get API Key" button → Create free account → Copy key. For Ollama (local): install Ollama from https://ollama.ai/download and pull a model (e.g., `ollama pull llama3.2`). No API key required for Ollama.
 
 ### 3️⃣ Configure Folders
 Load folders from IMAP or add custom labels
@@ -201,6 +202,12 @@ Load folders from IMAP or add custom labels
 <td><a href="https://console.mistral.ai">Get Key</a></td>
 <td>✅ Limited</td>
 <td>GDPR compliance</td>
+</tr>
+<tr>
+<td><b>🔹 Ollama</b></td>
+<td><a href="https://ollama.ai/download">Install Ollama</a></td>
+<td>✅ Local (no external usage)</td>
+<td>Run local LLMs (llama3.2, tinyllama, phi, gemma). No API keys required; supports model downloads and CPU-only mode.</td>
 </tr>
 </table>
 

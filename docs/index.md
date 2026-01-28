@@ -31,7 +31,7 @@ pre{background:#0b0d0f;padding:12px;border-radius:8px;color:#d7e9c7}
 
 # 🎯 AutoSort+ for Thunderbird
 
-<p class="lead">AI-powered email organization that adapts to your workflow. Choose from Gemini, OpenAI, Anthropic, Groq, or Mistral and let AutoSort+ automatically move emails to the right folders.</p>
+<p class="lead">AI-powered email organization that adapts to your workflow. Choose from cloud providers (Gemini, OpenAI, Anthropic, Groq, Mistral) or run a <strong>local Ollama</strong> model and let AutoSort+ automatically move emails to the right folders.</p>
 
 <div class="badges">
 <a href="https://github.com/Nigel1992/AutoSort-Plus/releases"><img src="https://img.shields.io/badge/Version-1.2.3.3-blue?style=for-the-badge" alt="Version"></a>
@@ -64,7 +64,7 @@ AutoSort+ transforms your email workflow by automatically organizing messages in
 | **Setup Time** | Hours of rule configuration | Minutes with AI |
 | **Flexibility** | Static rules, breaks easily | Adaptive AI, learns patterns |
 | **Context Understanding** | Basic keyword matching | Full content comprehension |
-| **Multi-Provider** | N/A | 5 AI providers to choose from |
+| **Multi-Provider** | N/A | 5 cloud providers + local Ollama support |
 | **Smart Limits** | N/A | Built-in rate limit management |
 | **History Tracking** | Manual logging | Automatic 100-move history |
 
@@ -98,6 +98,7 @@ Choose the best AI provider for your needs:
 | **Claude** | claude-3-haiku | 1000/day | ⚡⚡⚡ | Long emails, nuanced content |
 | **Groq** | llama-3.3-70b | Generous | ⚡⚡⚡⚡ | Ultra-fast, free |
 | **Mistral** | mistral-small | Free tier | ⚡⚡⚡ | European privacy focus |
+| **Ollama** | local LLM (llama3.2, phi, tinyllama) | Local (no external usage) | ⚡⚡ - ⚡⚡⚡ | Run models locally for privacy and offline use; supports model download and CPU-only mode |
 
 ### 📊 Smart Rate Limit Management (Gemini)
 
@@ -152,6 +153,7 @@ Choose your preferred AI provider:
 - **Anthropic** (Free/Paid): [Get API Key](https://console.anthropic.com/) - 1000/day free
 - **Groq** (Free): [Get API Key](https://console.groq.com/keys) - Generous limits
 - **Mistral** (Free/Paid): [Get API Key](https://console.mistral.ai/)
+- **Ollama (Local)**: No API key required — [Install Ollama](https://ollama.ai/download) and pull a model (e.g., `ollama pull llama3.2`). See the Ollama setup guide in the docs for details.
 
 ### 3️⃣ Configure AutoSort+
 
@@ -244,6 +246,13 @@ Family
 - Enable "Paid Plan" checkbox to bypass rate limits
 - Use Reset Counter when switching API keys
 - Monitor daily reset time in usage panel
+
+**Ollama (Local) Users:**
+- Install Ollama: https://ollama.ai/download
+- Pull a model: `ollama pull llama3.2` (or `tinyllama`, `phi`, `gemma`)
+- Set the Ollama URL and model in AutoSort+ settings (no API key required)
+- Use CPU-only mode in settings to avoid GPU usage if necessary
+- If Ollama returns 403 or connection errors, check `OLLAMA_403_DEBUG.md` in the repo
 
 **All Providers:**
 - Test connection before first use
