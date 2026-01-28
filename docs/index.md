@@ -17,6 +17,14 @@ body{background:linear-gradient(180deg,var(--bg),#0b0c0d);color:var(--muted);fon
 .content{max-width:1100px;margin:20px auto;padding:10px}
 .warning{background:#ff9800;color:#111;padding:.5em 1em;border-radius:6px;margin:1em 0;font-weight:700}
 pre{background:#0b0d0f;padding:12px;border-radius:8px;color:#d7e9c7}
+
+/* Release banner improvements for better contrast */
+.release-banner{color:#ffffff;padding:18px;border-radius:8px}
+.release-banner h3,.release-banner h4{color:#ffffff;margin:0 0 8px 0;text-shadow:0 1px 2px rgba(0,0,0,0.6)}
+.release-banner p, .release-banner strong, .release-banner li{color:#f0f6ff}
+.release-banner .note{color:#dfeeff}
+.release-banner .fix{background:rgba(255,255,255,0.06);padding:10px;border-radius:6px;margin-top:10px}
+
 </style>
 
 <div class="hero" markdown="1">
@@ -64,7 +72,7 @@ AutoSort+ transforms your email workflow by automatically organizing messages in
 
 ## 🎉 Latest Release: v1.2.3.3
 
-<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; color: white; margin: 20px 0;" markdown="1">
+<div class="release-banner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 20px 0;" markdown="1">
 
 ### 🚀 Release v1.2.3.3 — January 28, 2026
 
