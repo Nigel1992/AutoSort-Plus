@@ -425,7 +425,7 @@ See [LICENSE](https://github.com/Nigel1992/AutoSort-Plus/blob/main/LICENSE) for 
 
 ---
 
-<div align="center">
+<div align="center" markdown="1">
 
 ## ⭐ Star History
 
