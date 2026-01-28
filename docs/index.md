@@ -43,7 +43,7 @@ blockquote {
 }
 </style>
 
-<div align="center">
+<div align="center" markdown="1">
 
 # 🎯 AutoSort+ for Thunderbird
 
@@ -78,7 +78,7 @@ AutoSort+ transforms your email workflow by automatically organizing messages in
 
 ## 🎉 Latest Release: v1.2.0
 
-<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; color: white; margin: 20px 0;">
+<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; color: white; margin: 20px 0;" markdown="1">
 
 ### 🚀 Multi-Provider AI Release
 
