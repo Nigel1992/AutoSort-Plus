@@ -1,3 +1,13 @@
+## AutoSort+ v1.2.3.3 - January 28, 2026
+
+### 🛠️ Bug Fix: Manual Label Application (Thunderbird Context Menu)
+- Fixed: Manual label application via right-click (AutoSort+ > AutoSort Label > pick any) now works reliably in all Thunderbird message list views.
+- **Root Cause:** The extension previously relied on a content script (content.js) to fetch selected messages, but Thunderbird does not inject content scripts into privileged mail/message tabs. This caused the error: "Could not establish connection. Receiving end does not exist."
+- **Solution:** The logic for fetching selected messages and applying labels is now handled entirely in the background script using the mailTabs API. This removes the dependency on content scripts for this feature and ensures robust operation.
+- No other features are affected by this change; all AI, Ollama, and label management features continue to work as before.
+
+---
+
 ## AutoSort+ v1.2.3.2 - January 27, 2026
 
 ### 🛠️ Latest Changes
@@ -153,4 +163,4 @@ For regular use, consider:
 4. Click the gear icon and select "Install Add-on From File..."
 5. Select the downloaded autosortplus.xpi file
 6. Click "Add" when prompted to install the add-on
-7. Restart Thunderbird when prompted 
+7. Restart Thunderbird when prompted

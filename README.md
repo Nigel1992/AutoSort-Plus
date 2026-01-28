@@ -11,7 +11,7 @@
 <img width="120" height="120" alt="AutoSort+ Logo" src="https://github.com/user-attachments/assets/32e8e1fb-7cb0-4b65-9bcc-e1cf693bf5e5" />
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.2.3.1-blue.svg)](https://github.com/Nigel1992/AutoSort-Plus/releases)
+[![Version](https://img.shields.io/badge/version-1.2.3.3-blue.svg)](https://github.com/Nigel1992/AutoSort-Plus/releases)
 [![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0%2B-0a84ff.svg)](https://www.thunderbird.net/)
 [![Development Status](https://img.shields.io/badge/status-active-success)](https://github.com/Nigel1992/AutoSort-Plus)
 
@@ -685,6 +685,6 @@ See [LICENSE](LICENSE) file for full text.
 
 ![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=for-the-badge&logo=thunderbird&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Version](https://img.shields.io/badge/Version-1.2.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.2.3.3-blue?style=for-the-badge)
 
 </div>

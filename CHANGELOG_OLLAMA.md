@@ -1,3 +1,8 @@
+# v1.2.3.3 - January 28, 2026
+
+- Fixed: Manual label application from the context menu now works in all Thunderbird message list views.
+- Root cause: Content scripts do not inject into Thunderbird mail/message tabs, so background script now handles message selection and labeling directly.
+
 # Ollama Integration - Changelog
 
 ## New Features Added
