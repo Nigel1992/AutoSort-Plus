@@ -4,58 +4,44 @@ title: AutoSort+ - AI-Powered Email Organization for Thunderbird
 ---
 
 <style>
-body {
-  background: #181a1b;
-  color: #e0e0e0;
-}
-
-h1, h2, h3, h4, h5, h6, strong {
-  color: #fff;
-}
-
-code, pre {
-  background: #23272e;
-  color: #b5e853;
-}
-
-a, a:visited {
-  color: #7abaff;
-}
-
-.table-striped tr:nth-child(even) {
-  background: #23272e;
-}
-
-blockquote {
-  border-left: 4px solid #7abaff;
-  background: #23272e;
-  color: #b5e853;
-  padding: 0.5em 1em;
-}
-
-.warning {
-  background: #ff9800;
-  color: #181a1b;
-  padding: 0.5em 1em;
-  border-radius: 6px;
-  margin: 1em 0;
-  font-weight: bold;
-}
+:root{--bg:#0f1112;--card:#131417;--muted:#bfc4c8;--accent:#7abaff;--green:#7ee58e}
+body{background:linear-gradient(180deg,var(--bg),#0b0c0d);color:var(--muted);font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial}
+.hero{max-width:1100px;margin:40px auto;padding:48px;border-radius:12px;background:linear-gradient(135deg,#0f1720 0%, #111827 100%);box-shadow:0 6px 30px rgba(0,0,0,.6);text-align:center}
+.hero h1{font-size:2.4rem;margin:0;color:#fff}
+.hero p{color:var(--muted);margin:12px 0 20px;font-size:1.05rem}
+.hero .badges img{margin:0 6px 12px}
+.btn-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+.btn{background:transparent;border:1px solid rgba(255,255,255,.06);color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600}
+.btn.primary{background:linear-gradient(90deg,#667eea,#764ba2);border:none}
+.hero .small{font-size:.9rem;color:var(--muted);margin-top:12px}
+.content{max-width:1100px;margin:20px auto;padding:10px}
+.warning{background:#ff9800;color:#111;padding:.5em 1em;border-radius:6px;margin:1em 0;font-weight:700}
+pre{background:#0b0d0f;padding:12px;border-radius:8px;color:#d7e9c7}
 </style>
 
-<div align="center" markdown="1">
+<div class="hero" markdown="1">
 
 # 🎯 AutoSort+ for Thunderbird
 
-### AI-Powered Email Organization with Multi-Provider Support
+<p class="lead">AI-powered email organization that adapts to your workflow. Choose from Gemini, OpenAI, Anthropic, Groq, or Mistral and let AutoSort+ automatically move emails to the right folders.</p>
 
+<div class="badges">
 <a href="https://github.com/Nigel1992/AutoSort-Plus/releases"><img src="https://img.shields.io/badge/Version-1.2.3.3-blue?style=for-the-badge" alt="Version"></a>
 <a href="https://www.thunderbird.net/"><img src="https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=for-the-badge&logo=thunderbird&logoColor=white" alt="Thunderbird"></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"></a>
+</div>
 
-[📦 Download](https://github.com/Nigel1992/AutoSort-Plus/releases) • [📖 Full README](https://github.com/Nigel1992/AutoSort-Plus) • [🐛 Report Issue](https://github.com/Nigel1992/AutoSort-Plus/issues)
+<div class="btn-row">
+<a class="btn primary" href="https://github.com/Nigel1992/AutoSort-Plus/releases">Download .xpi</a>
+<a class="btn" href="https://github.com/Nigel1992/AutoSort-Plus">View on GitHub</a>
+<a class="btn" href="/AutoSort-Plus/docs/index.html">Documentation</a>
+</div>
+
+<p class="small">Available as a manual install (.xpi). See the Documentation below for installation and usage instructions.</p>
 
 </div>
+
+<div class="content">
 
 ---
 
@@ -76,29 +62,16 @@ AutoSort+ transforms your email workflow by automatically organizing messages in
 
 ---
 
-## 🎉 Latest Release: v1.2.0
+## 🎉 Latest Release: v1.2.3.3
 
 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 10px; color: white; margin: 20px 0;" markdown="1">
 
-### 🚀 Multi-Provider AI Release
+### 🚀 Release v1.2.3.3 — January 28, 2026
 
-**Released:** January 13, 2026
+**Summary:** Fixed manual label application from the context menu (Right-click → AutoSort+ → AutoSort Label → pick a label). The background script now handles selection and labeling reliably across Thunderbird views.
 
-#### 🆕 Major Features
-- ✅ **5 AI Providers**: Gemini, OpenAI, Anthropic, Groq, Mistral
-- ✅ **Gemini Rate Limiting**: Automatic 5/min, 20/day enforcement
-- ✅ **Usage Dashboard**: Real-time tracking with smart warnings
-- ✅ **IMAP Auto-Discovery**: Recursive folder detection
-- ✅ **Bulk Import**: Load labels from text lists
-- ✅ **Move History**: Last 100 emails with full details
-- ✅ **Professional UI**: Provider info cards and validation
-
-#### 🔧 Improvements
-- ✅ Updated Groq to llama-3.3-70b
-- ✅ Enhanced error handling
-- ✅ Auto-create missing folders
-- ✅ Better batch processing
-- ✅ Settings validation system
+#### 🛠️ Notable Fix
+- ✅ **Manual Labeling Fix:** Replaced content-script dependency with `mailTabs` API handling in background script to avoid "Could not establish connection. Receiving end does not exist." errors.
 
 </div>
 
