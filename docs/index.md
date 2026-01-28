@@ -49,9 +49,9 @@ blockquote {
 
 ### AI-Powered Email Organization with Multi-Provider Support
 
-[![Version](https://img.shields.io/badge/Version-1.2.0-blue?style=for-the-badge)](https://github.com/Nigel1992/AutoSort-Plus/releases)
-[![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=for-the-badge&logo=thunderbird&logoColor=white)](https://www.thunderbird.net/)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+<a href="https://github.com/Nigel1992/AutoSort-Plus/releases"><img src="https://img.shields.io/badge/Version-1.2.3.3-blue?style=for-the-badge" alt="Version"></a>
+<a href="https://www.thunderbird.net/"><img src="https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=for-the-badge&logo=thunderbird&logoColor=white" alt="Thunderbird"></a>
+<a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"></a>
 
 [📦 Download](https://github.com/Nigel1992/AutoSort-Plus/releases) • [📖 Full README](https://github.com/Nigel1992/AutoSort-Plus) • [🐛 Report Issue](https://github.com/Nigel1992/AutoSort-Plus/issues)
 
