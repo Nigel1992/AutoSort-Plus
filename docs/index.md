@@ -441,6 +441,6 @@ See [LICENSE](https://github.com/Nigel1992/AutoSort-Plus/blob/main/LICENSE) for 
 
 ![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=flat-square&logo=thunderbird&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![Version](https://img.shields.io/badge/Version-1.2.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.2.3.3-blue?style=flat-square)
 
 </div>
