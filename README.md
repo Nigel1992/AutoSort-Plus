@@ -145,8 +145,16 @@ Click "Get API Key" button → Create free account → Copy key
 ### 3️⃣ Configure Folders
 Load folders from IMAP or add custom labels
 
-### 4️⃣ Start Sorting
-Select emails → Right-click → **AutoSort+ → Analyze with AI**
+### 4️⃣ Sort Emails (Two Options)
+
+**Option 1: AI-Powered Sorting**
+- Select emails → Right-click → **AutoSort+ → Analyze with AI**
+- The AI will analyze and move emails to the best folder/category.
+
+**Option 2: Manual Labeling**
+- Select emails → Right-click → **AutoSort+ → AutoSort Label → [Pick any label]**
+- The selected label/category will be applied instantly to all selected emails.
+- *If you add or change labels in the settings menu, you must restart Thunderbird for the new labels to appear in the right-click menu.*
 
 > 📌 **Note:** Currently requires manual selection and right-click. Automatic background sorting coming in future update!
 
