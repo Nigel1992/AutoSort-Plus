@@ -3,6 +3,46 @@ layout: default
 title: AutoSort+ - AI-Powered Email Organization for Thunderbird
 ---
 
+<style>
+body {
+  background: #181a1b;
+  color: #e0e0e0;
+}
+
+h1, h2, h3, h4, h5, h6, strong {
+  color: #fff;
+}
+
+code, pre {
+  background: #23272e;
+  color: #b5e853;
+}
+
+a, a:visited {
+  color: #7abaff;
+}
+
+.table-striped tr:nth-child(even) {
+  background: #23272e;
+}
+
+blockquote {
+  border-left: 4px solid #7abaff;
+  background: #23272e;
+  color: #b5e853;
+  padding: 0.5em 1em;
+}
+
+.warning {
+  background: #ff9800;
+  color: #181a1b;
+  padding: 0.5em 1em;
+  border-radius: 6px;
+  margin: 1em 0;
+  font-weight: bold;
+}
+</style>
+
 <div align="center">
 
 # 🎯 AutoSort+ for Thunderbird
@@ -143,9 +183,16 @@ Choose your preferred AI provider:
 
 ### 4️⃣ Start Organizing
 
-1. Select one or more emails
-2. Right-click → **"AutoSort+ Analyze with AI"**
-3. Watch as emails automatically move to correct folders! 🎉
+You have two options:
+
+**Option 1: AI-Powered Sorting**
+- Select emails → Right-click → **AutoSort+ → Analyze with AI**
+- The AI will analyze and move emails to the best folder/category.
+
+**Option 2: Manual Labeling**
+- Select emails → Right-click → **AutoSort+ → AutoSort Label → [Pick any label]**
+- The selected label/category will be applied instantly to all selected emails.
+<div class="warning">If you add or change labels in the settings menu, you must restart Thunderbird for the new labels to appear in the right-click menu.</div>
 
 ---
 
@@ -396,4 +443,4 @@ See [LICENSE](https://github.com/Nigel1992/AutoSort-Plus/blob/main/LICENSE) for 
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 ![Version](https://img.shields.io/badge/Version-1.2.0-blue?style=flat-square)
 
-</div> 
+</div>
