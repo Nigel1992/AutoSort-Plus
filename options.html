@@ -103,6 +103,17 @@
                 <h3>⚙️ General Settings</h3>
                 <input type="checkbox" id="enable-ai" checked>
                 <label for="enable-ai">Enable AI-powered sorting</label>
+                <div class="input-group">
+                    <label for="ai-temperature">Model Temperature:</label>
+                    <input type="range" id="ai-temperature" min="0" max="1" step="0.01" value="0.2" style="width: 180px;">
+                    <span id="ai-temperature-value">0.20</span>
+                    <small class="help-text">Lower = more deterministic, higher = more creative. Recommended: 0.1–0.3 for accuracy.</small>
+                </div>
+                <div class="input-group">
+                    <input type="checkbox" id="enable-rule-fallbacks" checked>
+                    <label for="enable-rule-fallbacks">Enable rule-based fallback (keywords/sender/subject)</label>
+                </div>
+                <div id="label-warning" class="warning-box" style="display:none;"></div>
             </div>
                 <div class="checkbox-container" id="gemini-paid-container" style="display: none;">
                     <input type="checkbox" id="gemini-paid-plan">

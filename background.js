@@ -400,7 +400,9 @@ async function analyzeEmailContent(emailContent) {
             'enableAi', 
             'geminiPaidPlan', 
             'geminiRateLimit',
-            'geminiRateLimits'
+            'geminiRateLimits',
+            'aiTemperature',
+            'enableRuleFallbacks'
         ]);
         const provider = settings.aiProvider || 'gemini';
         
@@ -492,17 +494,23 @@ async function analyzeEmailContent(emailContent) {
             return null;
         }
 
-        const prompt = `You are an email classification assistant. Analyze this email content and choose the most appropriate label from this list: ${settings.labels.join(', ')}. 
+        // If Spam is a label, make prompt more conservative
+        let prompt = `You are an email classification assistant. Analyze this email content and choose the most appropriate label from this list: ${settings.labels.join(', ')}.
         Consider the following:
         1. The main topic and purpose of the email
         2. The sender and recipient context
         3. The urgency and importance of the content
         4. The type of communication (e.g., notification, request, update)
         
-        Only respond with the exact label name that best fits the content. If no label fits well, respond with "null".
-        
-        Email content:
-        ${emailContent}`;
+        Only respond with the exact label name that best fits the content. If no label fits well, respond with "null".`;
+        if (settings.labels && settings.labels.includes("Spam")) {
+            prompt += `\n\nIf the email is unsolicited, contains suspicious links, requests personal information, or matches common spam patterns (lottery, prize, free offer, urgent action, unsubscribe, etc.), classify it as 'Spam'. Be conservative: only assign 'Spam' if you are confident.`;
+        }
+        prompt += `\n\nEmail content:\n${emailContent}`;
+
+        // Use temperature from settings, default 0.2
+        const temperature = typeof settings.aiTemperature === 'number' ? settings.aiTemperature : 0.2;
+        const enableRuleFallbacks = settings.enableRuleFallbacks !== false;
 
         await updateNotification(
             notificationId,
@@ -536,7 +544,7 @@ async function analyzeEmailContent(emailContent) {
                     }]
                 }],
                 generationConfig: {
-                    temperature: 0.2,
+                    temperature: temperature,
                     topK: 1,
                     topP: 1,
                     maxOutputTokens: 50,
@@ -592,7 +600,7 @@ async function analyzeEmailContent(emailContent) {
                     model: 'gpt-4o-mini',
                     messages: [{ role: 'user', content: prompt }],
                     max_tokens: 50,
-                    temperature: 0.2
+                    temperature: temperature
                 })
             });
 
@@ -615,7 +623,8 @@ async function analyzeEmailContent(emailContent) {
                 body: JSON.stringify({
                     model: 'claude-3-haiku-20240307',
                     messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 50
+                    max_tokens: 50,
+                    temperature: temperature
                 })
             });
 
@@ -638,7 +647,7 @@ async function analyzeEmailContent(emailContent) {
                     model: 'llama-3.3-70b-versatile',
                     messages: [{ role: 'user', content: prompt }],
                     max_tokens: 50,
-                    temperature: 0.2
+                    temperature: temperature
                 })
             });
 
@@ -661,9 +670,27 @@ async function analyzeEmailContent(emailContent) {
                     model: 'mistral-small-latest',
                     messages: [{ role: 'user', content: prompt }],
                     max_tokens: 50,
-                    temperature: 0.2
+                    temperature: temperature
                 })
             });
+        // Rule-based fallback stub (expand with real logic as needed)
+        if (enableRuleFallbacks) {
+            // Enhanced spam detection
+            if (settings.labels && settings.labels.includes("Spam")) {
+                const lowerContent = (emailContent || "").toLowerCase();
+                // Example blocklist (expand as needed)
+                const spamKeywords = [
+                    "unsubscribe", "lottery", "win money", "prize", "free offer", "click here", "urgent action", "risk-free", "act now", "congratulations", "you have been selected", "claim your prize", "guaranteed", "no cost", "limited time offer", "winner", "credit card", "password", "bank account", "verify your account", "bitcoin", "crypto", "investment opportunity"
+                ];
+                // Sender/subject heuristics (stub: in real use, pass sender/subject)
+                // For now, just check content
+                if (spamKeywords.some(k => lowerContent.includes(k))) {
+                    await updateNotification(notificationId, "AutoSort+ Rule Fallback", "Matched spam keyword, assigning label: Spam");
+                    return "Spam";
+                }
+            }
+            // Add more rules as needed (e.g., sender, subject, etc.)
+        }
 
         } else if (provider === 'ollama') {
             console.log("Making API request to Ollama (local)...");

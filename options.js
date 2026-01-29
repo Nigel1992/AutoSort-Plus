@@ -1,4 +1,46 @@
 document.addEventListener('DOMContentLoaded', async function() {
+        // Temperature slider
+        const aiTemperatureSlider = document.getElementById('ai-temperature');
+        const aiTemperatureValue = document.getElementById('ai-temperature-value');
+        if (aiTemperatureSlider && aiTemperatureValue) {
+            aiTemperatureSlider.addEventListener('input', function() {
+                aiTemperatureValue.textContent = Number(this.value).toFixed(2);
+            });
+        }
+
+        // Rule-based fallback toggle
+        const ruleFallbacksCheckbox = document.getElementById('enable-rule-fallbacks');
+
+        // Label distinctness warning
+        const labelWarning = document.getElementById('label-warning');
+        function checkLabelDistinctness() {
+            const labelInputs = document.querySelectorAll('.label-input');
+            const labels = Array.from(labelInputs).map(i => i.value.trim()).filter(Boolean);
+            let warning = '';
+            // Check for similar/duplicate labels
+            for (let i = 0; i < labels.length; ++i) {
+                for (let j = i + 1; j < labels.length; ++j) {
+                    if (labels[i].toLowerCase() === labels[j].toLowerCase()) {
+                        warning = 'Warning: Duplicate or very similar labels detected: "' + labels[i] + '".';
+                    } else if (labels[i].toLowerCase().includes(labels[j].toLowerCase()) || labels[j].toLowerCase().includes(labels[i].toLowerCase())) {
+                        warning = 'Warning: Overlapping label names detected: "' + labels[i] + '" and "' + labels[j] + '".';
+                    }
+                }
+            }
+            if (labels.length > 10) {
+                warning = 'Warning: Too many labels (' + labels.length + '). This may reduce accuracy.';
+            }
+            if (warning) {
+                labelWarning.textContent = warning;
+                labelWarning.style.display = 'block';
+            } else {
+                labelWarning.textContent = '';
+                labelWarning.style.display = 'none';
+            }
+        }
+        // Attach to label input changes
+        document.getElementById('labels-container').addEventListener('input', checkLabelDistinctness);
+        checkLabelDistinctness();
     // Initialize collapsible sections
     const sectionHeaders = document.querySelectorAll('.section-header');
     sectionHeaders.forEach(header => {
@@ -1159,6 +1201,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             showMessage('Please add at least one folder/label before saving. Use "Load Folders from Mail Account" or add custom labels.', false);
             return;
         }
+        // Get temperature and rule fallback
+        const aiTemperature = aiTemperatureSlider ? Number(aiTemperatureSlider.value) : 0.2;
+        const enableRuleFallbacks = ruleFallbacksCheckbox ? ruleFallbacksCheckbox.checked : true;
         
         // Validate API keys based on provider
         if (provider === 'gemini') {
@@ -1183,7 +1228,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 currentGeminiKeyIndex: 0, // Start with first key
                 aiProvider: provider,
                 enableAi: document.getElementById('enable-ai').checked,
-                geminiPaidPlan: geminiPaidCheckbox.checked
+                geminiPaidPlan: geminiPaidCheckbox.checked,
+                aiTemperature,
+                enableRuleFallbacks
             };
             
             // Initialize rate limits array for all keys if not exists
@@ -1222,7 +1269,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ollamaModel: ollamaModel,
                 ollamaCustomModel: ollamaCustomModelInput.value.trim(),
                 ollamaAuthToken: ollamaAuthTokenInput ? ollamaAuthTokenInput.value.trim() : '',
-                ollamaCpuOnly: ollamaCpuOnlyCheckbox.checked
+                ollamaCpuOnly: ollamaCpuOnlyCheckbox.checked,
+                aiTemperature,
+                enableRuleFallbacks
             };
 
             browser.storage.local.set(settings).then(() => {
@@ -1244,7 +1293,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 apiKey: apiKey,
                 aiProvider: provider,
                 enableAi: document.getElementById('enable-ai').checked,
-                geminiPaidPlan: geminiPaidCheckbox.checked
+                geminiPaidPlan: geminiPaidCheckbox.checked,
+                aiTemperature,
+                enableRuleFallbacks
             };
 
             browser.storage.local.set(settings).then(() => {
