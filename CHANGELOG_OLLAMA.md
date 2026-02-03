@@ -1,3 +1,12 @@
+# v1.2.3.4 - February 3, 2026
+
+**🐛 Bug Fix: Settings Persistence**
+- Fixed: Ollama AI settings (model, custom model name, auth token) now properly persist when reopening Thunderbird
+- Fixed: AI temperature and rule fallback settings now save and restore correctly
+- Fixed: Custom Ollama models (e.g., "qwen2.5:7b-instruct") now display correctly in settings UI after restart
+- Fixed: Settings UI accurately reflects the actual model in use, preventing confusion about which model is active
+- Resolves issue [#4](https://github.com/Nigel1992/AutoSort-Plus/issues/4)
+
 # v1.2.3.3 - January 28, 2026
 
 - Fixed: Manual label application from the context menu now works in all Thunderbird message list views.

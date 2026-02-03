@@ -628,7 +628,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Load saved settings
-    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly']).then(result => {
+    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaAuthToken', 'ollamaCpuOnly', 'aiTemperature', 'enableRuleFallbacks']).then(result => {
         if (result.labels && result.labels.length > 0) {
             result.labels.forEach(label => {
                 addLabelInput(label);
@@ -663,10 +663,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             ollamaAuthTokenInput.value = result.ollamaAuthToken;
         }
         if (result.ollamaModel && ollamaModelSelect) {
-            ollamaModelSelect.value = result.ollamaModel;
-            if (result.ollamaModel === 'custom' && result.ollamaCustomModel && ollamaCustomModelInput) {
-                ollamaCustomModelInput.value = result.ollamaCustomModel;
-                ollamaCustomModelInput.style.display = 'block';
+            // Check if the saved model is one of the preset options
+            const presetModels = ['llama2', 'llama3.2', 'mistral', 'phi', 'gemma', 'qwen2.5', 'custom'];
+            if (presetModels.includes(result.ollamaModel)) {
+                // It's a preset - set the dropdown directly
+                ollamaModelSelect.value = result.ollamaModel;
+                if (result.ollamaModel === 'custom' && result.ollamaCustomModel && ollamaCustomModelInput) {
+                    ollamaCustomModelInput.value = result.ollamaCustomModel;
+                    ollamaCustomModelInput.style.display = 'block';
+                }
+            } else {
+                // It's a custom model name - set dropdown to custom and populate the field
+                ollamaModelSelect.value = 'custom';
+                if (ollamaCustomModelInput) {
+                    ollamaCustomModelInput.value = result.ollamaModel;
+                    ollamaCustomModelInput.style.display = 'block';
+                }
             }
         }
         if (ollamaCpuOnlyCheckbox) {
@@ -682,6 +694,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Set gemini paid plan checkbox
         geminiPaidCheckbox.checked = result.geminiPaidPlan === true;
+        
+        // Load AI temperature setting
+        if (result.aiTemperature !== undefined && aiTemperatureSlider && aiTemperatureValue) {
+            aiTemperatureSlider.value = result.aiTemperature;
+            aiTemperatureValue.textContent = Number(result.aiTemperature).toFixed(2);
+        }
+        
+        // Load rule fallbacks setting
+        if (result.enableRuleFallbacks !== undefined && ruleFallbacksCheckbox) {
+            ruleFallbacksCheckbox.checked = result.enableRuleFallbacks;
+        }
         
         updateSaveButtonState();
     });
@@ -1253,9 +1276,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else if (provider === 'ollama') {
             // Ollama doesn't need API key, just save URL and model
             let ollamaModel = ollamaModelSelect.value;
+            let actualModel = ollamaModel;
+            
             if (ollamaModel === 'custom') {
-                ollamaModel = ollamaCustomModelInput.value.trim();
-                if (!ollamaModel) {
+                actualModel = ollamaCustomModelInput.value.trim();
+                if (!actualModel) {
                     showMessage('Please enter a custom model name for Ollama.', false);
                     return;
                 }
@@ -1266,7 +1291,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 aiProvider: provider,
                 enableAi: document.getElementById('enable-ai').checked,
                 ollamaUrl: ollamaUrlInput.value.trim() || 'http://localhost:11434',
-                ollamaModel: ollamaModel,
+                ollamaModel: actualModel,
                 ollamaCustomModel: ollamaCustomModelInput.value.trim(),
                 ollamaAuthToken: ollamaAuthTokenInput ? ollamaAuthTokenInput.value.trim() : '',
                 ollamaCpuOnly: ollamaCpuOnlyCheckbox.checked,
