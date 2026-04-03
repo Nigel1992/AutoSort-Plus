@@ -6,8 +6,6 @@
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Nigel1992)
 
-> **Support this project!** All donations go towards your chosen charity. All donations go towards your chosen charity. You can pick any charity you'd like, and I will ensure the funds are sent their way. Please note that standard payment processing fees (Ko-fi All donations go towards your chosen charity. You can pick any charity you'd like, and I will ensure the funds are sent their way. Please note that standard payment processing fees (Ko-fi All donations go towards your chosen charity. You can pick any charity you'd like, and I will ensure the funds are sent their way. Please note that standard payment processing fees (Ko-fi & PayPal) will be deducted from the total. As a thank you, your name can be added to the official donor list for this project on GitHub. Feel free to email me at thedjskywalker@gmail.com for proof of the donation or to let me know which charity you've selected! :) PayPal) will be deducted from the total. As a thank you, your name can be added to the official donor list for this project on GitHub. Feel free to email me at thedjskywalker@gmail.com for proof of the donation or to let me know which charity you've selected! :) PayPal) will be deducted from the total. As a thank you, your name can be added to the official donor list for this project on GitHub. Feel free to email me at thedjskywalker@gmail.com for proof of the donation or to let me know which charity you've selected! :). As a thank you, your name will be listed as a supporter/donor in this project. Feel free to email me at thedjskywalker@gmail.com for proof! :)
-
 <div align="center">
 
 # 🎯 AutoSort+ 
@@ -413,21 +411,6 @@ You can also manually label emails without AI analysis:
 }
 ```
 
-### Supported AI Models
-
-| Provider | Model | Context Window | Speed | Cost |
-|----------|-------|----------------|-------|------|
-| Gemini | gemini-2.5-flash | 1M tokens | ⚡⚡⚡ | Free/Paid |
-| OpenAI | gpt-4o-mini | 128K tokens | ⚡⚡ | Paid |
-| Claude | claude-3-haiku | 200K tokens | ⚡⚡⚡ | Free/Paid |
-| Groq | llama-3.3-70b | 8K tokens | ⚡⚡⚡⚡ | Free |
-| Mistral | mistral-small-latest | 32K tokens | ⚡⚡⚡ | Free/Paid |
-| Ollama (Local) | llama3.2, phi, gemma, tinyllama (varies) | Varies by model (local) | ⚡ - ⚡⚡⚡ | Local (no external cost) |
-
-> **Note:** Ollama runs locally on your machine — no API key required. Models are downloaded via `ollama pull <model>` and can run in CPU-only mode for machines without GPU resources.
-
----
-
 ## 🔒 Privacy & Security
 
 | Feature | Status | Details |
@@ -723,3 +706,7 @@ See [LICENSE](LICENSE) file for full text.
 ![Version](https://img.shields.io/badge/Version-1.2.3.3-blue?style=for-the-badge)
 
 </div>
+
+## Support This Project
+
+Support this project! All donations go towards your chosen charity. You can pick any charity you'd like, and I will ensure the funds are sent their way. Please note that standard payment processing fees (Ko-fi & PayPal) will be deducted from the total. As a thank you, your name will be listed as a supporter/donor in this project. Feel free to email me at thedjskywalker@gmail.com for proof of the donation or to let me know which charity you've selected!
