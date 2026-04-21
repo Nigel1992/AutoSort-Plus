@@ -770,4 +770,150 @@ input[type="checkbox"] {
     border-left-color: #f44336;
     background: #ffebee;
 }
- 
+
+/* ── Batch Processing Status Panel ───────────────────────────────────────── */
+
+.batch-status-panel {
+    margin-bottom: 24px;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, #e8f0fe 0%, #d2e3fc 100%);
+    border: 2px solid var(--primary-color);
+    border-radius: 10px;
+    box-shadow: 0 3px 10px rgba(0, 96, 223, 0.15);
+    animation: slideDown 0.3s ease-out;
+}
+
+.batch-status-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.batch-status-icon {
+    font-size: 1.4em;
+    animation: batchSpin 2s linear infinite;
+    display: inline-block;
+}
+
+@keyframes batchSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}
+
+/* Stop spinning when paused */
+.batch-status-panel[data-status="paused"] .batch-status-icon {
+    animation: none;
+}
+
+/* Show done/cancelled state */
+.batch-status-panel[data-status="done"] .batch-status-icon,
+.batch-status-panel[data-status="cancelled"] .batch-status-icon {
+    animation: none;
+}
+
+.batch-status-title {
+    font-weight: 700;
+    font-size: 1.05em;
+    color: #003eaa;
+    flex: 1;
+}
+
+.batch-provider-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 12px;
+    font-size: 0.78em;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* Progress bar */
+.batch-progress-bar-wrap {
+    height: 12px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    border: 1px solid rgba(0, 96, 223, 0.2);
+}
+
+.batch-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0060df 0%, #00d4ff 100%);
+    border-radius: 8px;
+    transition: width 0.4s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.batch-progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    to { left: 200%; }
+}
+
+.batch-progress-text {
+    font-size: 0.88em;
+    color: #003eaa;
+    margin: 0 0 12px 0;
+}
+
+/* Batch control buttons */
+.batch-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.batch-btn-pause {
+    background: #f59e0b;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.88em;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.batch-btn-pause:hover { background: #d97706; }
+
+.batch-btn-resume {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.88em;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.batch-btn-resume:hover { background: #059669; }
+
+.batch-btn-cancel {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.88em;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.batch-btn-cancel:hover { background: #dc2626; }

@@ -1745,4 +1745,124 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Add event listeners for history controls
     document.getElementById('clear-history').addEventListener('click', clearHistory);
     document.getElementById('refresh-history').addEventListener('click', updateHistoryTable);
+
+    // ── Batch Progress Panel ───────────────────────────────────────────────
+
+    const batchPanel      = document.getElementById('batch-status-panel');
+    const batchFill       = document.getElementById('batch-progress-fill');
+    const batchText       = document.getElementById('batch-progress-text');
+    const batchBadge      = document.getElementById('batch-provider-badge');
+    const batchPauseBtn   = document.getElementById('batch-pause-btn');
+    const batchResumeBtn  = document.getElementById('batch-resume-btn');
+    const batchCancelBtn  = document.getElementById('batch-cancel-btn');
+
+    let _batchHideTimer = null;
+
+    /**
+     * Update the batch panel UI from a progress payload.
+     * @param {{ status, total, completed, failed, skipped, provider }} payload
+     */
+    function applyBatchProgress(payload) {
+        if (!batchPanel) return;
+
+        const { status, total, completed, failed, skipped, provider } = payload;
+        const done = completed + failed + skipped;
+        const pct  = total > 0 ? Math.round((done / total) * 100) : 0;
+
+        // Show the panel
+        batchPanel.style.display = 'block';
+        batchPanel.dataset.status = status;
+
+        // Provider badge
+        if (batchBadge && provider) {
+            batchBadge.textContent = provider;
+        }
+
+        // Progress bar
+        if (batchFill) {
+            batchFill.style.width = pct + '%';
+        }
+
+        // Status text
+        if (batchText) {
+            if (status === 'paused') {
+                batchText.textContent = `⏸ Paused — ${done} / ${total} (${completed} sorted, ${failed} failed, ${skipped} skipped)`;
+            } else if (status === 'done') {
+                batchText.textContent = `✅ Done — sorted: ${completed}, skipped: ${skipped}, failed: ${failed}`;
+            } else if (status === 'cancelled') {
+                batchText.textContent = `⏹ Cancelled after ${done} / ${total} emails`;
+            } else {
+                batchText.textContent = `Processing ${done} / ${total} — sorted: ${completed}, failed: ${failed}, skipped: ${skipped}`;
+            }
+        }
+
+        // Pause / Resume button toggle
+        if (batchPauseBtn && batchResumeBtn) {
+            if (status === 'paused') {
+                batchPauseBtn.style.display  = 'none';
+                batchResumeBtn.style.display = '';
+            } else {
+                batchPauseBtn.style.display  = '';
+                batchResumeBtn.style.display = 'none';
+            }
+        }
+
+        // Hide cancel button when finished
+        if (batchCancelBtn) {
+            batchCancelBtn.style.display = (status === 'done' || status === 'cancelled') ? 'none' : '';
+        }
+
+        // Auto-hide panel 5 s after completion
+        if (status === 'done' || status === 'cancelled') {
+            clearTimeout(_batchHideTimer);
+            _batchHideTimer = setTimeout(() => {
+                if (batchPanel) batchPanel.style.display = 'none';
+            }, 5000);
+        }
+    }
+
+    // On page open: pick up any already-running batch from storage
+    browser.storage.local.get('currentBatch').then(result => {
+        if (result.currentBatch && result.currentBatch.status === 'running') {
+            applyBatchProgress(result.currentBatch);
+        }
+    });
+
+    // Live updates from background script
+    browser.runtime.onMessage.addListener(msg => {
+        if (msg.action === 'batchProgress') {
+            applyBatchProgress(msg);
+        }
+    });
+
+    // Pause button
+    if (batchPauseBtn) {
+        batchPauseBtn.addEventListener('click', () => {
+            browser.runtime.sendMessage({ action: 'batchControl', command: 'pause' }).catch(() => {});
+            if (batchPanel) batchPanel.dataset.status = 'paused';
+            if (batchText)  batchText.textContent = '⏸ Pausing… current request will finish first.';
+            if (batchPauseBtn)  batchPauseBtn.style.display  = 'none';
+            if (batchResumeBtn) batchResumeBtn.style.display = '';
+        });
+    }
+
+    // Resume button
+    if (batchResumeBtn) {
+        batchResumeBtn.addEventListener('click', () => {
+            browser.runtime.sendMessage({ action: 'batchControl', command: 'resume' }).catch(() => {});
+            if (batchPanel) batchPanel.dataset.status = 'running';
+            if (batchPauseBtn)  batchPauseBtn.style.display  = '';
+            if (batchResumeBtn) batchResumeBtn.style.display = 'none';
+        });
+    }
+
+    // Cancel button
+    if (batchCancelBtn) {
+        batchCancelBtn.addEventListener('click', () => {
+            if (!confirm('Cancel the current batch? Already-sorted emails will not be undone.')) return;
+            browser.runtime.sendMessage({ action: 'batchControl', command: 'cancel' }).catch(() => {});
+            if (batchText) batchText.textContent = '⏹ Cancelling… current request will finish first.';
+            if (batchCancelBtn) batchCancelBtn.disabled = true;
+        });
+    }
 }); 

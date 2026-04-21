@@ -28,6 +28,17 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             }
         })();
         return true;
+    } else if (message.action === 'batchControl') {
+        // Pause / Resume / Cancel from the options page UI
+        if (message.command === 'pause') {
+            _batchState.paused = true;
+        } else if (message.command === 'resume') {
+            _batchState.paused = false;
+        } else if (message.command === 'cancel') {
+            _batchState.cancelled = true;
+            _batchState.paused = false;
+        }
+        sendResponse({ ok: true });
     }
 });
 
@@ -246,6 +257,259 @@ async function callOllamaViaTab(ollamaUrl, payload) {
     }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// BATCH PROCESSING ENGINE
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Per-provider batch configuration.
+ *   concurrency  – max simultaneous in-flight AI requests
+ *   delayMs      – minimum milliseconds to wait between launching each request
+ *
+ * Note: Gemini free-tier concurrency=1 and delayMs are managed by the existing
+ * checkGeminiRateLimit() / trackGeminiRequest() helpers and preserved here.
+ */
+const PROVIDER_BATCH_CONFIG = {
+    gemini:              { concurrency: 1, delayMs: 0     }, // delay handled by rate-limit helper
+    openai:              { concurrency: 3, delayMs: 500   },
+    anthropic:           { concurrency: 2, delayMs: 500   },
+    groq:                { concurrency: 5, delayMs: 200   },
+    mistral:             { concurrency: 2, delayMs: 500   },
+    ollama:              { concurrency: 1, delayMs: 0     }, // local, sequential is fine
+    'openai-compatible': { concurrency: 2, delayMs: 500   }
+};
+
+/** In-memory batch state (reset for each new batch run). */
+let _batchState = {
+    running:   false,
+    cancelled: false,
+    paused:    false,
+    total:     0,
+    completed: 0,
+    failed:    0,
+    skipped:   0,
+    provider:  ''
+};
+
+/** Reset batch state to defaults. */
+function _resetBatchState(total, provider) {
+    _batchState = {
+        running:   true,
+        cancelled: false,
+        paused:    false,
+        total,
+        completed: 0,
+        failed:    0,
+        skipped:   0,
+        provider
+    };
+}
+
+/** Broadcast current batch progress to any open options pages. */
+async function _broadcastBatchProgress(status = 'running') {
+    const payload = {
+        action:    'batchProgress',
+        status,
+        total:     _batchState.total,
+        completed: _batchState.completed,
+        failed:    _batchState.failed,
+        skipped:   _batchState.skipped,
+        provider:  _batchState.provider
+    };
+    try {
+        // Persist to storage so options page can pick it up on open
+        await browser.storage.local.set({ currentBatch: { ...payload, startTime: Date.now() } });
+        // Also send a live runtime message (options page may be open)
+        await browser.runtime.sendMessage(payload).catch(() => {});
+    } catch (e) {
+        // Ignore – options page may not be open
+    }
+}
+
+/**
+ * Wait while the batch is paused. Returns true when resumed, false if cancelled
+ * while waiting.
+ */
+async function _waitWhilePaused() {
+    while (_batchState.paused && !_batchState.cancelled) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    return !_batchState.cancelled;
+}
+
+/**
+ * Core batch engine. Processes an array of Thunderbird message objects using
+ * the currently configured AI provider with appropriate concurrency and pacing.
+ *
+ * @param {Array} messages  – Array of Thunderbird message objects (from mailTabs API)
+ */
+async function batchAnalyzeEmails(messages) {
+    const settingsData = await browser.storage.local.get(['aiProvider', 'geminiPaidPlan']);
+    const provider = settingsData.aiProvider || 'gemini';
+    const isPaidGemini = !!settingsData.geminiPaidPlan;
+
+    const providerCfg = PROVIDER_BATCH_CONFIG[provider] || { concurrency: 1, delayMs: 500 };
+    // Gemini paid tier can run with higher concurrency
+    const concurrency = (provider === 'gemini' && isPaidGemini) ? 3 : providerCfg.concurrency;
+    const delayMs     = providerCfg.delayMs;
+
+    _resetBatchState(messages.length, provider);
+    await _broadcastBatchProgress('running');
+
+    if (window.debugLogger) {
+        window.debugLogger.info('[Batch]', `Starting batch: ${messages.length} emails, provider=${provider}, concurrency=${concurrency}, delayMs=${delayMs}`);
+    }
+
+    // Helper to extract body text from a full Thunderbird message
+    function extractText(fullMessage) {
+        function fromParts(parts) {
+            if (!parts) return '';
+            let text = '';
+            for (const part of parts) {
+                if (part.parts) text += fromParts(part.parts);
+                if (part.contentType === 'text/plain') {
+                    text += part.body + '\n';
+                } else if (part.contentType === 'text/html' && !text) {
+                    text = browser.messengerUtilities.convertToPlainText(part.body);
+                } else if (part.contentType === 'message/rfc822' && part.body) {
+                    text += part.body + '\n';
+                }
+            }
+            return text;
+        }
+        if (fullMessage.parts) return fromParts(fullMessage.parts);
+        return fullMessage.body || '';
+    }
+
+    // Process a single message with one retry on failure
+    async function processOne(message) {
+        // Respect pause / cancel before starting
+        if (_batchState.cancelled) return;
+        if (_batchState.paused) {
+            const resumed = await _waitWhilePaused();
+            if (!resumed) return;
+        }
+
+        for (let attempt = 1; attempt <= 2; attempt++) {
+            try {
+                const fullMessage = await browser.messages.getFull(message.id);
+                if (!fullMessage) {
+                    _batchState.skipped++;
+                    return;
+                }
+
+                const emailContent = extractText(fullMessage);
+                if (!emailContent || !emailContent.trim()) {
+                    _batchState.skipped++;
+                    return;
+                }
+
+                const label = await analyzeEmailContent(emailContent);
+
+                if (!label || String(label).trim().toLowerCase() === 'null') {
+                    _batchState.skipped++;
+                    return;
+                }
+
+                await applyLabelsToMessages([message], label);
+                _batchState.completed++;
+                return; // success
+
+            } catch (err) {
+                if (window.debugLogger) {
+                    window.debugLogger.warn('[Batch]', `Attempt ${attempt} failed for msg ${message.id}: ${err.message}`);
+                }
+                if (attempt === 2) {
+                    // Both attempts failed
+                    _batchState.failed++;
+                    console.error(`[Batch] Message ${message.id} failed after retry:`, err.message);
+                } else {
+                    // Brief pause before retry
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                }
+            }
+        }
+    }
+
+    // Concurrency pool runner
+    let launchIndex = 0;
+    let lastLaunchTime = 0;
+    const inFlight = new Set();
+
+    while (launchIndex < messages.length || inFlight.size > 0) {
+        // Check cancellation
+        if (_batchState.cancelled) break;
+
+        // Wait while paused (only when no new items are being launched)
+        if (_batchState.paused && launchIndex >= messages.length) {
+            await _waitWhilePaused();
+        }
+
+        // Launch new tasks up to concurrency limit
+        while (
+            launchIndex < messages.length &&
+            inFlight.size < concurrency &&
+            !_batchState.cancelled &&
+            !_batchState.paused
+        ) {
+            // Enforce minimum delay between launches
+            const now = Date.now();
+            const sinceLastLaunch = now - lastLaunchTime;
+            if (delayMs > 0 && sinceLastLaunch < delayMs) {
+                await new Promise(resolve => setTimeout(resolve, delayMs - sinceLastLaunch));
+            }
+
+            const msg = messages[launchIndex++];
+            lastLaunchTime = Date.now();
+
+            const task = processOne(msg).finally(() => {
+                inFlight.delete(task);
+            });
+            inFlight.add(task);
+        }
+
+        // Broadcast progress after each potential change
+        await _broadcastBatchProgress('running');
+
+        // Yield to let in-flight promises make progress
+        if (inFlight.size > 0) {
+            await Promise.race(inFlight);
+        }
+    }
+
+    // Wait for all remaining in-flight tasks
+    if (inFlight.size > 0) {
+        await Promise.allSettled([...inFlight]);
+    }
+
+    const finalStatus = _batchState.cancelled ? 'cancelled' : 'done';
+    _batchState.running = false;
+    await _broadcastBatchProgress(finalStatus);
+
+    // Clear persisted batch state after a short delay so the UI can show "done"
+    setTimeout(async () => {
+        await browser.storage.local.remove('currentBatch').catch(() => {});
+    }, 6000);
+
+    if (window.debugLogger) {
+        window.debugLogger.info('[Batch]', `Batch ${finalStatus}: completed=${_batchState.completed}, failed=${_batchState.failed}, skipped=${_batchState.skipped}`);
+    }
+
+    // Final summary notification
+    const { completed, failed, skipped, total } = _batchState;
+    if (finalStatus === 'cancelled') {
+        await showNotification('AutoSort+ Batch Cancelled',
+            `Stopped after ${completed + failed + skipped}/${total} emails. Sorted: ${completed}, failed: ${failed}.`);
+    } else if (failed === 0 && skipped === 0) {
+        await showNotification('AutoSort+ Batch Complete',
+            `Successfully sorted all ${completed} emails.`);
+    } else {
+        await showNotification('AutoSort+ Batch Complete',
+            `Processed ${total} emails — sorted: ${completed}, skipped: ${skipped}, failed: ${failed}.`);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Gemini rate limiting functions (free tier: 5/min, 20/day per key)
 async function checkGeminiRateLimit() {
     const now = Date.now();
@@ -1441,118 +1705,51 @@ browser.menus.onClicked.addListener(async (info, tab) => {
         }
     } else if (info.menuItemId === "autosort-analyze") {
         if (window.debugLogger) {
-            window.debugLogger.info('[AutoSort+]', 'AI analysis selected - starting process');
+            window.debugLogger.info('[AutoSort+]', 'AI analysis selected - starting batch process');
         }
-        await showNotification("AutoSort+", "Starting AI analysis of selected messages...");
 
         try {
+            // Guard: refuse if a batch is already running
+            if (_batchState.running) {
+                await showNotification(
+                    'AutoSort+ Busy',
+                    'A batch is already in progress. Please wait or cancel it from the settings page.'
+                );
+                return;
+            }
+
             // Get the current mail tab
             const mailTabs = await browser.mailTabs.query({ active: true, currentWindow: true });
             if (!mailTabs || mailTabs.length === 0) {
-                console.error("No active mail tab found");
-                await showNotification("AutoSort+ Error", "No active mail tab found");
+                console.error('No active mail tab found');
+                await showNotification('AutoSort+ Error', 'No active mail tab found');
                 return;
-            }
-            if (window.debugLogger) {
-                window.debugLogger.info('[AutoSort+]', 'Current mail tab retrieved');
             }
 
             // Get selected messages using mailTabs API
             const selectedMessageList = await browser.mailTabs.getSelectedMessages(mailTabs[0].id);
-            if (window.debugLogger) {
-                window.debugLogger.info('[AutoSort+]', `Selected message list: ${selectedMessageList.messages.length} messages`);
-            }
-
             if (!selectedMessageList || !selectedMessageList.messages || selectedMessageList.messages.length === 0) {
-                console.error("No messages selected");
-                await showNotification("AutoSort+ Error", "No messages selected for analysis");
+                console.error('No messages selected');
+                await showNotification('AutoSort+ Error', 'No messages selected for analysis');
                 return;
             }
 
+            const messages = selectedMessageList.messages;
             if (window.debugLogger) {
-                window.debugLogger.info('[AutoSort+]', `Analyzing ${selectedMessageList.messages.length} selected messages`);
+                window.debugLogger.info('[AutoSort+]', `Starting batch analysis of ${messages.length} selected messages`);
             }
 
-            for (const message of selectedMessageList.messages) {
-                // Get the full message with body
-                const fullMessage = await browser.messages.getFull(message.id);
-                if (window.debugLogger) {
-                    window.debugLogger.info('[AutoSort+]', `Got full message: ${fullMessage ? 'yes' : 'no'}`);
-                }
+            await showNotification(
+                'AutoSort+ Batch',
+                `Starting AI analysis of ${messages.length} email${messages.length > 1 ? 's' : ''}...`
+            );
 
-                if (!fullMessage) {
-                    console.error("Could not get message content");
-                    continue;
-                }
+            // Hand off to the batch engine (runs async, does not block the event listener)
+            batchAnalyzeEmails(messages);
 
-                // Function to recursively extract text from message parts
-                function extractTextFromParts(parts) {
-                    let text = "";
-                    if (!parts) return text;
-
-                    for (const part of parts) {
-                        if (window.debugLogger) {
-                            window.debugLogger.info('[AutoSort+]', `Processing part: ${part.contentType}`);
-                        }
-
-                        if (part.parts) {
-                            // Recursively process nested parts
-                            text += extractTextFromParts(part.parts);
-                        }
-
-                        if (part.contentType === "text/plain") {
-                            text += part.body + "\n";
-                        } else if (part.contentType === "text/html" && !text) {
-                            // Only use HTML if we haven't found plain text
-                            text = browser.messengerUtilities.convertToPlainText(part.body);
-                        } else if (part.contentType === "message/rfc822" && part.body) {
-                            // Handle message/rfc822 parts
-                            text += part.body + "\n";
-                        }
-                    }
-                    return text;
-                }
-
-                // Extract email content from the message
-                let emailContent = "";
-                if (fullMessage.parts) {
-                    emailContent = await extractTextFromParts(fullMessage.parts);
-                } else if (fullMessage.body) {
-                    emailContent = fullMessage.body;
-                }
-
-                if (window.debugLogger) {
-                    window.debugLogger.info('[AutoSort+]', `Extracted email content: ${emailContent ? emailContent.length + ' chars' : 'empty'}`);
-                }
-
-                if (!emailContent) {
-                    console.error("No readable content found in message");
-                    await showNotification("AutoSort+ Error", "Could not extract email content");
-                    continue;
-                }
-
-                if (window.debugLogger) {
-                    window.debugLogger.info('[AutoSort+]', 'Analyzing message content');
-                }
-                const label = await analyzeEmailContent(emailContent);
-
-                // Skip if AI returned null/no label
-                if (!label || String(label).trim().toLowerCase() === "null") {
-                    if (window.debugLogger) {
-                        window.debugLogger.info('[AutoSort+]', 'Skipping message - generated label was null/empty');
-                    }
-                    continue;
-                }
-
-                if (window.debugLogger) {
-                    window.debugLogger.info('[AutoSort+]', `Applying label: ${label}`);
-                }
-                await applyLabelsToMessages([message], label);
-                await showNotification("AutoSort+", `Successfully applied label: ${label}`);
-            }
         } catch (error) {
-            console.error("Error during AI analysis:", error);
-            await showNotification("AutoSort+ Error", `Error: ${error.message}`);
+            console.error('Error starting batch analysis:', error);
+            await showNotification('AutoSort+ Error', `Error: ${error.message}`);
         }
     }
 }); 

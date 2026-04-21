@@ -8,7 +8,25 @@
 <body>
     <div class="container">
         <h1>AutoSort+ Settings</h1>
-        
+
+        <!-- ── Batch Processing Status Panel ── -->
+        <div id="batch-status-panel" class="batch-status-panel" style="display:none;" role="status" aria-live="polite">
+            <div class="batch-status-header">
+                <span class="batch-status-icon">⚙️</span>
+                <span class="batch-status-title">Batch Processing In Progress</span>
+                <span id="batch-provider-badge" class="batch-provider-badge"></span>
+            </div>
+            <div class="batch-progress-bar-wrap">
+                <div id="batch-progress-fill" class="batch-progress-fill" style="width:0%"></div>
+            </div>
+            <p id="batch-progress-text" class="batch-progress-text">Preparing…</p>
+            <div class="batch-controls">
+                <button id="batch-pause-btn" class="button batch-btn-pause">⏸ Pause</button>
+                <button id="batch-resume-btn" class="button batch-btn-resume" style="display:none;">▶ Resume</button>
+                <button id="batch-cancel-btn" class="button batch-btn-cancel">⏹ Cancel</button>
+            </div>
+        </div>
+
         <div class="section collapsible-section">
             <div class="section-header" data-section="ai-settings">
                 <h2>🤖 AI Settings</h2>
