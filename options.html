@@ -27,6 +27,7 @@
                         <option value="groq">Groq (Fast & Free)</option>
                         <option value="mistral">Mistral AI</option>
                         <option value="ollama">Ollama (Local LLM)</option>
+                        <option value="openai-compatible">OpenAI-Compatible (Custom Endpoint)</option>
                     </select>
                 </div>
                 
@@ -75,7 +76,31 @@
                 <div id="ollama-test-result" class="api-test-result"></div>
                 <div id="ollama-diagnostics" class="diagnostics-result" style="display: none;"></div>
             </div>
-            
+
+            <div class="subsection" id="openai-compatible-settings-subsection" style="display: none;">
+                <h3>OpenAI-Compatible Endpoint</h3>
+                <label for="custom-base-url">Base URL:</label>
+                <input type="text" id="custom-base-url" class="api-key-input" placeholder="http://localhost:1234/v1 or https://api.provider.com/v1">
+                <small class="help-text">Enter base URL including /v1. Endpoint must use OpenAI format: <code>/v1/chat/completions</code>. Examples: LM Studio, LocalAI, vLLM, Together AI</small>
+
+                <label for="custom-model-select">Model:</label>
+                <select id="custom-model-select" class="provider-select">
+                    <option value="">-- Select model --</option>
+                    <option value="custom">Custom (enter below)</option>
+                </select>
+                <input type="text" id="custom-model-custom" class="api-key-input" placeholder="Enter model name manually" style="display: none;">
+
+                <label for="custom-api-key">API Key (optional):</label>
+                <input type="password" id="custom-api-key" class="api-key-input" placeholder="Leave empty for local endpoints without auth">
+                <small class="help-text">Required for cloud providers, optional for local servers</small>
+
+                <div class="button-group">
+                    <button id="fetch-custom-models" class="button">Fetch Models</button>
+                    <button id="test-custom-endpoint" class="button">Test Connection</button>
+                </div>
+                <div id="custom-test-result" class="api-test-result"></div>
+            </div>
+
             <div class="subsection" id="api-key-subsection">
                 <h3>🔑 API Key Configuration</h3>
                 <div class="input-group">
@@ -103,6 +128,9 @@
                 <h3>⚙️ General Settings</h3>
                 <input type="checkbox" id="enable-ai" checked>
                 <label for="enable-ai">Enable AI-powered sorting</label>
+                <input type="checkbox" id="enable-debug">
+                <label for="enable-debug">Enable debug mode (console logging)</label>
+                <small class="help-text">Open Thunderbird Developer Tools (Ctrl+Shift+I) to view logs</small>
             </div>
                 <div class="checkbox-container" id="gemini-paid-container" style="display: none;">
                     <input type="checkbox" id="gemini-paid-plan">
@@ -224,6 +252,7 @@
             <button id="save-settings" class="button primary">Save Settings</button>
         </div>
     </div>
+    <script src="js/logger.js"></script>
     <script src="options.js"></script>
 </body>
 </html> 

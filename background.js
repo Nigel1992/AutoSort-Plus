@@ -1,3 +1,8 @@
+// Initialize debug logger
+if (window.debugLogger) {
+    window.debugLogger.init();
+}
+
 // Listen for messages from the options page
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "applyLabels") {
@@ -102,7 +107,85 @@ async function ollamaChatViaTab(ollamaUrl, model, prompt, authToken) {
         }
         
         return result.data;
-        
+
+    } finally {
+        // Close the tab
+        try { await browser.tabs.remove(tab.id); } catch (e) {}
+    }
+}
+
+async function openaiCompatibleChatViaTab(baseUrl, model, prompt, apiKey) {
+    // Open a hidden tab at the endpoint URL to make the fetch (browser context, not restricted)
+    const tab = await browser.tabs.create({ url: baseUrl, active: false });
+
+    // Wait for tab to load
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    try {
+        // Build the request headers
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+        // Inject code to make the fetch using OpenAI-compatible format and store result
+        const scriptCode = `
+        (async () => {
+            try {
+                const headers = ${JSON.stringify(headers)};
+                const response = await fetch(window.location.origin + '/v1/chat/completions', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        model: ${JSON.stringify(model)},
+                        messages: [{ role: 'user', content: ${JSON.stringify(prompt)} }],
+                        max_tokens: 8192,
+                        temperature: 0.2,
+                        stream: false
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                }
+
+                const data = await response.json();
+                window.__openai_compat_result = { ok: true, data };
+            } catch (error) {
+                window.__openai_compat_result = { ok: false, error: error.message };
+            }
+        })();
+        `;
+
+        await browser.tabs.executeScript(tab.id, { code: scriptCode });
+
+        // Wait for result (with polling to be safe)
+        let result = null;
+        for (let i = 0; i < 60; i++) { // 30 seconds max
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            try {
+                const results = await browser.tabs.executeScript(tab.id, {
+                    code: 'window.__openai_compat_result || null'
+                });
+                if (results && results[0]) {
+                    result = results[0];
+                    break;
+                }
+            } catch (e) {
+                // Tab might be closing
+                break;
+            }
+        }
+
+        if (!result) {
+            throw new Error('OpenAI-compatible request timed out (30s) - no response from API');
+        }
+
+        if (!result.ok) {
+            throw new Error(result.error || 'OpenAI-compatible API error');
+        }
+
+        return result.data;
+
     } finally {
         // Close the tab
         try { await browser.tabs.remove(tab.id); } catch (e) {}
@@ -321,8 +404,10 @@ async function trackGeminiRequest(keyIndex = null) {
         rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
         
         await browser.storage.local.set({ geminiRateLimits: rateLimits });
-        
-        console.log(`Gemini Key #${keyIndex + 1}: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
+
+        if (window.debugLogger) {
+            window.debugLogger.info('[RateLimit]', `Gemini Key #${keyIndex + 1}: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
+        }
     } else {
         // Legacy single-key mode
         const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: now + (24 * 60 * 60 * 1000) };
@@ -336,16 +421,20 @@ async function trackGeminiRequest(keyIndex = null) {
         rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
         
         await browser.storage.local.set({ geminiRateLimit: rateLimit });
-        
-        console.log(`Gemini requests: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
+
+        if (window.debugLogger) {
+            window.debugLogger.info('[RateLimit]', `Gemini requests: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
+        }
     }
 }
 
 // Function to show notification
 async function showNotification(title, message, type = "basic") {
     // Log to console (Thunderbird doesn't support browser.notifications)
-    console.log(`[AutoSort+] ${title}: ${message}`);
-    
+    if (window.debugLogger) {
+        window.debugLogger.info('[AutoSort+]', `${title}: ${message}`);
+    }
+
     // Try to show notification if API is available
     try {
         if (browser.notifications && browser.notifications.create) {
@@ -370,8 +459,10 @@ async function showNotification(title, message, type = "basic") {
 // Function to update existing notification
 async function updateNotification(id, title, message) {
     // Log to console
-    console.log(`[AutoSort+] ${title}: ${message}`);
-    
+    if (window.debugLogger) {
+        window.debugLogger.info('[AutoSort+]', `${title}: ${message}`);
+    }
+
     // Try to update notification if API is available
     try {
         if (browser.notifications && browser.notifications.clear && id) {
@@ -392,15 +483,23 @@ async function analyzeEmailContent(emailContent) {
         );
 
         const settings = await browser.storage.local.get([
-            'apiKey', 
+            'apiKey',
             'geminiApiKeys',
             'currentGeminiKeyIndex',
-            'aiProvider', 
-            'labels', 
-            'enableAi', 
-            'geminiPaidPlan', 
+            'aiProvider',
+            'labels',
+            'enableAi',
+            'geminiPaidPlan',
             'geminiRateLimit',
-            'geminiRateLimits'
+            'geminiRateLimits',
+            'ollamaUrl',
+            'ollamaModel',
+            'ollamaCustomModel',
+            'ollamaAuthToken',
+            'ollamaCpuOnly',
+            'ollamaNumCtx',
+            'customBaseUrl',
+            'customModel'
         ]);
         const provider = settings.aiProvider || 'gemini';
         
@@ -438,14 +537,16 @@ async function analyzeEmailContent(emailContent) {
             
             keyIndexToUse = rateLimitCheck.keyIndex;
         }
-        
-        console.log("Settings retrieved:", {
-            hasApiKey: !!(settings.apiKey || (settings.geminiApiKeys && settings.geminiApiKeys.length > 0)),
-            provider: provider,
-            labels: settings.labels,
-            enableAi: settings.enableAi !== false
-        });
-        
+
+        if (window.debugLogger) {
+            window.debugLogger.info('[AutoSort+]', 'Settings retrieved', {
+                hasApiKey: !!(settings.apiKey || (settings.geminiApiKeys && settings.geminiApiKeys.length > 0)),
+                provider: provider,
+                labels: settings.labels,
+                enableAi: settings.enableAi !== false
+            });
+        }
+
         if (settings.enableAi === false) {
             console.error("AI is disabled");
             await updateNotification(
@@ -462,17 +563,19 @@ async function analyzeEmailContent(emailContent) {
             if (settings.geminiApiKeys && settings.geminiApiKeys.length > 0) {
                 const keyIndex = keyIndexToUse !== null ? keyIndexToUse : (settings.currentGeminiKeyIndex || 0);
                 apiKeyToUse = settings.geminiApiKeys[keyIndex];
-                console.log(`Using Gemini API Key #${keyIndex + 1} of ${settings.geminiApiKeys.length}`);
+                if (window.debugLogger) {
+                    window.debugLogger.info('[Gemini]', `Using API Key #${keyIndex + 1} of ${settings.geminiApiKeys.length}`);
+                }
             } else if (settings.apiKey) {
                 // Legacy single key
                 apiKeyToUse = settings.apiKey;
             }
-        } else if (provider !== 'ollama') {
-            // Ollama doesn't need an API key; other providers do
+        } else if (provider !== 'ollama' && provider !== 'openai-compatible') {
+            // Ollama and OpenAI-compatible don't need API key; other providers do
             apiKeyToUse = settings.apiKey;
         }
-        
-        if (!apiKeyToUse && provider !== 'ollama') {
+
+        if (!apiKeyToUse && provider !== 'ollama' && provider !== 'openai-compatible') {
             console.error("Missing API key");
             await updateNotification(
                 notificationId,
@@ -480,6 +583,21 @@ async function analyzeEmailContent(emailContent) {
                 `${provider.charAt(0).toUpperCase() + provider.slice(1)} API key not configured. Please add your API key in settings.`
             );
             return null;
+        }
+
+        // Validate OpenAI-compatible endpoint has baseUrl and model
+        if (provider === 'openai-compatible') {
+            const baseUrl = settings.customBaseUrl || '';
+            const model = settings.customModel || '';
+            if (!baseUrl || !model) {
+                console.error("OpenAI-compatible endpoint not configured");
+                await updateNotification(
+                    notificationId,
+                    "AutoSort+ Error",
+                    "OpenAI-compatible endpoint not configured. Please set base URL and model in settings."
+                );
+                return null;
+            }
         }
         
         if (!settings.labels || settings.labels.length === 0) {
@@ -515,8 +633,10 @@ async function analyzeEmailContent(emailContent) {
 
         if (provider === 'gemini') {
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKeyToUse}`;
-            console.log("Making API request to Gemini...");
-            
+            if (window.debugLogger) {
+                window.debugLogger.info('[Gemini]', 'Making API request...');
+            }
+
             // Track request for rate limiting (free tier only)
             if (!settings.geminiPaidPlan) {
                 await trackGeminiRequest(keyIndexToUse);
@@ -574,8 +694,10 @@ async function analyzeEmailContent(emailContent) {
             });
 
         } else if (provider === 'openai') {
-            console.log("Making API request to OpenAI...");
-            
+            if (window.debugLogger) {
+                window.debugLogger.info('[OpenAI]', 'Making API request...');
+            }
+
             await updateNotification(
                 notificationId,
                 "AutoSort+ AI Analysis",
@@ -597,8 +719,10 @@ async function analyzeEmailContent(emailContent) {
             });
 
         } else if (provider === 'anthropic') {
-            console.log("Making API request to Anthropic...");
-            
+            if (window.debugLogger) {
+                window.debugLogger.info('[Claude]', 'Making API request...');
+            }
+
             await updateNotification(
                 notificationId,
                 "AutoSort+ AI Analysis",
@@ -620,8 +744,10 @@ async function analyzeEmailContent(emailContent) {
             });
 
         } else if (provider === 'groq') {
-            console.log("Making API request to Groq...");
-            
+            if (window.debugLogger) {
+                window.debugLogger.info('[Groq]', 'Making API request...');
+            }
+
             await updateNotification(
                 notificationId,
                 "AutoSort+ AI Analysis",
@@ -643,8 +769,10 @@ async function analyzeEmailContent(emailContent) {
             });
 
         } else if (provider === 'mistral') {
-            console.log("Making API request to Mistral...");
-            
+            if (window.debugLogger) {
+                window.debugLogger.info('[Mistral]', 'Making API request...');
+            }
+
             await updateNotification(
                 notificationId,
                 "AutoSort+ AI Analysis",
@@ -666,8 +794,10 @@ async function analyzeEmailContent(emailContent) {
             });
 
         } else if (provider === 'ollama') {
-            console.log("Making API request to Ollama (local)...");
-            
+            if (window.debugLogger) {
+                window.debugLogger.info('[Ollama]', 'Making API request (local)...');
+            }
+
             await updateNotification(
                 notificationId,
                 "AutoSort+ AI Analysis",
@@ -686,8 +816,10 @@ async function analyzeEmailContent(emailContent) {
             if (ollamaModel === 'custom' && ollamaSettings.ollamaCustomModel) {
                 ollamaModel = ollamaSettings.ollamaCustomModel;
             }
-            
-            console.log(`Using Ollama at ${ollamaUrl} with model ${ollamaModel}${cpuOnly ? ' (CPU-only)' : ''}`);
+
+            if (window.debugLogger) {
+                window.debugLogger.info('[Ollama]', `Using Ollama at ${ollamaUrl} with model ${ollamaModel}${cpuOnly ? ' (CPU-only)' : ''}`);
+            }
 
             // Use tab injection to make the fetch (browser context, no restrictions)
             try {
@@ -705,12 +837,84 @@ async function analyzeEmailContent(emailContent) {
                 throw ollamaError;
             }
 
+        } else if (provider === 'openai-compatible') {
+            if (window.debugLogger) {
+                window.debugLogger.info('[Custom]', 'Making API request to OpenAI-compatible endpoint...');
+            }
+
+            // Get custom endpoint settings
+            const customSettings = await browser.storage.local.get(['customBaseUrl', 'customModel', 'apiKey']);
+            const baseUrl = (customSettings.customBaseUrl || '').replace(/\/$/, '');
+            const model = customSettings.customModel || '';
+            const apiKey = customSettings.apiKey || '';
+
+            if (!baseUrl || !model) {
+                throw new Error('OpenAI-compatible endpoint not configured. Please set base URL and model in settings.');
+            }
+
+            await updateNotification(
+                notificationId,
+                "AutoSort+ AI Analysis",
+                `Analyzing email content with ${model}...`
+            );
+
+            // Build headers
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (apiKey) {
+                headers['Authorization'] = `Bearer ${apiKey}`;
+            }
+
+            // Check if this is a localhost endpoint - Thunderbird background scripts can't directly fetch localhost
+            const isLocalhost = baseUrl.startsWith('http://localhost') || baseUrl.startsWith('http://127.0.0.1');
+
+            if (isLocalhost) {
+                // Use tab injection for localhost (similar to Ollama handling)
+                if (window.debugLogger) {
+                    window.debugLogger.info('[Custom]', `Using tab injection for localhost endpoint: ${baseUrl}`);
+                }
+
+                try {
+                    const customResponse = await openaiCompatibleChatViaTab(baseUrl, model, prompt, apiKey);
+
+                    if (!customResponse.choices || customResponse.choices.length === 0 || !customResponse.choices[0].message) {
+                        throw new Error('Invalid OpenAI-compatible response format');
+                    }
+
+                    data = customResponse;
+                    response = null; // Mark as handled
+
+                } catch (customError) {
+                    console.error('[OpenAI-Compatible] Tab injection failed:', customError.message);
+                    throw customError;
+                }
+            } else {
+                // Direct fetch for non-localhost endpoints
+                if (window.debugLogger) {
+                    window.debugLogger.info('[Custom]', `Making direct fetch to: ${baseUrl}/chat/completions`);
+                }
+
+                response = await fetch(baseUrl + '/chat/completions', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        model,
+                        messages: [{ role: 'user', content: prompt }],
+                        max_tokens: 8192,
+                        temperature: 0.2
+                    })
+                });
+            }
+
         } else {
             throw new Error(`Unknown provider: ${provider}`);
         }
 
         if (response) {
-            console.log("API response status:", response.status);
+            if (window.debugLogger) {
+                window.debugLogger.info('[API]', `Response status: ${response.status}`);
+            }
 
             if (!response.ok) {
                 let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
@@ -756,14 +960,18 @@ async function analyzeEmailContent(emailContent) {
             );
 
             data = await response.json();
-            console.log("Full API response data:", JSON.stringify(data, null, 2));
+            if (window.debugLogger) {
+                window.debugLogger.info('[API]', 'Full response data received');
+            }
         } else if (data) {
             await updateNotification(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Processing AI response..."
             );
-            console.log("Using response from native helper.");
+            if (window.debugLogger) {
+                window.debugLogger.info('[API]', 'Using response from native helper');
+            }
         } else {
             await updateNotification(
                 notificationId,
@@ -796,9 +1004,19 @@ async function analyzeEmailContent(emailContent) {
                     label = tryTrim(candidate.content.parts[0].text);
                 }
             }
-        } else if (provider === 'openai' || provider === 'groq' || provider === 'mistral') {
+        } else if (provider === 'openai' || provider === 'groq' || provider === 'mistral' || provider === 'openai-compatible') {
             if (data.choices && data.choices.length > 0) {
-                label = tryTrim(data.choices[0].message?.content || data.choices[0].text);
+                const choice = data.choices[0];
+                if (window.debugLogger) {
+                    window.debugLogger.info('[API]', 'Choice structure:', choice);
+                }
+                // Try multiple possible content locations
+                label = tryTrim(choice.message?.content || choice.text || choice.delta?.content);
+                // Some models return reasoning in separate field
+                if (!label && choice.message?.reasoning_content) {
+                    // Extract from reasoning if no content
+                    label = tryTrim(choice.message.reasoning_content);
+                }
             }
         } else if (provider === 'anthropic') {
             if (data.content && data.content.length > 0) {
@@ -846,7 +1064,9 @@ async function analyzeEmailContent(emailContent) {
             return null;
         }
 
-        console.log("Raw generated label:", label);
+        if (window.debugLogger) {
+            window.debugLogger.info('[AutoSort+]', `Raw generated label: ${label}`);
+        }
 
         // Normalize and try to match configured labels more forgivingly
         const normalize = s => s.toString().trim().replace(/^['"`]+|['"`]+$/g, '');
@@ -865,12 +1085,16 @@ async function analyzeEmailContent(emailContent) {
         }
 
         if (matched) {
-            console.log('Mapped AI output to configured label:', matched);
+            if (window.debugLogger) {
+                window.debugLogger.info('[AutoSort+]', `Mapped AI output to configured label: ${matched}`);
+            }
             await updateNotification(notificationId, "AutoSort+ Success", `AI analysis complete. Selected label: ${matched}`);
             return matched;
         }
 
-        console.log("Label not found in configured labels. Generated:", label);
+        if (window.debugLogger) {
+            window.debugLogger.warn('[AutoSort+]', `Label not found in configured labels. Generated: ${label}`);
+        }
         await updateNotification(notificationId, "AutoSort+ Warning", `AI suggested: "${label}" but it's not in your configured labels.`);
         return null;
     } catch (error) {
@@ -916,12 +1140,18 @@ async function applyLabelsToMessages(messages, label) {
         const moveResults = [];
 
         for (const message of messages) {
-            console.log("Processing message:", message.id);
-            console.log("Target label/folder:", label);
-            
+            if (window.debugLogger) {
+                window.debugLogger.info('[Folder]', `Processing message: ${message.id}`);
+            }
+            if (window.debugLogger) {
+                window.debugLogger.info('[Folder]', `Target label/folder: ${label}`);
+            }
+
             // Get all folders to find the destination folder
             const account = await browser.accounts.get(message.folder.accountId);
-            console.log("Account info:", account);
+            if (window.debugLogger) {
+                window.debugLogger.info('[Folder]', 'Account info retrieved');
+            }
 
             await updateNotification(
                 notificationId,
@@ -932,7 +1162,9 @@ async function applyLabelsToMessages(messages, label) {
             // Find the folder with matching name
             const findFolder = (folders, targetName) => {
                 for (const folder of folders) {
-                    console.log("Checking folder:", folder.name);
+                    if (window.debugLogger) {
+                        window.debugLogger.info('[Folder]', `Checking folder: ${folder.name}`);
+                    }
                     if (folder.name === targetName) {
                         return folder;
                     }
@@ -964,17 +1196,25 @@ async function applyLabelsToMessages(messages, label) {
             // Find the category and target folder
             for (const category of categories) {
                 if (label.startsWith(category)) {
-                    console.log("Found matching category:", category);
+                    if (window.debugLogger) {
+                        window.debugLogger.info('[Folder]', `Found matching category: ${category}`);
+                    }
                     categoryFolder = findFolder(account.folders, category);
                     if (categoryFolder) {
-                        console.log("Found category folder:", categoryFolder.name);
+                        if (window.debugLogger) {
+                            window.debugLogger.info('[Folder]', `Found category folder: ${categoryFolder.name}`);
+                        }
                         // Try to find the subfolder
                         const subfolderName = label.replace(category + "/", "");
-                        console.log("Looking for subfolder:", subfolderName);
+                        if (window.debugLogger) {
+                            window.debugLogger.info('[Folder]', `Looking for subfolder: ${subfolderName}`);
+                        }
                         targetFolder = findFolder(categoryFolder.subFolders || [], subfolderName);
                         break;
                     } else {
-                        console.log("Category folder not found:", category, "- skipping to next category");
+                        if (window.debugLogger) {
+                            window.debugLogger.warn('[Folder]', `Category folder not found: ${category} - skipping`);
+                        }
                         continue;
                     }
                 }
@@ -982,7 +1222,9 @@ async function applyLabelsToMessages(messages, label) {
 
             // If no target folder found, try direct match
             if (!targetFolder) {
-                console.log("No category match found, trying direct folder match");
+                if (window.debugLogger) {
+                    window.debugLogger.info('[Folder]', 'No category match, trying direct folder match');
+                }
                 targetFolder = findFolder(account.folders, label);
             }
 
@@ -990,16 +1232,22 @@ async function applyLabelsToMessages(messages, label) {
             if (!targetFolder) {
                 const looksImported = label.includes('/') || label.includes('\\');
                 if (looksImported) {
-                    console.warn(`Folder "${label}" looks imported/structured; skipping auto-create.`);
+                    if (window.debugLogger) {
+                        window.debugLogger.warn('[Folder]', `Folder "${label}" looks imported/structured; skipping auto-create`);
+                    }
                 } else {
                     try {
                         const parentFolder = account.folders && account.folders.length > 0 ? account.folders[0] : null;
                         if (parentFolder && browser.folders && browser.folders.create) {
-                            console.log(`Creating missing folder "${label}" under ${parentFolder.name || 'root'}`);
+                            if (window.debugLogger) {
+                                window.debugLogger.info('[Folder]', `Creating missing folder "${label}" under ${parentFolder.name || 'root'}`);
+                            }
                             const created = await browser.folders.create(parentFolder, label);
                             if (created) {
                                 targetFolder = created;
-                                console.log("Created folder:", created);
+                                if (window.debugLogger) {
+                                    window.debugLogger.info('[Folder]', `Created folder: ${created.name}`);
+                                }
                             }
                         }
                     } catch (createError) {
@@ -1008,7 +1256,9 @@ async function applyLabelsToMessages(messages, label) {
                 }
             }
 
-            console.log("Moving message to folder:", targetFolder ? targetFolder.name : "not found");
+            if (window.debugLogger) {
+                window.debugLogger.info('[Folder]', `Moving message to folder: ${targetFolder ? targetFolder.name : 'not found'}`);
+            }
 
             try {
                 if (!targetFolder) {
@@ -1123,7 +1373,9 @@ async function showMoveResultsPopup(results) {
         );
 
         // Also log to console for debugging
-        console.log("[AutoSort+] Results:", message);
+        if (window.debugLogger) {
+            window.debugLogger.info('[AutoSort+]', 'Results popup displayed');
+        }
     } catch (error) {
         console.error("Error showing results:", error);
         await showNotification(
@@ -1165,7 +1417,9 @@ browser.menus.create({
 browser.menus.onClicked.addListener(async (info, tab) => {
     if (info.parentMenuItemId === "autosort-label") {
         const label = info.menuItemId.replace("label-", "");
-        console.log(`Manual label selected: ${label}`);
+        if (window.debugLogger) {
+            window.debugLogger.info('[AutoSort+]', `Manual label selected: ${label}`);
+        }
         await showNotification("AutoSort+", `Applying label: ${label}`);
         try {
             // Get the current mail tab for processing
@@ -1186,9 +1440,11 @@ browser.menus.onClicked.addListener(async (info, tab) => {
             await showNotification("AutoSort+ Error", `Error applying label: ${error.message}`);
         }
     } else if (info.menuItemId === "autosort-analyze") {
-        console.log("AI analysis selected - starting process");
+        if (window.debugLogger) {
+            window.debugLogger.info('[AutoSort+]', 'AI analysis selected - starting process');
+        }
         await showNotification("AutoSort+", "Starting AI analysis of selected messages...");
-        
+
         try {
             // Get the current mail tab
             const mailTabs = await browser.mailTabs.query({ active: true, currentWindow: true });
@@ -1197,11 +1453,15 @@ browser.menus.onClicked.addListener(async (info, tab) => {
                 await showNotification("AutoSort+ Error", "No active mail tab found");
                 return;
             }
-            console.log("Current mail tab:", mailTabs[0]);
+            if (window.debugLogger) {
+                window.debugLogger.info('[AutoSort+]', 'Current mail tab retrieved');
+            }
 
             // Get selected messages using mailTabs API
             const selectedMessageList = await browser.mailTabs.getSelectedMessages(mailTabs[0].id);
-            console.log("Selected message list:", selectedMessageList);
+            if (window.debugLogger) {
+                window.debugLogger.info('[AutoSort+]', `Selected message list: ${selectedMessageList.messages.length} messages`);
+            }
 
             if (!selectedMessageList || !selectedMessageList.messages || selectedMessageList.messages.length === 0) {
                 console.error("No messages selected");
@@ -1209,13 +1469,16 @@ browser.menus.onClicked.addListener(async (info, tab) => {
                 return;
             }
 
-            console.log(`Analyzing ${selectedMessageList.messages.length} selected messages`);
-            
+            if (window.debugLogger) {
+                window.debugLogger.info('[AutoSort+]', `Analyzing ${selectedMessageList.messages.length} selected messages`);
+            }
+
             for (const message of selectedMessageList.messages) {
                 // Get the full message with body
                 const fullMessage = await browser.messages.getFull(message.id);
-                console.log("Got full message:", fullMessage ? "yes" : "no");
-                console.log("Message content:", fullMessage);
+                if (window.debugLogger) {
+                    window.debugLogger.info('[AutoSort+]', `Got full message: ${fullMessage ? 'yes' : 'no'}`);
+                }
 
                 if (!fullMessage) {
                     console.error("Could not get message content");
@@ -1228,17 +1491,15 @@ browser.menus.onClicked.addListener(async (info, tab) => {
                     if (!parts) return text;
 
                     for (const part of parts) {
-                        console.log("Processing part:", {
-                            contentType: part.contentType,
-                            partName: part.partName,
-                            size: part.size
-                        });
+                        if (window.debugLogger) {
+                            window.debugLogger.info('[AutoSort+]', `Processing part: ${part.contentType}`);
+                        }
 
                         if (part.parts) {
                             // Recursively process nested parts
                             text += extractTextFromParts(part.parts);
                         }
-                        
+
                         if (part.contentType === "text/plain") {
                             text += part.body + "\n";
                         } else if (part.contentType === "text/html" && !text) {
@@ -1260,7 +1521,9 @@ browser.menus.onClicked.addListener(async (info, tab) => {
                     emailContent = fullMessage.body;
                 }
 
-                console.log("Extracted email content:", emailContent || "<empty string>");
+                if (window.debugLogger) {
+                    window.debugLogger.info('[AutoSort+]', `Extracted email content: ${emailContent ? emailContent.length + ' chars' : 'empty'}`);
+                }
 
                 if (!emailContent) {
                     console.error("No readable content found in message");
@@ -1268,16 +1531,22 @@ browser.menus.onClicked.addListener(async (info, tab) => {
                     continue;
                 }
 
-                console.log("Analyzing message content");
+                if (window.debugLogger) {
+                    window.debugLogger.info('[AutoSort+]', 'Analyzing message content');
+                }
                 const label = await analyzeEmailContent(emailContent);
 
                 // Skip if AI returned null/no label
                 if (!label || String(label).trim().toLowerCase() === "null") {
-                    console.log("Skipping message because generated label was null/empty");
+                    if (window.debugLogger) {
+                        window.debugLogger.info('[AutoSort+]', 'Skipping message - generated label was null/empty');
+                    }
                     continue;
                 }
 
-                console.log("Applying label:", label);
+                if (window.debugLogger) {
+                    window.debugLogger.info('[AutoSort+]', `Applying label: ${label}`);
+                }
                 await applyLabelsToMessages([message], label);
                 await showNotification("AutoSort+", `Successfully applied label: ${label}`);
             }

@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize debug logger
+    if (window.debugLogger) {
+        window.debugLogger.init();
+    }
+
     // Initialize collapsible sections
     const sectionHeaders = document.querySelectorAll('.section-header');
     sectionHeaders.forEach(header => {
@@ -64,6 +69,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     const ollamaTestResult = document.getElementById('ollama-test-result');
     const diagnoseOllamaButton = document.getElementById('diagnose-ollama');
     const ollamaDiagnostics = document.getElementById('ollama-diagnostics');
+
+    // OpenAI-Compatible elements
+    const customBaseUrlInput = document.getElementById('custom-base-url');
+    const customModelSelect = document.getElementById('custom-model-select');
+    const customModelCustomInput = document.getElementById('custom-model-custom');
+    const customApiKeyInput = document.getElementById('custom-api-key');
+    const fetchCustomModelsButton = document.getElementById('fetch-custom-models');
+    const testCustomEndpointButton = document.getElementById('test-custom-endpoint');
+    const customTestResult = document.getElementById('custom-test-result');
+
+    // Debug mode element
+    const enableDebugCheckbox = document.getElementById('enable-debug');
     
     // Update endpoint URLs when Ollama URL changes
     if (ollamaUrlInput) {
@@ -72,10 +89,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             const chatEndpoint = document.getElementById('ollama-chat-endpoint');
             const pullEndpoint = document.getElementById('ollama-pull-endpoint');
             const tagsEndpoint = document.getElementById('ollama-tags-endpoint');
-            
+
             if (chatEndpoint) chatEndpoint.textContent = `${url}/api/chat`;
             if (pullEndpoint) pullEndpoint.textContent = `${url}/api/pull`;
             if (tagsEndpoint) tagsEndpoint.textContent = `${url}/api/tags`;
+
+            updateSaveButtonState();
         });
     }
     
@@ -119,6 +138,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             signupUrl: 'https://ollama.ai/',
             info: '✓ 100% Free: Runs locally on your machine<br>✓ Privacy: No data sent to external servers<br>✓ No rate limits: Process unlimited emails<br>✓ Models: Llama 2/3, Mistral, Phi, Gemma, Qwen, and more<br>✓ Requires: <a href="https://ollama.ai/download" target="_blank">Ollama installed</a> and running locally<br>✓ Setup: Install Ollama, run "ollama pull llama3.2" to download a model',
             isFree: true
+        },
+        'openai-compatible': {
+            name: 'OpenAI-Compatible',
+            signupUrl: '',
+            info: '✓ Compatible with: LocalAI, LM Studio, vLLM, Together AI, OpenRouter, DeepSeek, Fireworks, etc.<br>✓ Enter your endpoint base URL and model name<br>✓ API key optional for local servers<br>✓ Uses standard /v1/chat/completions format',
+            isFree: true
         }
     };
     
@@ -133,10 +158,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         const geminiMultiKeysSubsection = document.getElementById('gemini-multi-keys-subsection');
         const geminiUsageSubsection = document.getElementById('gemini-usage-subsection');
         const rateLimitWarning = document.getElementById('rate-limit-warning');
-        
-        // Show/hide rate limit warning (not for Ollama)
+        const openaiCompatibleSubsection = document.getElementById('openai-compatible-settings-subsection');
+
+        // Show/hide rate limit warning (not for Ollama or OpenAI-Compatible local)
         if (rateLimitWarning) {
-            rateLimitWarning.style.display = provider === 'ollama' ? 'none' : 'block';
+            rateLimitWarning.style.display = (provider === 'ollama' || provider === 'openai-compatible') ? 'none' : 'block';
         }
         
         // Show/hide Gemini-specific elements
@@ -146,6 +172,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (geminiUsageSubsection) geminiUsageSubsection.style.display = 'block';
             if (apiKeySubsection) apiKeySubsection.style.display = 'none';
             if (ollamaSubsection) ollamaSubsection.style.display = 'none';
+            if (openaiCompatibleSubsection) openaiCompatibleSubsection.style.display = 'none';
             updateGeminiUsageDisplay();
         } else if (provider === 'ollama') {
             // Show Ollama settings, hide API key and Gemini sections
@@ -154,12 +181,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (geminiUsageSubsection) geminiUsageSubsection.style.display = 'none';
             if (apiKeySubsection) apiKeySubsection.style.display = 'none';
             if (ollamaSubsection) ollamaSubsection.style.display = 'block';
+            if (openaiCompatibleSubsection) openaiCompatibleSubsection.style.display = 'none';
+        } else if (provider === 'openai-compatible') {
+            // Show OpenAI-Compatible settings, hide others
+            geminiPaidContainer.style.display = 'none';
+            if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'none';
+            if (geminiUsageSubsection) geminiUsageSubsection.style.display = 'none';
+            if (apiKeySubsection) apiKeySubsection.style.display = 'none';
+            if (ollamaSubsection) ollamaSubsection.style.display = 'none';
+            if (openaiCompatibleSubsection) openaiCompatibleSubsection.style.display = 'block';
         } else {
             geminiPaidContainer.style.display = 'none';
             if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'none';
             if (geminiUsageSubsection) geminiUsageSubsection.style.display = 'none';
             if (apiKeySubsection) apiKeySubsection.style.display = 'block';
             if (ollamaSubsection) ollamaSubsection.style.display = 'none';
+            if (openaiCompatibleSubsection) openaiCompatibleSubsection.style.display = 'none';
         }
         
         providerInfo.innerHTML = `
@@ -168,10 +205,13 @@ document.addEventListener('DOMContentLoaded', async function() {
                 <p>${config.info}</p>
             </div>
         `;
-        
-        if (provider !== 'ollama') {
+
+        if (provider !== 'ollama' && provider !== 'openai-compatible') {
             apiKeyInput.placeholder = `Enter your ${config.name} API key`;
         }
+
+        // Update save button state when provider changes
+        updateSaveButtonState();
     }
     
     // Update Gemini usage display
@@ -355,7 +395,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         input.addEventListener('input', (e) => {
             const newKey = e.target.value.trim();
             geminiKeys[index] = newKey;
-            
+
             // Check for duplicates in real-time
             if (newKey) {
                 const isDuplicate = geminiKeys.some((key, i) => i !== index && key.trim() === newKey);
@@ -370,6 +410,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 input.style.borderColor = '';
                 input.title = '';
             }
+
+            // Update save button state
+            updateSaveButtonState();
         });
         
         const testButton = document.createElement('button');
@@ -532,7 +575,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     getApiKeyButton.addEventListener('click', async () => {
         const provider = aiProviderSelect.value;
         const config = aiProviders[provider];
-        
+
+        // Skip if provider has no signup URL (like openai-compatible)
+        if (!config.signupUrl) {
+            showMessage('This provider doesn\'t have a signup URL. Configure the endpoint directly in the settings above.', false);
+            return;
+        }
+
         try {
             // Try to open in new tab
             await browser.tabs.create({ url: config.signupUrl });
@@ -557,26 +606,42 @@ document.addEventListener('DOMContentLoaded', async function() {
             .filter(label => label !== '');
         
         const provider = aiProviderSelect.value;
-        let hasValidApiKey = true; // Default to true for Ollama and other providers
-        
+        let hasValidApiKey = true; // Default to true, override based on provider
+
         if (provider === 'gemini') {
             const validGeminiKeys = geminiKeys.filter(key => key && key.trim() !== '');
             hasValidApiKey = validGeminiKeys.length > 0;
-        } else if (provider !== 'ollama') {
+        } else if (provider === 'ollama') {
+            // Ollama needs URL and model configured
+            const ollamaUrl = ollamaUrlInput ? ollamaUrlInput.value.trim() : '';
+            let ollamaModel = ollamaModelSelect ? ollamaModelSelect.value : '';
+            const ollamaCustomModel = ollamaCustomModelInput ? ollamaCustomModelInput.value.trim() : '';
+            hasValidApiKey = !!ollamaUrl && (!!ollamaModel || (!!ollamaCustomModel && ollamaModel === 'custom'));
+        } else if (provider === 'openai-compatible') {
+            // OpenAI-compatible needs baseUrl and model, not API key
+            const baseUrl = customBaseUrlInput ? customBaseUrlInput.value.trim() : '';
+            const model = customModelSelect ? customModelSelect.value : '';
+            const customModel = customModelCustomInput ? customModelCustomInput.value.trim() : '';
+            hasValidApiKey = !!baseUrl && (!!model || (!!customModel && model === 'custom'));
+        } else {
             // Non-Ollama providers (OpenAI, Anthropic, Groq, Mistral) require API key
             const apiKey = apiKeyInput.value.trim();
             hasValidApiKey = !!apiKey;
         }
-        // Ollama doesn't require an API key, so hasValidApiKey stays true
         
         if (labels.length === 0 || !hasValidApiKey) {
             saveButton.disabled = true;
             saveButton.classList.add('disabled');
-            
+
             let missingItems = [];
             if (labels.length === 0) missingItems.push('folders/labels');
-            if (!hasValidApiKey) missingItems.push('API key');
-            
+            if (!hasValidApiKey) {
+                if (provider === 'ollama') missingItems.push('Ollama URL/model');
+                else if (provider === 'openai-compatible') missingItems.push('endpoint URL/model');
+                else if (provider === 'gemini') missingItems.push('Gemini API key');
+                else missingItems.push('API key');
+            }
+
             saveButton.title = `Please configure: ${missingItems.join(' and ')}`;
         } else {
             saveButton.disabled = false;
@@ -586,7 +651,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Load saved settings
-    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly']).then(result => {
+    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'customBaseUrl', 'customModel', 'debugMode']).then(result => {
         if (result.labels && result.labels.length > 0) {
             result.labels.forEach(label => {
                 addLabelInput(label);
@@ -630,7 +695,28 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (ollamaCpuOnlyCheckbox) {
             ollamaCpuOnlyCheckbox.checked = result.ollamaCpuOnly === true;
         }
-        
+
+        // Load OpenAI-Compatible endpoint settings
+        if (result.customBaseUrl && customBaseUrlInput) {
+            customBaseUrlInput.value = result.customBaseUrl;
+        }
+        if (result.customModel) {
+            // Check if it matches a dropdown option or use custom input
+            const dropdownOptions = customModelSelect ? Array.from(customModelSelect.options).map(o => o.value) : [];
+            if (dropdownOptions.includes(result.customModel)) {
+                if (customModelSelect) customModelSelect.value = result.customModel;
+            } else {
+                // Not in dropdown - use custom input
+                if (customModelSelect) {
+                    customModelSelect.value = 'custom';
+                    if (customModelCustomInput) {
+                        customModelCustomInput.style.display = 'block';
+                        customModelCustomInput.value = result.customModel;
+                    }
+                }
+            }
+        }
+
         if (result.aiProvider) {
             aiProviderSelect.value = result.aiProvider;
             updateProviderInfo();
@@ -640,9 +726,29 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Set gemini paid plan checkbox
         geminiPaidCheckbox.checked = result.geminiPaidPlan === true;
-        
+
+        // Load debug mode setting
+        if (enableDebugCheckbox && result.debugMode !== undefined) {
+            enableDebugCheckbox.checked = result.debugMode;
+        }
+
         updateSaveButtonState();
     });
+
+    // Debug mode toggle
+    if (enableDebugCheckbox) {
+        enableDebugCheckbox.addEventListener('change', async () => {
+            if (window.debugLogger) {
+                if (enableDebugCheckbox.checked) {
+                    await window.debugLogger.enable();
+                    showMessage('✓ Debug mode enabled. Open Thunderbird Developer Tools (Ctrl+Shift+I) to view logs.', true);
+                } else {
+                    await window.debugLogger.disable();
+                    showMessage('✓ Debug mode disabled.', true);
+                }
+            }
+        });
+    }
     
     // Add input listeners for validation
     apiKeyInput.addEventListener('input', updateSaveButtonState);
@@ -653,9 +759,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         const apiKey = apiKeyInput.value.trim();
         const provider = aiProviderSelect.value;
         
-        // Skip for Ollama as it has its own test button
+        // Skip for Ollama and OpenAI-Compatible as they have their own test buttons
         if (provider === 'ollama') {
             showApiTestResult('Please use the "Test Ollama Connection" button below', false);
+            return;
+        }
+        if (provider === 'openai-compatible') {
+            showApiTestResult('Please use the "Test Connection" button in the OpenAI-Compatible section', false);
             return;
         }
         
@@ -877,7 +987,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else {
                 ollamaCustomModelInput.style.display = 'none';
             }
+            updateSaveButtonState();
         });
+    }
+
+    // Update save button when custom model input changes
+    if (ollamaCustomModelInput) {
+        ollamaCustomModelInput.addEventListener('input', updateSaveButtonState);
     }
     
     // Test Ollama connection
@@ -900,7 +1016,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ollamaTestResult.className = 'api-test-result';
                 
                 const testUrl = `${ollamaUrl}/api/tags`;
-                console.log('[Ollama Test] Connecting to:', testUrl);
+                if (window.debugLogger) { window.debugLogger.info('[Ollama]', 'Test connecting to: ' + testUrl); }
                 
                 const headers = {};
                 if (ollamaAuthTokenInput && ollamaAuthTokenInput.value.trim()) {
@@ -912,11 +1028,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                     headers
                 });
                 
-                console.log('[Ollama Test] Response status:', response.status);
+                if (window.debugLogger) { window.debugLogger.info('[Ollama]', 'Response status: ' + response.status); }
                 
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('[Ollama Test] Success:', data);
+                    if (window.debugLogger) { window.debugLogger.info('[Ollama]', 'Success:', data); }
                     const installedModels = data.models && data.models.length > 0 
                         ? data.models.map(m => m.name)
                         : [];
@@ -964,7 +1080,197 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
     }
-    
+
+    // Custom model dropdown change handler - show/hide custom input
+    if (customModelSelect) {
+        customModelSelect.addEventListener('change', () => {
+            if (customModelSelect.value === 'custom') {
+                if (customModelCustomInput) customModelCustomInput.style.display = 'block';
+            } else {
+                if (customModelCustomInput) customModelCustomInput.style.display = 'none';
+            }
+            updateSaveButtonState();
+        });
+    }
+
+    // Update save button when custom endpoint inputs change
+    if (customBaseUrlInput) {
+        customBaseUrlInput.addEventListener('input', updateSaveButtonState);
+    }
+    if (customModelCustomInput) {
+        customModelCustomInput.addEventListener('input', updateSaveButtonState);
+    }
+
+    // Fetch models from OpenAI-compatible endpoint
+    if (fetchCustomModelsButton) {
+        fetchCustomModelsButton.addEventListener('click', async () => {
+            const baseUrl = customBaseUrlInput ? customBaseUrlInput.value.trim().replace(/\/$/, '') : '';
+            const apiKey = customApiKeyInput ? customApiKeyInput.value.trim() : '';
+
+            if (!baseUrl) {
+                if (customTestResult) {
+                    customTestResult.textContent = '⚠️ Please enter a base URL first';
+                    customTestResult.className = 'api-test-result error';
+                }
+                return;
+            }
+
+            try {
+                if (customTestResult) {
+                    customTestResult.textContent = 'Fetching models from endpoint...';
+                    customTestResult.className = 'api-test-result';
+                }
+
+                const headers = { 'Content-Type': 'application/json' };
+                if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+                // Check if localhost - needs tab injection
+                const isLocalhost = baseUrl.startsWith('http://localhost') || baseUrl.startsWith('http://127.0.0.1');
+
+                let modelsData;
+
+                if (isLocalhost) {
+                    // Use tab injection for localhost (Thunderbird restriction)
+                    modelsData = await fetchModelsViaTab(baseUrl, apiKey);
+                } else {
+                    // Direct fetch for cloud endpoints
+                    const response = await fetch(baseUrl + '/models', { headers });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    modelsData = await response.json();
+                }
+
+                // Parse models - handle different response formats
+                const models = modelsData.data || modelsData.models || [];
+
+                if (models.length === 0) {
+                    if (customTestResult) {
+                        customTestResult.textContent = '⚠️ No models found at this endpoint';
+                        customTestResult.className = 'api-test-result error';
+                    }
+                    return;
+                }
+
+                // Populate dropdown
+                if (customModelSelect) {
+                    customModelSelect.innerHTML = '<option value="">-- Select model --</option>';
+                    models.forEach(m => {
+                        const modelId = m.id || m.name || m;
+                        const option = document.createElement('option');
+                        option.value = modelId;
+                        option.textContent = modelId;
+                        customModelSelect.appendChild(option);
+                    });
+                    // Add custom option at end
+                    const customOpt = document.createElement('option');
+                    customOpt.value = 'custom';
+                    customOpt.textContent = 'Custom (enter manually)';
+                    customModelSelect.appendChild(customOpt);
+                }
+
+                if (customTestResult) {
+                    customTestResult.textContent = `✓ Found ${models.length} models. Select from dropdown or use "Custom" option.`;
+                    customTestResult.className = 'api-test-result success';
+                }
+
+            } catch (error) {
+                console.error('[Fetch Models] Error:', error);
+                if (customTestResult) {
+                    customTestResult.textContent = `✗ Failed to fetch models: ${error.message}`;
+                    customTestResult.className = 'api-test-result error';
+                }
+            }
+        });
+    }
+
+    // Test OpenAI-Compatible endpoint connection
+    if (testCustomEndpointButton) {
+        testCustomEndpointButton.addEventListener('click', async () => {
+            const baseUrl = customBaseUrlInput ? customBaseUrlInput.value.trim() : '';
+            let model = customModelSelect ? customModelSelect.value : '';
+            const apiKey = customApiKeyInput ? customApiKeyInput.value.trim() : '';
+
+            // If custom selected, use custom input value
+            if (model === 'custom' && customModelCustomInput) {
+                model = customModelCustomInput.value.trim();
+            }
+
+            if (!baseUrl) {
+                if (customTestResult) {
+                    customTestResult.textContent = '⚠️ Please enter a base URL';
+                    customTestResult.className = 'api-test-result error';
+                }
+                return;
+            }
+            if (!model) {
+                if (customTestResult) {
+                    customTestResult.textContent = '⚠️ Please enter a model name';
+                    customTestResult.className = 'api-test-result error';
+                }
+                return;
+            }
+
+            try {
+                if (customTestResult) {
+                    customTestResult.textContent = 'Testing connection...';
+                    customTestResult.className = 'api-test-result';
+                }
+
+                const headers = { 'Content-Type': 'application/json' };
+                if (apiKey) {
+                    headers['Authorization'] = `Bearer ${apiKey}`;
+                }
+
+                // Normalize base URL (remove trailing slash)
+                const normalizedUrl = baseUrl.replace(/\/$/, '');
+
+                if (window.debugLogger) { window.debugLogger.info('[Custom]', 'Test connecting to: ' + normalizedUrl + '/chat/completions'); }
+
+                const response = await fetch(normalizedUrl + '/chat/completions', {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        model,
+                        messages: [{ role: 'user', content: 'Test' }],
+                        max_tokens: 10
+                    })
+                });
+
+                if (window.debugLogger) { window.debugLogger.info('[Custom]', 'Response status: ' + response.status); }
+
+                if (response.ok) {
+                    if (customTestResult) {
+                        customTestResult.textContent = `✓ Connected successfully! Model "${model}" is ready at ${normalizedUrl}`;
+                        customTestResult.className = 'api-test-result success';
+                    }
+                } else {
+                    const errorText = await response.text();
+                    console.error('[Custom Endpoint Test] Error response:', errorText);
+                    let errorMsg = 'Connection failed';
+                    try {
+                        const errorData = JSON.parse(errorText);
+                        errorMsg = errorData.error?.message || errorData.error || errorText;
+                    } catch (e) {
+                        errorMsg = `HTTP ${response.status}: ${response.statusText}`;
+                    }
+                    if (customTestResult) {
+                        customTestResult.textContent = `✗ Error: ${errorMsg}`;
+                        customTestResult.className = 'api-test-result error';
+                    }
+                }
+            } catch (error) {
+                console.error('[Custom Endpoint Test] Exception:', error);
+                if (customTestResult) {
+                    customTestResult.textContent = `✗ Connection failed: ${error.message}. Check the base URL and ensure the endpoint is running.`;
+                    customTestResult.className = 'api-test-result error';
+                }
+            }
+        });
+    }
+
     // Run comprehensive Ollama diagnostics
     if (diagnoseOllamaButton) {
         diagnoseOllamaButton.addEventListener('click', async () => {
@@ -1183,7 +1489,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 currentGeminiKeyIndex: 0, // Start with first key
                 aiProvider: provider,
                 enableAi: document.getElementById('enable-ai').checked,
-                geminiPaidPlan: geminiPaidCheckbox.checked
+                geminiPaidPlan: geminiPaidCheckbox.checked,
+                debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false
             };
             
             // Initialize rate limits array for all keys if not exists
@@ -1222,12 +1529,49 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ollamaModel: ollamaModel,
                 ollamaCustomModel: ollamaCustomModelInput.value.trim(),
                 ollamaAuthToken: ollamaAuthTokenInput ? ollamaAuthTokenInput.value.trim() : '',
-                ollamaCpuOnly: ollamaCpuOnlyCheckbox.checked
+                ollamaCpuOnly: ollamaCpuOnlyCheckbox.checked,
+                debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false
             };
 
             browser.storage.local.set(settings).then(() => {
                 const cpuMode = ollamaCpuOnlyCheckbox.checked ? ' (CPU-only mode)' : '';
                 showMessage(`✓ Settings saved successfully! Ollama is configured for local email processing${cpuMode}.`, true);
+                updateSaveButtonState();
+            }).catch(error => {
+                showMessage('Error saving settings: ' + error, false);
+            });
+        } else if (provider === 'openai-compatible') {
+            // OpenAI-Compatible endpoint needs base URL and model
+            const baseUrl = customBaseUrlInput ? customBaseUrlInput.value.trim() : '';
+            let model = customModelSelect ? customModelSelect.value : '';
+            const apiKey = customApiKeyInput ? customApiKeyInput.value.trim() : '';
+
+            // If custom selected, use custom input value
+            if (model === 'custom' && customModelCustomInput) {
+                model = customModelCustomInput.value.trim();
+            }
+
+            if (!baseUrl) {
+                showMessage('Please enter a base URL for the custom endpoint.', false);
+                return;
+            }
+            if (!model) {
+                showMessage('Please select or enter a model name for the custom endpoint.', false);
+                return;
+            }
+
+            const settings = {
+                labels: labels,
+                aiProvider: provider,
+                enableAi: document.getElementById('enable-ai').checked,
+                customBaseUrl: baseUrl.replace(/\/$/, ''),
+                customModel: model,
+                apiKey: apiKey,
+                debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false
+            };
+
+            browser.storage.local.set(settings).then(() => {
+                showMessage('✓ Settings saved successfully! Custom OpenAI-compatible endpoint configured.', true);
                 updateSaveButtonState();
             }).catch(error => {
                 showMessage('Error saving settings: ' + error, false);
@@ -1244,7 +1588,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 apiKey: apiKey,
                 aiProvider: provider,
                 enableAi: document.getElementById('enable-ai').checked,
-                geminiPaidPlan: geminiPaidCheckbox.checked
+                geminiPaidPlan: geminiPaidCheckbox.checked,
+                debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false
             };
 
             browser.storage.local.set(settings).then(() => {
@@ -1291,6 +1636,64 @@ document.addEventListener('DOMContentLoaded', async function() {
     function showApiTestResult(message, isSuccess) {
         apiTestResult.textContent = message;
         apiTestResult.className = `api-test-result ${isSuccess ? 'success' : 'error'}`;
+    }
+
+    // Helper function to fetch models via tab injection (for localhost endpoints)
+    async function fetchModelsViaTab(baseUrl, apiKey) {
+        const tab = await browser.tabs.create({ url: baseUrl, active: false });
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+            const scriptCode = `
+            (async () => {
+                try {
+                    const headers = ${JSON.stringify(headers)};
+                    const response = await fetch(window.location.origin + '/v1/models', {
+                        method: 'GET',
+                        headers
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('HTTP ' + response.status);
+                    }
+
+                    const data = await response.json();
+                    window.__models_result = { ok: true, data };
+                } catch (error) {
+                    window.__models_result = { ok: false, error: error.message };
+                }
+            })();
+            `;
+
+            await browser.tabs.executeScript(tab.id, { code: scriptCode });
+
+            // Poll for result
+            let result = null;
+            for (let i = 0; i < 30; i++) {
+                await new Promise(resolve => setTimeout(resolve, 500));
+                try {
+                    const results = await browser.tabs.executeScript(tab.id, { code: 'window.__models_result || null' });
+                    if (results && results[0]) {
+                        result = results[0];
+                        break;
+                    }
+                } catch (e) {
+                    break;
+                }
+            }
+
+            if (!result || !result.ok) {
+                throw new Error(result?.error || 'Timeout fetching models');
+            }
+
+            return result.data;
+
+        } finally {
+            try { await browser.tabs.remove(tab.id); } catch (e) {}
+        }
     }
 
     // Show message to user

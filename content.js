@@ -1,3 +1,36 @@
+// Debug logging helper for content script context
+const debugLog = {
+    enabled: false,
+
+    async init() {
+        try {
+            const result = await browser.storage.local.get('debugMode');
+            this.enabled = !!result.debugMode;
+        } catch (e) {}
+
+        // Listen for changes
+        browser.storage.onChanged.addListener((changes, area) => {
+            if (area === 'local' && changes.debugMode !== undefined) {
+                this.enabled = !!changes.debugMode.newValue;
+            }
+        });
+    },
+
+    info(message, data = null) {
+        if (this.enabled) {
+            console.info('%c[Content]', 'color: white; background: #00BCD4; padding: 2px 6px; border-radius: 4px;', message, data !== null ? data : '');
+        }
+    },
+
+    error(message, data = null) {
+        // Always output errors
+        console.error('%c[Content]', 'color: white; background: #F44336; padding: 2px 6px; border-radius: 4px;', message, data !== null ? data : '');
+    }
+};
+
+// Initialize debug mode
+debugLog.init();
+
 // Listen for messages from the background script
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "getSelectedMessages") {
@@ -13,7 +46,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             // Get selected rows
             const selectedRows = messageList.querySelectorAll('tr.selected');
             if (!selectedRows || selectedRows.length === 0) {
-                console.log("No messages selected");
+                debugLog.info("No messages selected");
                 sendResponse([]);
                 return true;
             }
@@ -26,7 +59,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                                 row.getAttribute('id');
                 
                 if (!messageId) {
-                    console.warn("Row missing message ID:", row);
+                    debugLog.info("Row missing message ID:", row);
                     return null;
                 }
                 
@@ -35,7 +68,7 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 return { id: cleanId };
             }).filter(msg => msg !== null);
 
-            console.log("Found selected messages:", selectedMessages);
+            debugLog.info("Found selected messages:", selectedMessages);
             sendResponse(selectedMessages);
         } catch (error) {
             console.error("Error getting selected messages:", error);

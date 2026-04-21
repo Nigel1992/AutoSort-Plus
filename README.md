@@ -562,9 +562,9 @@ You can also manually label emails without AI analysis:
 <th>Status</th>
 </tr>
 <tr>
-<td>🔴 High</td>
+<td>🟢 Done</td>
 <td><strong>Detailed Logging</strong> - Debug mode with console output</td>
-<td>📋 Planned</td>
+<td>✅ Completed</td>
 </tr>
 <tr>
 <td>🔴 High</td>

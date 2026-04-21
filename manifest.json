@@ -25,7 +25,7 @@
     "http://127.0.0.1/*"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["js/logger.js", "background.js"]
   },
   "content_scripts": [
     {
