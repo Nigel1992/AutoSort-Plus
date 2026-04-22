@@ -916,4 +916,18 @@ input[type="checkbox"] {
     transition: background 0.2s;
 }
 
-.batch-btn-cancel:hover { background: #dc2626; }
+.batch-btn-cancel:hover { background: #dc2626; }
+
+/* ── Custom Prompt Textarea ─────────────────────────────────────────────── */
+
+.prompt-textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    resize: vertical;
+    margin-bottom: 10px;
+}

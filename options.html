@@ -163,6 +163,24 @@
                     <label for="gemini-paid-plan">I have a Gemini paid plan (removes rate limits)</label>
                 </div>
             </div>
+
+        <div class="section collapsible-section collapsed">
+            <div class="section-header" data-section="custom-prompt">
+                <h2>🤖 Custom Prompt</h2>
+                <span class="collapse-icon">▶</span>
+            </div>
+            <div class="section-content" id="custom-prompt">
+                <p class="info-text">Customize the prompt sent to AI for email classification.</p>
+                <p><strong>Required placeholders:</strong></p>
+                <ul>
+                    <li><code>{labels}</code> - Your folder list</li>
+                    <li><code>{email}</code> - Email content</li>
+                </ul>
+                <textarea id="custom-prompt-text" class="prompt-textarea"
+                    placeholder="Enter your custom prompt..." rows="10"></textarea>
+                <button id="reset-prompt" class="button">Reset to Default</button>
+            </div>
+        </div>
             
             <div class="subsection" id="gemini-usage-subsection" style="display: none;">
                 <h3>📊 Gemini API Usage</h3>

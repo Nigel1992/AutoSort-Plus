@@ -58,25 +58,38 @@ registerAutoSortListener();
  * Extract body text from a full Thunderbird message structure.
  * Used by both batch processing and auto-sort.
  */
-function extractTextFromParts(fullMessage) {
-    function fromParts(parts) {
+async function extractTextFromParts(fullMessage) {
+    async function fromParts(parts) {
         if (!parts) return '';
         let text = '';
         for (const part of parts) {
-            if (part.parts) text += fromParts(part.parts);
+            if (part.parts) text += await fromParts(part.parts);
             if (part.contentType === 'text/plain') {
                 text += part.body + '\n';
             } else if (part.contentType === 'text/html' && !text) {
-                text = browser.messengerUtilities.convertToPlainText(part.body);
+                text = await browser.messengerUtilities.convertToPlainText(part.body);
             } else if (part.contentType === 'message/rfc822' && part.body) {
                 text += part.body + '\n';
             }
         }
         return text;
     }
-    if (fullMessage.parts) return fromParts(fullMessage.parts);
+    if (fullMessage.parts) return await fromParts(fullMessage.parts);
     return fullMessage.body || '';
 }
+
+// Default prompt template for email classification
+const DEFAULT_PROMPT = `You are an email classification assistant. Analyze this email content and choose the most appropriate label from this list: {labels}.
+Consider the following:
+1. The main topic and purpose of the email
+2. The sender and recipient context
+3. The urgency and importance of the content
+4. The type of communication (e.g., notification, request, update)
+
+Only respond with the exact label name that best fits the content. If no label fits well, respond with "null".
+
+Email content:
+{email}`;
 
 // Ollama handling using tab injection (runs fetch in browser context)
 
@@ -409,7 +422,7 @@ async function batchAnalyzeEmails(messages) {
                     return;
                 }
 
-                const emailContent = extractTextFromParts(fullMessage);
+                const emailContent = await extractTextFromParts(fullMessage);
                 if (!emailContent || !emailContent.trim()) {
                     _batchState.skipped++;
                     return;
@@ -757,7 +770,8 @@ async function analyzeEmailContent(emailContent) {
             'ollamaCpuOnly',
             'ollamaNumCtx',
             'customBaseUrl',
-            'customModel'
+            'customModel',
+            'customPrompt'
         ]);
         const provider = settings.aiProvider || 'gemini';
         
@@ -869,17 +883,34 @@ async function analyzeEmailContent(emailContent) {
             return null;
         }
 
-        const prompt = `You are an email classification assistant. Analyze this email content and choose the most appropriate label from this list: ${settings.labels.join(', ')}. 
-        Consider the following:
-        1. The main topic and purpose of the email
-        2. The sender and recipient context
-        3. The urgency and importance of the content
-        4. The type of communication (e.g., notification, request, update)
-        
-        Only respond with the exact label name that best fits the content. If no label fits well, respond with "null".
-        
-        Email content:
-        ${emailContent}`;
+        // Select prompt template (custom or default)
+        const promptTemplate = (settings.customPrompt && settings.customPrompt.trim())
+            ? settings.customPrompt.trim()
+            : DEFAULT_PROMPT;
+
+        // Inject placeholders
+        let prompt = promptTemplate;
+        const labelsStr = settings.labels.join(', ');
+
+        // Handle missing {labels} placeholder
+        if (!prompt.includes('{labels}')) {
+            if (window.debugLogger) {
+                window.debugLogger.warn('[AutoSort]', 'Custom prompt missing {labels} placeholder - injecting at start');
+            }
+            prompt = `Labels: ${labelsStr}\n\n${prompt}`;
+        } else {
+            prompt = prompt.replace('{labels}', labelsStr);
+        }
+
+        // Handle missing {email} placeholder
+        if (!prompt.includes('{email}')) {
+            if (window.debugLogger) {
+                window.debugLogger.warn('[AutoSort]', 'Custom prompt missing {email} placeholder - appending');
+            }
+            prompt = `${prompt}\n\nEmail content:\n${emailContent}`;
+        } else {
+            prompt = prompt.replace('{email}', emailContent);
+        }
 
         await updateNotification(
             notificationId,
@@ -1660,7 +1691,7 @@ async function classifyAndMove(message) {
         const fullMessage = await browser.messages.getFull(message.id);
         if (!fullMessage) return;
 
-        const emailContent = extractTextFromParts(fullMessage);
+        const emailContent = await extractTextFromParts(fullMessage);
         if (!emailContent?.trim()) return;
 
         const label = await analyzeEmailContent(emailContent);

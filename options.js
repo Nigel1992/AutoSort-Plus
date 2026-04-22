@@ -651,7 +651,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Load saved settings
-    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'customBaseUrl', 'customModel', 'debugMode', 'batchChunkSize', 'autoSortEnabled']).then(result => {
+    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'customBaseUrl', 'customModel', 'debugMode', 'batchChunkSize', 'autoSortEnabled', 'customPrompt']).then(result => {
         if (result.labels && result.labels.length > 0) {
             result.labels.forEach(label => {
                 addLabelInput(label);
@@ -744,6 +744,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             autoSortCheckbox.checked = result.autoSortEnabled === true;
         }
 
+        // Load custom prompt setting
+        const customPromptTextarea = document.getElementById('custom-prompt-text');
+        if (customPromptTextarea) {
+            customPromptTextarea.value = result.customPrompt || '';
+        }
+
         updateSaveButtonState();
     });
 
@@ -758,6 +764,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                     await window.debugLogger.disable();
                     showMessage('✓ Debug mode disabled.', true);
                 }
+            }
+        });
+    }
+
+    // Reset custom prompt to default
+    const resetPromptButton = document.getElementById('reset-prompt');
+    if (resetPromptButton) {
+        resetPromptButton.addEventListener('click', () => {
+            const customPromptTextarea = document.getElementById('custom-prompt-text');
+            if (customPromptTextarea) {
+                customPromptTextarea.value = '';
+                showMessage('Custom prompt cleared. Default prompt will be used.', true);
             }
         });
     }
@@ -1480,6 +1498,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         const autoSortCheckbox = document.getElementById('enable-auto-sort');
         const autoSortEnabled = autoSortCheckbox ? autoSortCheckbox.checked : false;
 
+        // Extract custom prompt setting
+        const customPromptTextarea = document.getElementById('custom-prompt-text');
+        const customPrompt = customPromptTextarea ? customPromptTextarea.value.trim() : '';
+
         // Validation
         if (labels.length === 0) {
             showMessage('Please add at least one folder/label before saving. Use "Load Folders from Mail Account" or add custom labels.', false);
@@ -1512,7 +1534,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 geminiPaidPlan: geminiPaidCheckbox.checked,
                 debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false,
                 batchChunkSize: batchChunkSize,
-                autoSortEnabled: autoSortEnabled
+                autoSortEnabled: autoSortEnabled,
+                customPrompt: customPrompt
             };
             
             // Initialize rate limits array for all keys if not exists
@@ -1554,7 +1577,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ollamaCpuOnly: ollamaCpuOnlyCheckbox.checked,
                 debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false,
                 batchChunkSize: batchChunkSize,
-                autoSortEnabled: autoSortEnabled
+                autoSortEnabled: autoSortEnabled,
+                customPrompt: customPrompt
             };
 
             browser.storage.local.set(settings).then(() => {
@@ -1593,7 +1617,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 apiKey: apiKey,
                 debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false,
                 batchChunkSize: batchChunkSize,
-                autoSortEnabled: autoSortEnabled
+                autoSortEnabled: autoSortEnabled,
+                customPrompt: customPrompt
             };
 
             browser.storage.local.set(settings).then(() => {
@@ -1616,7 +1641,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 enableAi: document.getElementById('enable-ai').checked,
                 debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false,
                 batchChunkSize: batchChunkSize,
-                autoSortEnabled: autoSortEnabled
+                autoSortEnabled: autoSortEnabled,
+                customPrompt: customPrompt
             };
 
             browser.storage.local.set(settings).then(() => {
