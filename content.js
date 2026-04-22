@@ -89,12 +89,14 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     });
                     if (!res.ok) {
                         const t = await res.text();
+                        let errorMsg = t || `HTTP ${res.status}`;
                         try {
                             const j = JSON.parse(t);
-                            throw new Error(j.error || t);
-                        } catch (e) {
-                            throw new Error(t || `HTTP ${res.status}`);
+                            if (j.error) errorMsg = j.error;
+                        } catch (parseErr) {
+                            // Not JSON, use raw text
                         }
+                        throw new Error(errorMsg);
                     }
                     const reader = res.body.getReader();
                     const decoder = new TextDecoder();

@@ -6,34 +6,36 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <h1>AutoSort+ Settings</h1>
+<div class="container">
+    <h1>AutoSort+ Settings</h1>
 
-        <!-- ── Batch Processing Status Panel ── -->
-        <div id="batch-status-panel" class="batch-status-panel" style="display:none;" role="status" aria-live="polite">
-            <div class="batch-status-header">
-                <span class="batch-status-icon">⚙️</span>
-                <span class="batch-status-title">Batch Processing In Progress</span>
-                <span id="batch-provider-badge" class="batch-provider-badge"></span>
-            </div>
-            <div class="batch-progress-bar-wrap">
-                <div id="batch-progress-fill" class="batch-progress-fill" style="width:0%"></div>
-            </div>
-            <p id="batch-progress-text" class="batch-progress-text">Preparing…</p>
-            <div class="batch-controls">
-                <button id="batch-pause-btn" class="button batch-btn-pause">⏸ Pause</button>
-                <button id="batch-resume-btn" class="button batch-btn-resume" style="display:none;">▶ Resume</button>
-                <button id="batch-cancel-btn" class="button batch-btn-cancel">⏹ Cancel</button>
-            </div>
+    <!-- Batch Processing Status Panel -->
+    <div id="batch-status-panel" class="batch-status-panel" style="display:none;" role="status" aria-live="polite">
+        <div class="batch-status-header">
+            <span class="batch-status-icon">⚙️</span>
+            <span class="batch-status-title">Batch Processing In Progress</span>
+            <span id="batch-provider-badge" class="batch-provider-badge"></span>
         </div>
+        <div class="batch-progress-bar-wrap">
+            <div id="batch-progress-fill" class="batch-progress-fill" style="width:0%"></div>
+        </div>
+        <p id="batch-progress-text" class="batch-progress-text">Preparing…</p>
+        <div class="batch-controls">
+            <button id="batch-pause-btn" class="button batch-btn-pause">⏸ Pause</button>
+            <button id="batch-resume-btn" class="button batch-btn-resume" style="display:none;">▶ Resume</button>
+            <button id="batch-cancel-btn" class="button batch-btn-cancel">⏹ Cancel</button>
+        </div>
+    </div>
 
-        <div class="section collapsible-section">
-            <div class="section-header" data-section="ai-settings">
-                <h2>🤖 AI Settings</h2>
-                <span class="collapse-icon">▼</span>
-            </div>
-            <div class="section-content" id="ai-settings">
-            
+    <!-- AI Settings Section -->
+    <div class="section collapsible-section">
+        <div class="section-header" data-section="ai-settings">
+            <h2>🤖 AI Settings</h2>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="section-content" id="ai-settings">
+
+            <!-- Provider Selection -->
             <div class="subsection">
                 <h3>Provider Selection</h3>
                 <div class="input-group">
@@ -48,14 +50,13 @@
                         <option value="openai-compatible">OpenAI-Compatible (Custom Endpoint)</option>
                     </select>
                 </div>
-                
                 <div id="provider-info" class="provider-info"></div>
-                
                 <div id="rate-limit-warning" class="warning-box" style="display: none;">
                     <strong>⚠️ Rate Limit Warning:</strong> Free API tiers are severely limited when processing emails. You may only process 5-20 emails before hitting rate limits. Paid plans ($5-20/month) are recommended for daily email processing.
                 </div>
             </div>
-            
+
+            <!-- Ollama Settings -->
             <div class="subsection" id="ollama-settings-subsection" style="display: none;">
                 <h3>🏠 Local Ollama Configuration</h3>
                 <label for="ollama-url">Ollama Server URL:</label>
@@ -95,8 +96,9 @@
                 <div id="ollama-diagnostics" class="diagnostics-result" style="display: none;"></div>
             </div>
 
+            <!-- OpenAI-Compatible Settings -->
             <div class="subsection" id="openai-compatible-settings-subsection" style="display: none;">
-                <h3>OpenAI-Compatible Endpoint</h3>
+                <h3>🔗 OpenAI-Compatible Endpoint</h3>
                 <label for="custom-base-url">Base URL:</label>
                 <input type="text" id="custom-base-url" class="api-key-input" placeholder="http://localhost:1234/v1 or https://api.provider.com/v1">
                 <small class="help-text">Enter base URL including /v1. Endpoint must use OpenAI format: <code>/v1/chat/completions</code>. Examples: LM Studio, LocalAI, vLLM, Together AI</small>
@@ -119,6 +121,7 @@
                 <div id="custom-test-result" class="api-test-result"></div>
             </div>
 
+            <!-- API Key Configuration -->
             <div class="subsection" id="api-key-subsection">
                 <h3>🔑 API Key Configuration</h3>
                 <div class="input-group">
@@ -131,8 +134,8 @@
                     <div id="api-test-result" class="api-test-result"></div>
                 </div>
             </div>
-            </div>
-            
+
+            <!-- Multiple Gemini API Keys -->
             <div class="subsection" id="gemini-multi-keys-subsection" style="display: none;">
                 <h3>🔄 Multiple Gemini API Keys</h3>
                 <p class="info-text">Add multiple API keys from different Google Cloud projects. The extension will automatically rotate between them when rate limits are reached.</p>
@@ -141,47 +144,38 @@
                     <button id="add-gemini-key" class="button">+ Add Another Gemini Key</button>
                 </div>
             </div>
-            
+
+            <!-- Gemini Paid Plan -->
+            <div class="checkbox-container" id="gemini-paid-container" style="display: none;">
+                <input type="checkbox" id="gemini-paid-plan">
+                <label for="gemini-paid-plan">I have a Gemini paid plan (removes rate limits)</label>
+            </div>
+
+            <!-- General Settings -->
             <div class="subsection" id="ai-general-subsection">
                 <h3>⚙️ General Settings</h3>
-                <input type="checkbox" id="enable-ai" checked>
-                <label for="enable-ai">Enable AI-powered sorting</label>
-                <input type="checkbox" id="enable-debug">
-                <label for="enable-debug">Enable debug mode (console logging)</label>
-                <small class="help-text">Open Thunderbird Developer Tools (Ctrl+Shift+I) to view logs</small>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="enable-ai" checked>
+                    <label for="enable-ai">Enable AI-powered sorting</label>
+                </div>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="enable-debug">
+                    <label for="enable-debug">Enable debug mode (console logging)</label>
+                    <small class="help-text">Open Thunderbird Developer Tools (Ctrl+Shift+I) to view logs</small>
+                </div>
                 <div class="input-group" style="margin-top: 15px;">
                     <label for="batch-chunk-size">Batch chunk size:</label>
                     <input type="number" id="batch-chunk-size" min="1" max="20" value="5" style="width: 60px;">
                     <small class="help-text">Process N emails at once, wait for all responses, then continue (1-20)</small>
                 </div>
-                <input type="checkbox" id="enable-auto-sort">
-                <label for="enable-auto-sort">Auto-sort new emails in Inbox</label>
-                <small class="help-text">Automatically classify and move new Inbox emails using AI</small>
-            </div>
-                <div class="checkbox-container" id="gemini-paid-container" style="display: none;">
-                    <input type="checkbox" id="gemini-paid-plan">
-                    <label for="gemini-paid-plan">I have a Gemini paid plan (removes rate limits)</label>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="enable-auto-sort">
+                    <label for="enable-auto-sort">Auto-sort new emails in Inbox</label>
+                    <small class="help-text">Automatically classify and move new Inbox emails using AI</small>
                 </div>
             </div>
 
-        <div class="section collapsible-section collapsed">
-            <div class="section-header" data-section="custom-prompt">
-                <h2>🤖 Custom Prompt</h2>
-                <span class="collapse-icon">▶</span>
-            </div>
-            <div class="section-content" id="custom-prompt">
-                <p class="info-text">Customize the prompt sent to AI for email classification.</p>
-                <p><strong>Required placeholders:</strong></p>
-                <ul>
-                    <li><code>{labels}</code> - Your folder list</li>
-                    <li><code>{email}</code> - Email content</li>
-                </ul>
-                <textarea id="custom-prompt-text" class="prompt-textarea"
-                    placeholder="Enter your custom prompt..." rows="10"></textarea>
-                <button id="reset-prompt" class="button">Reset to Default</button>
-            </div>
-        </div>
-            
+            <!-- Gemini API Usage -->
             <div class="subsection" id="gemini-usage-subsection" style="display: none;">
                 <h3>📊 Gemini API Usage</h3>
                 <div id="single-key-usage" style="display: none;">
@@ -211,9 +205,9 @@
                         <button id="refresh-all-usage" class="button">Refresh All Usage</button>
                     </div>
                 </div>
-                </div>
             </div>
-            
+
+            <!-- How AI Sorting Works -->
             <div class="subsection ai-info-subsection">
                 <h3>ℹ️ How AI Sorting Works</h3>
                 <div class="ai-description">
@@ -226,16 +220,41 @@
                     </ul>
                 </div>
             </div>
-            </div>
-            </div>
-        </div>
 
-        <div class="section collapsible-section">
-            <div class="section-header" data-section="folders-settings">
-                <h2>📁 Custom Categories/Folders</h2>
-                <span class="collapse-icon">▼</span>
-            </div>
-            <div class="section-content" id="folders-settings">
+        </div>
+    </div>
+
+    <!-- Custom Prompt Section -->
+    <div class="section collapsible-section collapsed">
+        <div class="section-header" data-section="custom-prompt">
+            <h2>📝 Custom Prompt</h2>
+            <span class="collapse-icon">▶</span>
+        </div>
+        <div class="section-content" id="custom-prompt">
+            <p class="info-text">Customize the prompt sent to AI for email classification.</p>
+            <p><strong>Available placeholders:</strong></p>
+            <ul>
+                <li><code>{labels}</code> — Your folder/label list</li>
+                <li><code>{subject}</code> — Email subject line</li>
+                <li><code>{author}</code> — Sender email address/name</li>
+                <li><code>{attachments}</code> — Attachment filenames (comma-separated)</li>
+                <li><code>{body}</code> — Email body content (recommended)</li>
+                <li><code>{email}</code> — Email content (legacy, same as {body})</li>
+            </ul>
+            <p class="hint">💡 Tip: Use <code>{subject}</code> and <code>{attachments}</code> for better classification accuracy.</p>
+            <textarea id="custom-prompt-text" class="prompt-textarea" placeholder="Enter your custom prompt..." rows="10"></textarea>
+            <button id="reset-prompt" class="button">Reset to Default</button>
+        </div>
+    </div>
+
+    <!-- Custom Categories/Folders Section -->
+    <div class="section collapsible-section">
+        <div class="section-header" data-section="folders-settings">
+            <h2>📁 Custom Categories/Folders</h2>
+            <span class="collapse-icon">▼</span>
+        </div>
+        <div class="section-content" id="folders-settings">
+            <!-- Folder Source -->
             <div class="folder-source">
                 <h3>Folder Source</h3>
                 <button id="load-imap-folders" class="button">Load Folders from Mail Account</button>
@@ -249,11 +268,13 @@
                     </div>
                 </div>
             </div>
+            <!-- Bulk Import -->
             <div class="bulk-import">
                 <label for="bulk-import-text">Import Categories/Folders (one per line):</label>
                 <textarea id="bulk-import-text" class="bulk-import-textarea" placeholder="Enter categories/folders, one per line"></textarea>
                 <button id="import-labels" class="button">Import</button>
             </div>
+            <!-- Labels Container -->
             <div id="labels-container">
                 <div class="label-item">
                     <input type="text" class="label-input" placeholder="Enter category/folder name">
@@ -261,15 +282,16 @@
                 </div>
             </div>
             <button id="add-label" class="button">Add</button>
-            </div>
         </div>
+    </div>
 
-        <div class="section collapsible-section collapsed">
-            <div class="section-header" data-section="history-settings">
-                <h2>📜 Move History</h2>
-                <span class="collapse-icon">▶</span>
-            </div>
-            <div class="section-content" id="history-settings" style="display: none;">
+    <!-- Move History Section -->
+    <div class="section collapsible-section collapsed">
+        <div class="section-header" data-section="history-settings">
+            <h2>📜 Move History</h2>
+            <span class="collapse-icon">▶</span>
+        </div>
+        <div class="section-content" id="history-settings">
             <div class="history-controls">
                 <button id="clear-history" class="button">Clear History</button>
                 <button id="refresh-history" class="button">Refresh</button>
@@ -289,14 +311,16 @@
                     </tbody>
                 </table>
             </div>
-            </div>
-        </div>
-
-        <div class="section save-section">
-            <button id="save-settings" class="button primary">Save Settings</button>
         </div>
     </div>
-    <script src="js/logger.js"></script>
-    <script src="options.js"></script>
+
+    <!-- Save Section -->
+    <div class="section save-section">
+        <button id="save-settings" class="button primary">Save Settings</button>
+    </div>
+
+</div>
+<script src="js/logger.js"></script>
+<script src="options.js"></script>
 </body>
-</html> 
+</html>

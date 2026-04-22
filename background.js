@@ -3,10 +3,27 @@ if (window.debugLogger) {
     window.debugLogger.init();
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PROVIDER CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PROVIDERS = {
+    GEMINI: 'gemini',
+    OPENAI: 'openai',
+    ANTHROPIC: 'anthropic',
+    GROQ: 'groq',
+    MISTRAL: 'mistral',
+    OLLAMA: 'ollama',
+    OPENAI_COMPATIBLE: 'openai-compatible'
+};
+
 // Listen for messages from the options page
 browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === "applyLabels") {
-        applyLabelsToMessages(message.messages, message.label);
+        applyLabelsToMessages(message.messages, message.label)
+            .then(() => sendResponse({ ok: true }))
+            .catch(err => sendResponse({ ok: false, error: err.message }));
+        return true; // Required for async response
     } else if (message.action === "analyzeEmail") {
         analyzeEmailContent(message.emailContent).then(label => {
             sendResponse({ label: label });
@@ -51,19 +68,45 @@ browser.browserAction.onClicked.addListener(() => {
 registerAutoSortListener();
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TEXT EXTRACTION HELPER
+// EMAIL CONTEXT EXTRACTION
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Extract body text from a full Thunderbird message structure.
- * Used by both batch processing and auto-sort.
+ * Extract comprehensive email context from a Thunderbird message structure.
+ * Returns subject, author, attachments, and body text.
  */
-async function extractTextFromParts(fullMessage) {
-    async function fromParts(parts) {
+async function extractEmailContext(fullMessage, messageHeader) {
+    const subject = (fullMessage.headers?.Subject?.[0]) || (messageHeader?.subject) || '';
+
+    const author = (fullMessage.headers?.From?.[0]) || (messageHeader?.author) || '';
+
+    // Collect attachment info from parts (name indicates it's a file attachment)
+    const attachments = [];
+    async function collectAttachments(parts) {
+        if (!parts) return;
+        for (const part of parts) {
+            if (part.parts) await collectAttachments(part.parts);
+            // part.name means this is an attachment/file part
+            if (part.name) {
+                // Skip inline text parts that are the email body
+                const isInlineText = (part.contentType === 'text/plain' || part.contentType === 'text/html') && !part.contentDisposition;
+                if (!isInlineText) {
+                    attachments.push({
+                        name: part.name,
+                        contentType: part.contentType || 'unknown',
+                        size: part.size || 0
+                    });
+                }
+            }
+        }
+    }
+    if (fullMessage.parts) await collectAttachments(fullMessage.parts);
+
+    async function extractBodyText(parts) {
         if (!parts) return '';
         let text = '';
         for (const part of parts) {
-            if (part.parts) text += await fromParts(part.parts);
+            if (part.parts) text += await extractBodyText(part.parts);
             if (part.contentType === 'text/plain') {
                 text += part.body + '\n';
             } else if (part.contentType === 'text/html' && !text) {
@@ -74,37 +117,52 @@ async function extractTextFromParts(fullMessage) {
         }
         return text;
     }
-    if (fullMessage.parts) return await fromParts(fullMessage.parts);
-    return fullMessage.body || '';
+    const body = fullMessage.parts ? await extractBodyText(fullMessage.parts) : (fullMessage.body || '');
+
+    return {
+        subject,
+        author,
+        attachments,
+        body
+    };
+}
+
+// Legacy wrapper for backward compatibility
+async function extractTextFromParts(fullMessage) {
+    const context = await extractEmailContext(fullMessage, null);
+    return context.body;
 }
 
 // Default prompt template for email classification
-const DEFAULT_PROMPT = `You are an email classification assistant. Analyze this email content and choose the most appropriate label from this list: {labels}.
-Consider the following:
-1. The main topic and purpose of the email
-2. The sender and recipient context
-3. The urgency and importance of the content
-4. The type of communication (e.g., notification, request, update)
+const DEFAULT_PROMPT = `You are an email classification assistant. Analyze this email and choose the most appropriate label from: {labels}.
 
-Only respond with the exact label name that best fits the content. If no label fits well, respond with "null".
+**Email Metadata:**
+- Subject: {subject}
+- From: {author}
+- Attachments: {attachments}
 
-Email content:
-{email}`;
+**Email Body:**
+{body}
+
+Consider the subject line, sender context, attachment filenames, and body content to determine the most appropriate category. Respond with only the exact label name, or "null" if no label fits well.`;
 
 // Ollama handling using tab injection (runs fetch in browser context)
 
-async function ollamaChatViaTab(ollamaUrl, model, prompt, authToken) {
+async function ollamaChatViaTab(ollamaUrl, model, prompt, authToken, numCtx = 0) {
     // Open a hidden tab at localhost to make the fetch (browser context, not restricted)
     const tab = await browser.tabs.create({ url: ollamaUrl, active: false });
-    
+
     // Wait for tab to load
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     try {
         // Build the request headers
         const headers = { 'Content-Type': 'application/json' };
         if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-        
+
+        // Build options object if numCtx is set
+        const optionsObj = numCtx > 0 ? { options: { num_ctx: parseInt(numCtx) } } : {};
+
         // Inject code to make the fetch and store result
         const scriptCode = `
         (async () => {
@@ -116,7 +174,8 @@ async function ollamaChatViaTab(ollamaUrl, model, prompt, authToken) {
                     body: JSON.stringify({
                         model: ${JSON.stringify(model)},
                         messages: [{ role: 'user', content: ${JSON.stringify(prompt)} }],
-                        stream: false
+                        stream: false,
+                        ...${JSON.stringify(optionsObj)}
                     })
                 });
                 
@@ -193,7 +252,8 @@ async function openaiCompatibleChatViaTab(baseUrl, model, prompt, apiKey) {
                         model: ${JSON.stringify(model)},
                         messages: [{ role: 'user', content: ${JSON.stringify(prompt)} }],
                         max_tokens: 8192,
-                        temperature: 0.2,
+                        temperature: 0.6,
+                        top_p: 0.95,
                         stream: false
                     })
                 });
@@ -311,7 +371,7 @@ async function callOllamaViaTab(ollamaUrl, payload) {
  *   delayMs      – minimum milliseconds to wait between launching each request
  *
  * Note: Gemini free-tier concurrency=1 and delayMs are managed by the existing
- * checkGeminiRateLimit() / trackGeminiRequest() helpers and preserved here.
+ * checkAndTrackGeminiRateLimit() helper and preserved here.
  */
 const PROVIDER_BATCH_CONFIG = {
     gemini:              { concurrency: 1, delayMs: 0     }, // delay handled by rate-limit helper
@@ -422,13 +482,14 @@ async function batchAnalyzeEmails(messages) {
                     return;
                 }
 
-                const emailContent = await extractTextFromParts(fullMessage);
+                const emailContext = await extractEmailContext(fullMessage, message);
+                const emailContent = emailContext.body;
                 if (!emailContent || !emailContent.trim()) {
                     _batchState.skipped++;
                     return;
                 }
 
-                const label = await analyzeEmailContent(emailContent);
+                const label = await analyzeEmailContent(emailContent, emailContext);
 
                 if (!label || String(label).trim().toLowerCase() === 'null') {
                     _batchState.skipped++;
@@ -517,103 +578,124 @@ async function batchAnalyzeEmails(messages) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Gemini rate limiting functions (free tier: 5/min, 20/day per key)
-async function checkGeminiRateLimit() {
-    const now = Date.now();
+// Gemini rate limiting (free tier: 5/min, 20/day per key)
+// Combined check+track function to avoid redundant storage reads
+
+// Mutex for atomic rate limit operations
+let geminiRateLimitMutex = Promise.resolve();
+
+async function checkAndTrackGeminiRateLimit(keyIndex = null) {
+    // Chain onto mutex for atomic operation
+    return geminiRateLimitMutex = geminiRateLimitMutex.then(async () => {
+        const now = Date.now();
     const data = await browser.storage.local.get([
-        'geminiApiKeys', 
-        'geminiRateLimits', 
-        'currentGeminiKeyIndex', 
+        'geminiApiKeys',
+        'geminiRateLimits',
+        'currentGeminiKeyIndex',
         'geminiPaidPlan',
-        'geminiRateLimit' // Legacy single-key support
+        'geminiRateLimit' // Legacy single-key
     ]);
-    
-    // Handle paid plan - no limits
+
+    // Skip for paid plan
     if (data.geminiPaidPlan) {
-        return { allowed: true, waitTime: 0 };
+        return { allowed: true, waitTime: 0, keyIndex: keyIndex ?? 0 };
     }
-    
+
     // Multi-key mode
-    if (data.geminiApiKeys && data.geminiApiKeys.length > 0) {
+    if (data.geminiApiKeys?.length > 0) {
         const keys = data.geminiApiKeys;
         const rateLimits = data.geminiRateLimits || keys.map(() => ({
             requests: [],
             dailyCount: 0,
             dailyResetTime: now + (24 * 60 * 60 * 1000)
         }));
-        let currentIndex = data.currentGeminiKeyIndex || 0;
-        
-        // Try to find an available key
+        let currentIndex = keyIndex ?? (data.currentGeminiKeyIndex || 0);
+
         const startIndex = currentIndex;
         let attempts = 0;
-        
+
         while (attempts < keys.length) {
             const rateLimit = rateLimits[currentIndex];
-            
-            // Reset daily count if it's a new day
+
+            // Reset daily if expired
             if (now > rateLimit.dailyResetTime) {
                 rateLimit.dailyCount = 0;
                 rateLimit.dailyResetTime = now + (24 * 60 * 60 * 1000);
                 rateLimit.requests = [];
             }
-            
-            // Remove requests older than 1 minute
+
+            // Clean old requests
             const oneMinuteAgo = now - 60000;
-            rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
-            
-            // Check if this key is available
+            rateLimit.requests = rateLimit.requests.filter(t => t > oneMinuteAgo);
+
+            // Check availability
             if (rateLimit.dailyCount < 20) {
                 // Check if we need to wait
                 if (rateLimit.requests.length > 0) {
                     const lastRequest = Math.max(...rateLimit.requests);
                     const timeSinceLastRequest = now - lastRequest;
                     const minInterval = 12000; // 12 seconds
-                    
+
                     if (timeSinceLastRequest < minInterval) {
                         const waitTime = Math.ceil((minInterval - timeSinceLastRequest) / 1000);
-                        return {
-                            allowed: true,
-                            waitTime: waitTime,
-                            keyIndex: currentIndex
-                        };
+                        // Track request now (with wait)
+                        rateLimit.requests.push(now);
+                        rateLimit.dailyCount += 1;
+
+                        await browser.storage.local.set({
+                            currentGeminiKeyIndex: currentIndex,
+                            geminiRateLimits: rateLimits
+                        });
+
+                        if (window.debugLogger) {
+                            window.debugLogger.info('[RateLimit]', `Gemini Key #${currentIndex + 1}: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
+                        }
+
+                        return { allowed: true, waitTime, keyIndex: currentIndex };
                     }
                 }
-                
-                // This key is ready to use
-                await browser.storage.local.set({ 
+
+                // Track request immediately
+                rateLimit.requests.push(now);
+                rateLimit.dailyCount += 1;
+
+                await browser.storage.local.set({
                     currentGeminiKeyIndex: currentIndex,
                     geminiRateLimits: rateLimits
                 });
-                
-                return {
-                    allowed: true,
-                    waitTime: 0,
-                    keyIndex: currentIndex
-                };
+
+                if (window.debugLogger) {
+                    window.debugLogger.info('[RateLimit]', `Gemini Key #${currentIndex + 1}: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
+                }
+
+                return { allowed: true, waitTime: 0, keyIndex: currentIndex };
             }
-            
-            // This key has reached its limit, try next one
+
             currentIndex = (currentIndex + 1) % keys.length;
             attempts++;
         }
-        
-        // All keys have reached their limits
+
         return {
             allowed: false,
             message: `All ${keys.length} Gemini API keys have reached their daily limit (20/day each). Please wait for reset or add more API keys in settings.`
         };
     }
-    
-    // Legacy single-key mode (backward compatibility)
-    const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: now };
-    
-    // Reset daily count if it's a new day
+
+    // Legacy single-key mode
+    const rateLimit = data.geminiRateLimit || {
+        requests: [],
+        dailyCount: 0,
+        dailyResetTime: now + (24 * 60 * 60 * 1000)
+    };
+
+    // Reset daily if expired
     if (now > rateLimit.dailyResetTime) {
         rateLimit.dailyCount = 0;
         rateLimit.dailyResetTime = now + (24 * 60 * 60 * 1000);
+        rateLimit.requests = [];
     }
-    
-    // Check daily limit (20 per day)
+
+    // Check daily limit
     if (rateLimit.dailyCount >= 20) {
         const hoursUntilReset = Math.ceil((rateLimit.dailyResetTime - now) / (1000 * 60 * 60));
         return {
@@ -621,82 +703,57 @@ async function checkGeminiRateLimit() {
             message: `Gemini free tier daily limit reached (20/day). Resets in ${hoursUntilReset} hours. Upgrade to paid plan or add multiple API keys in settings to remove limits.`
         };
     }
-    
-    // Remove requests older than 1 minute
+
+    // Clean old requests
     const oneMinuteAgo = now - 60000;
-    rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
-    
-    // Check if we need to wait (12 seconds between requests = 5 per minute)
+    rateLimit.requests = rateLimit.requests.filter(t => t > oneMinuteAgo);
+
+    // Check if need to wait
     if (rateLimit.requests.length > 0) {
         const lastRequest = Math.max(...rateLimit.requests);
         const timeSinceLastRequest = now - lastRequest;
-        const minInterval = 12000; // 12 seconds
-        
+        const minInterval = 12000;
+
         if (timeSinceLastRequest < minInterval) {
             const waitTime = Math.ceil((minInterval - timeSinceLastRequest) / 1000);
-            return {
-                allowed: true,
-                waitTime: waitTime
-            };
+            // Track now (with wait)
+            rateLimit.requests.push(now);
+            rateLimit.dailyCount += 1;
+            await browser.storage.local.set({ geminiRateLimit: rateLimit });
+
+            if (window.debugLogger) {
+                window.debugLogger.info('[RateLimit]', `Gemini requests: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
+            }
+
+            return { allowed: true, waitTime, keyIndex: null };
         }
     }
-    
-    return {
-        allowed: true,
-        waitTime: 0
-    };
+
+    // Track request
+    rateLimit.requests.push(now);
+    rateLimit.dailyCount += 1;
+    await browser.storage.local.set({ geminiRateLimit: rateLimit });
+
+    if (window.debugLogger) {
+        window.debugLogger.info('[RateLimit]', `Gemini requests: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
+    }
+
+    return { allowed: true, waitTime: 0, keyIndex: null };
+    });
 }
 
-async function trackGeminiRequest(keyIndex = null) {
-    const now = Date.now();
-    const data = await browser.storage.local.get([
-        'geminiApiKeys',
-        'geminiRateLimits',
-        'currentGeminiKeyIndex',
-        'geminiRateLimit' // Legacy
-    ]);
-    
-    // Multi-key mode
-    if (data.geminiApiKeys && data.geminiApiKeys.length > 0 && keyIndex !== null) {
-        const rateLimits = data.geminiRateLimits || data.geminiApiKeys.map(() => ({
-            requests: [],
-            dailyCount: 0,
-            dailyResetTime: now + (24 * 60 * 60 * 1000)
-        }));
-        
-        const rateLimit = rateLimits[keyIndex];
-        
-        // Add current request
-        rateLimit.requests.push(now);
-        rateLimit.dailyCount += 1;
-        
-        // Clean old requests
-        const oneMinuteAgo = now - 60000;
-        rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
-        
-        await browser.storage.local.set({ geminiRateLimits: rateLimits });
+// Deprecated: Use checkAndTrackGeminiRateLimit instead
+async function checkGeminiRateLimit() {
+    console.warn('[Deprecated] checkGeminiRateLimit: Use checkAndTrackGeminiRateLimit instead');
+    const result = await checkAndTrackGeminiRateLimit();
+    // Note: This deprecated wrapper already tracked the request, so callers
+    // using this will need to NOT call trackGeminiRequest separately
+    return result;
+}
 
-        if (window.debugLogger) {
-            window.debugLogger.info('[RateLimit]', `Gemini Key #${keyIndex + 1}: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
-        }
-    } else {
-        // Legacy single-key mode
-        const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: now + (24 * 60 * 60 * 1000) };
-        
-        // Add current request
-        rateLimit.requests.push(now);
-        rateLimit.dailyCount += 1;
-        
-        // Clean old requests
-        const oneMinuteAgo = now - 60000;
-        rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
-        
-        await browser.storage.local.set({ geminiRateLimit: rateLimit });
-
-        if (window.debugLogger) {
-            window.debugLogger.info('[RateLimit]', `Gemini requests: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
-        }
-    }
+// Deprecated: No longer needed - tracking is done in checkAndTrackGeminiRateLimit
+async function trackGeminiRequest(keyIndex) {
+    console.warn('[Deprecated] trackGeminiRequest: No longer needed - tracking is done in checkAndTrackGeminiRateLimit');
 }
 
 // Function to show notification
@@ -746,7 +803,7 @@ async function updateNotification(id, title, message) {
 }
 
 // Function to analyze email content using AI
-async function analyzeEmailContent(emailContent) {
+async function analyzeEmailContent(emailContent, emailContext = null) {
     try {
         const notificationId = await showNotification(
             "AutoSort+ AI Analysis",
@@ -775,40 +832,40 @@ async function analyzeEmailContent(emailContent) {
         ]);
         const provider = settings.aiProvider || 'gemini';
         
-        // Check Gemini rate limits (free tier only)
+        // Check and track Gemini rate limits (free tier only) - single storage read
         let keyIndexToUse = null;
         if (provider === 'gemini' && !settings.geminiPaidPlan) {
-            const rateLimitCheck = await checkGeminiRateLimit();
-            if (!rateLimitCheck.allowed) {
+            const rateLimit = await checkAndTrackGeminiRateLimit();
+            if (!rateLimit.allowed) {
                 // Show persistent notification for limit reached
                 const isSingleKey = !settings.geminiApiKeys || settings.geminiApiKeys.length <= 1;
                 const notifTitle = isSingleKey ? "⛔ Gemini API Limit Reached" : "⛔ All Gemini Keys at Limit";
-                
+
                 const notifId = await showNotification(
                     notifTitle,
-                    rateLimitCheck.message,
+                    rateLimit.message,
                     "list"
                 );
-                
+
                 // Also try to update the current notification
                 await updateNotification(
                     notificationId,
                     "AutoSort+ Rate Limit",
-                    rateLimitCheck.message
+                    rateLimit.message
                 );
-                throw new Error(rateLimitCheck.message);
+                throw new Error(rateLimit.message);
             }
-            
-            if (rateLimitCheck.waitTime > 0) {
+
+            if (rateLimit.waitTime > 0) {
                 await updateNotification(
                     notificationId,
                     "AutoSort+ Rate Limit",
-                    `Rate limit reached. Waiting ${rateLimitCheck.waitTime} seconds...`
+                    `Rate limit reached. Waiting ${rateLimit.waitTime} seconds...`
                 );
-                await new Promise(resolve => setTimeout(resolve, rateLimitCheck.waitTime * 1000));
+                await new Promise(resolve => setTimeout(resolve, rateLimit.waitTime * 1000));
             }
-            
-            keyIndexToUse = rateLimitCheck.keyIndex;
+
+            keyIndexToUse = rateLimit.keyIndex;
         }
 
         if (window.debugLogger) {
@@ -892,24 +949,48 @@ async function analyzeEmailContent(emailContent) {
         let prompt = promptTemplate;
         const labelsStr = settings.labels.join(', ');
 
-        // Handle missing {labels} placeholder
-        if (!prompt.includes('{labels}')) {
-            if (window.debugLogger) {
-                window.debugLogger.warn('[AutoSort]', 'Custom prompt missing {labels} placeholder - injecting at start');
+        // Build context values for placeholders
+        const subject = emailContext?.subject || '';
+        const author = emailContext?.author || '';
+        const attachmentsStr = emailContext?.attachments?.length > 0
+            ? emailContext.attachments.map(a => a.name).join(', ')
+            : '(none)';
+        const body = emailContent; // body is the main email text
+
+        // Helper to inject placeholder with fallback injection if missing
+        function injectPlaceholder(placeholder, value, fallbackPrefix, fallbackPosition = 'start') {
+            if (!prompt.includes(placeholder)) {
+                if (window.debugLogger) {
+                    window.debugLogger.warn('[AutoSort]', `Custom prompt missing ${placeholder} placeholder - injecting`);
+                }
+                if (fallbackPosition === 'start') {
+                    prompt = `${fallbackPrefix}${value}\n\n${prompt}`;
+                } else {
+                    prompt = `${prompt}\n\n${fallbackPrefix}${value}`;
+                }
+            } else {
+                prompt = prompt.replace(placeholder, value);
             }
-            prompt = `Labels: ${labelsStr}\n\n${prompt}`;
-        } else {
-            prompt = prompt.replace('{labels}', labelsStr);
         }
 
-        // Handle missing {email} placeholder
-        if (!prompt.includes('{email}')) {
-            if (window.debugLogger) {
-                window.debugLogger.warn('[AutoSort]', 'Custom prompt missing {email} placeholder - appending');
-            }
-            prompt = `${prompt}\n\nEmail content:\n${emailContent}`;
+        // Inject all placeholders (order matters for fallback injection)
+        injectPlaceholder('{labels}', labelsStr, 'Labels: ', 'start');
+        injectPlaceholder('{subject}', subject, 'Subject: ', 'start');
+        injectPlaceholder('{author}', author, 'From: ', 'start');
+        injectPlaceholder('{attachments}', attachmentsStr, 'Attachments: ', 'start');
+
+        // Handle {body} and legacy {email} placeholders
+        if (prompt.includes('{body}')) {
+            prompt = prompt.replace('{body}', body);
+        } else if (prompt.includes('{email}')) {
+            // Legacy placeholder support
+            prompt = prompt.replace('{email}', body);
         } else {
-            prompt = prompt.replace('{email}', emailContent);
+            // Default: append body at end if no body/email placeholder found
+            if (window.debugLogger) {
+                window.debugLogger.warn('[AutoSort]', 'Custom prompt missing {body} placeholder - appending');
+            }
+            prompt = `${prompt}\n\nEmail content:\n${body}`;
         }
 
         await updateNotification(
@@ -924,10 +1005,7 @@ async function analyzeEmailContent(emailContent) {
         if (provider === 'gemini') {
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKeyToUse}`;
 
-            // Track request for rate limiting (free tier only)
-            if (!settings.geminiPaidPlan) {
-                await trackGeminiRequest(keyIndexToUse);
-            }
+            // Rate limiting already tracked in checkAndTrackGeminiRateLimit above
 
             await updateNotification(
                 notificationId,
@@ -943,9 +1021,9 @@ async function analyzeEmailContent(emailContent) {
                     }]
                 }],
                 generationConfig: {
-                    temperature: 0.2,
-                    topK: 1,
-                    topP: 1,
+                    temperature: 0.6,
+                    topK: 20,
+                    topP: 0.95,
                     maxOutputTokens: 50,
                     responseMimeType: "text/plain",
                     thinkingConfig: {
@@ -995,7 +1073,8 @@ async function analyzeEmailContent(emailContent) {
                 model: 'gpt-4o-mini',
                 messages: [{ role: 'user', content: prompt }],
                 max_tokens: 50,
-                temperature: 0.2
+                temperature: 0.6,
+                top_p: 0.95
             };
 
             if (window.debugLogger) {
@@ -1049,7 +1128,8 @@ async function analyzeEmailContent(emailContent) {
                 model: 'llama-3.3-70b-versatile',
                 messages: [{ role: 'user', content: prompt }],
                 max_tokens: 50,
-                temperature: 0.2
+                temperature: 0.6,
+                top_p: 0.95
             };
 
             if (window.debugLogger) {
@@ -1076,7 +1156,8 @@ async function analyzeEmailContent(emailContent) {
                 model: 'mistral-small-latest',
                 messages: [{ role: 'user', content: prompt }],
                 max_tokens: 50,
-                temperature: 0.2
+                temperature: 0.6,
+                top_p: 0.95
             };
 
             if (window.debugLogger) {
@@ -1124,7 +1205,7 @@ async function analyzeEmailContent(emailContent) {
 
             // Use tab injection to make the fetch (browser context, no restrictions)
             try {
-                const ollamaResponse = await ollamaChatViaTab(ollamaUrl, ollamaModel, prompt, ollamaAuthToken);
+                const ollamaResponse = await ollamaChatViaTab(ollamaUrl, ollamaModel, prompt, ollamaAuthToken, ollamaNumCtx);
 
                 if (!ollamaResponse.message || !ollamaResponse.message.content) {
                     throw new Error('Invalid Ollama response format');
@@ -1159,7 +1240,8 @@ async function analyzeEmailContent(emailContent) {
                 model,
                 messages: [{ role: 'user', content: prompt }],
                 max_tokens: 8192,
-                temperature: 0.2
+                temperature: 0.6,
+                top_p: 0.95
             };
 
             // Build headers
@@ -1427,10 +1509,50 @@ async function applyLabelsToMessages(messages, label) {
             "AutoSort+ Processing",
             `Starting to process ${messageCount} message(s)...`
         );
-        
+
         let successCount = 0;
         let errorCount = 0;
         const moveResults = [];
+
+        // Build folder lookup Map once to avoid N+1 pattern
+        // Key format: "accountId:folderName" to handle multiple accounts with same folder names
+        const folderCache = new Map();
+
+        // Cache accounts to avoid N+1 pattern
+        const accountCache = new Map();
+
+        async function getAccount(accountId) {
+            if (!accountCache.has(accountId)) {
+                const account = await browser.accounts.get(accountId);
+                accountCache.set(accountId, account);
+            }
+            return accountCache.get(accountId);
+        }
+
+        function buildFolderMap(folders, prefix = '', accountId) {
+            if (!folders) return;
+            for (const folder of folders) {
+                const fullName = prefix ? `${prefix}/${folder.name}` : folder.name;
+                folderCache.set(`${accountId}:${fullName}`, folder);
+                folderCache.set(`${accountId}:${folder.name}`, folder); // Also cache by short name
+                if (folder.subFolders) {
+                    buildFolderMap(folder.subFolders, fullName, accountId);
+                }
+            }
+        }
+
+        // Pre-build folder cache for all accounts involved
+        const uniqueAccountIds = [...new Set(
+            messages.map(m => m.folder?.accountId).filter(id => id)
+        )];
+        for (const accountId of uniqueAccountIds) {
+            const account = await getAccount(accountId);
+            buildFolderMap(account.folders, '', accountId);
+        }
+
+        if (window.debugLogger) {
+            window.debugLogger.info('[Folder]', `Built folder cache: ${folderCache.size} entries`);
+        }
 
         for (const message of messages) {
             if (window.debugLogger) {
@@ -1440,11 +1562,7 @@ async function applyLabelsToMessages(messages, label) {
                 window.debugLogger.info('[Folder]', `Target label/folder: ${label}`);
             }
 
-            // Get all folders to find the destination folder
-            const account = await browser.accounts.get(message.folder.accountId);
-            if (window.debugLogger) {
-                window.debugLogger.info('[Folder]', 'Account info retrieved');
-            }
+            const account = await getAccount(message.folder.accountId);
 
             await updateNotification(
                 notificationId,
@@ -1452,7 +1570,7 @@ async function applyLabelsToMessages(messages, label) {
                 `Finding destination folder for message ${successCount + errorCount + 1}/${messageCount}...`
             );
 
-            // Find the folder with matching name
+            // Legacy findFolder function - kept for edge cases
             const findFolder = (folders, targetName) => {
                 for (const folder of folders) {
                     if (window.debugLogger) {
@@ -1469,56 +1587,12 @@ async function applyLabelsToMessages(messages, label) {
                 return null;
             };
 
-            // First try to find the category folder
-            const categories = [
-                "Financiën",
-                "Werk en Carrière",
-                "Persoonlijke Communicatie en Sociale Leven",
-                "Gezondheid en Welzijn",
-                "Online Activiteiten en E-commerce",
-                "Reizen en Evenementen",
-                "Informatie en Media",
-                "Beveiliging en IT",
-                "Klantensupport en Acties",
-                "Overheid en Gemeenschap"
-            ];
+            // Use cached folder lookup instead of recursive search
+            let targetFolder = folderCache.get(`${message.folder.accountId}:${label}`);
 
-            let categoryFolder = null;
-            let targetFolder = null;
-
-            // Find the category and target folder
-            for (const category of categories) {
-                if (label.startsWith(category)) {
-                    if (window.debugLogger) {
-                        window.debugLogger.info('[Folder]', `Found matching category: ${category}`);
-                    }
-                    categoryFolder = findFolder(account.folders, category);
-                    if (categoryFolder) {
-                        if (window.debugLogger) {
-                            window.debugLogger.info('[Folder]', `Found category folder: ${categoryFolder.name}`);
-                        }
-                        // Try to find the subfolder
-                        const subfolderName = label.replace(category + "/", "");
-                        if (window.debugLogger) {
-                            window.debugLogger.info('[Folder]', `Looking for subfolder: ${subfolderName}`);
-                        }
-                        targetFolder = findFolder(categoryFolder.subFolders || [], subfolderName);
-                        break;
-                    } else {
-                        if (window.debugLogger) {
-                            window.debugLogger.warn('[Folder]', `Category folder not found: ${category} - skipping`);
-                        }
-                        continue;
-                    }
-                }
-            }
-
-            // If no target folder found, try direct match
-            if (!targetFolder) {
-                if (window.debugLogger) {
-                    window.debugLogger.info('[Folder]', 'No category match, trying direct folder match');
-                }
-                targetFolder = findFolder(account.folders, label);
+            // Handle subfolder paths - full path already cached above
+            if (!targetFolder && label.includes('/')) {
+                targetFolder = folderCache.get(`${message.folder.accountId}:${label}`);
             }
 
             // Auto-create missing folder when it's a custom label (skip imported/structured labels)
@@ -1538,6 +1612,7 @@ async function applyLabelsToMessages(messages, label) {
                             const created = await browser.folders.create(parentFolder, label);
                             if (created) {
                                 targetFolder = created;
+                                folderCache.set(`${message.folder.accountId}:${label}`, created);
                                 if (window.debugLogger) {
                                     window.debugLogger.info('[Folder]', `Created folder: ${created.name}`);
                                 }
@@ -1683,6 +1758,35 @@ async function showMoveResultsPopup(results) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
+ * Concurrency-limited parallel processor.
+ * Processes items concurrently with a maximum number of simultaneous operations.
+ *
+ * @param {Array} items - Array of items to process
+ * @param {Function} processor - Async function to process each item
+ * @param {number} limit - Maximum concurrent operations (default: 3)
+ * @returns {Promise<Array>} - Promise.allSettled results
+ */
+async function processWithConcurrency(items, processor, limit = 3) {
+    const results = [];
+    const executing = new Set();
+
+    for (const item of items) {
+        const promise = processor(item).then(result => {
+            executing.delete(promise);
+            return result;
+        });
+        executing.add(promise);
+        results.push(promise);
+
+        if (executing.size >= limit) {
+            await Promise.race(executing);
+        }
+    }
+
+    return Promise.allSettled(results);
+}
+
+/**
  * Classify a single message and move it to the appropriate folder.
  * Silent failure mode: errors logged, email stays in Inbox.
  */
@@ -1691,10 +1795,11 @@ async function classifyAndMove(message) {
         const fullMessage = await browser.messages.getFull(message.id);
         if (!fullMessage) return;
 
-        const emailContent = await extractTextFromParts(fullMessage);
+        const emailContext = await extractEmailContext(fullMessage, message);
+        const emailContent = emailContext.body;
         if (!emailContent?.trim()) return;
 
-        const label = await analyzeEmailContent(emailContent);
+        const label = await analyzeEmailContent(emailContent, emailContext);
         if (!label || String(label).trim().toLowerCase() === 'null') return;
 
         await applyLabelsToMessages([message], label);
@@ -1715,7 +1820,7 @@ async function classifyAndMove(message) {
  * Supports MessageList pagination via continueList.
  */
 async function handleNewMail(folder, messageList) {
-    const settings = await browser.storage.local.get(['autoSortEnabled', 'enableAi']);
+    const settings = await browser.storage.local.get(['autoSortEnabled', 'enableAi', 'aiProvider']);
 
     // Check if auto-sort is enabled
     if (!settings.autoSortEnabled) return;
@@ -1724,12 +1829,21 @@ async function handleNewMail(folder, messageList) {
     // Verify this is Inbox folder (specialUse array contains "inbox")
     if (!folder.specialUse?.includes("inbox")) return;
 
+    // Get provider setting for concurrency limit
+    const provider = settings.aiProvider || 'gemini';
+
+    // Use provider batch config for concurrency limit
+    const limit = PROVIDER_BATCH_CONFIG[provider]?.concurrency || 3;
+
+    if (window.debugLogger) {
+        window.debugLogger.info('[AutoSort]', `Processing new mail with concurrency=${limit} for provider=${provider}`);
+    }
+
     // Process all pages of messages
     let page = messageList;
     while (true) {
-        for (const message of page.messages) {
-            await classifyAndMove(message);
-        }
+        // Process concurrently instead of sequentially
+        await processWithConcurrency(page.messages, classifyAndMove, limit);
         if (!page.id) break;
         page = await browser.messages.continueList(page.id);
     }
@@ -1749,17 +1863,42 @@ browser.menus.create({
     contexts: ["message_list"]
 });
 
-// Add submenu items for labels
-browser.storage.local.get(['labels']).then(result => {
-    if (result.labels) {
-        result.labels.forEach(label => {
+// Helper to rebuild label submenu
+async function rebuildLabelSubmenu(labels) {
+    // Remove existing label menu items
+    try {
+        const existingItems = await browser.menus.getAll();
+        for (const item of existingItems) {
+            if (item.parentId === "autosort-label") {
+                browser.menus.remove(item.id);
+            }
+        }
+    } catch (e) {
+        // Ignore errors
+    }
+
+    // Create new label menu items
+    if (labels && labels.length > 0) {
+        for (const label of labels) {
             browser.menus.create({
                 id: `label-${label}`,
                 parentId: "autosort-label",
                 title: label,
                 contexts: ["message_list"]
             });
-        });
+        }
+    }
+}
+
+// Initial label menu setup
+browser.storage.local.get(['labels']).then(result => {
+    rebuildLabelSubmenu(result.labels);
+});
+
+// Update menu when labels change
+browser.storage.onChanged.addListener((changes) => {
+    if (changes.labels) {
+        rebuildLabelSubmenu(changes.labels.newValue);
     }
 });
 

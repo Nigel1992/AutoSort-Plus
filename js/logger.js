@@ -81,7 +81,11 @@ class DebugLogger {
         }
         if (this.enabled) {
             const style = this.getTagStyle(tag);
-            console[type](`%c${tag}`, style, message, data !== null && data !== undefined ? data : '');
+            if (data !== null && data !== undefined) {
+                console[type](`%c${tag}`, style, message, data);
+            } else {
+                console[type](`%c${tag}`, style, message);
+            }
         }
     }
 

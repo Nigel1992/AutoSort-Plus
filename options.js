@@ -1,10 +1,8 @@
 document.addEventListener('DOMContentLoaded', async function() {
-    // Initialize debug logger
     if (window.debugLogger) {
         window.debugLogger.init();
     }
 
-    // Initialize collapsible sections
     const sectionHeaders = document.querySelectorAll('.section-header');
     sectionHeaders.forEach(header => {
         header.addEventListener('click', function() {
@@ -14,16 +12,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             const icon = this.querySelector('.collapse-icon');
             
             if (section.classList.contains('collapsed')) {
-                // Expand
                 section.classList.remove('collapsed');
                 content.style.display = 'block';
                 icon.textContent = '▼';
-                // Trigger animation
                 setTimeout(() => {
                     content.style.animation = 'slideDown 0.3s ease-out';
                 }, 0);
             } else {
-                // Collapse
                 section.classList.add('collapsed');
                 content.style.display = 'none';
                 icon.textContent = '▶';
@@ -81,8 +76,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Debug mode element
     const enableDebugCheckbox = document.getElementById('enable-debug');
-    
-    // Update endpoint URLs when Ollama URL changes
+
     if (ollamaUrlInput) {
         ollamaUrlInput.addEventListener('input', () => {
             const url = ollamaUrlInput.value.trim() || 'http://localhost:11434';
@@ -147,12 +141,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     };
     
-    // Update provider info when selection changes
     function updateProviderInfo() {
         const provider = aiProviderSelect.value;
         const config = aiProviders[provider];
-        
-        // Get subsection elements
+
         const ollamaSubsection = document.getElementById('ollama-settings-subsection');
         const apiKeySubsection = document.getElementById('api-key-subsection');
         const geminiMultiKeysSubsection = document.getElementById('gemini-multi-keys-subsection');
@@ -160,12 +152,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const rateLimitWarning = document.getElementById('rate-limit-warning');
         const openaiCompatibleSubsection = document.getElementById('openai-compatible-settings-subsection');
 
-        // Show/hide rate limit warning (not for Ollama or OpenAI-Compatible local)
-        if (rateLimitWarning) {
-            rateLimitWarning.style.display = (provider === 'ollama' || provider === 'openai-compatible') ? 'none' : 'block';
-        }
-        
-        // Show/hide Gemini-specific elements
+        // Show/hide provider-specific UI elements
         if (provider === 'gemini') {
             geminiPaidContainer.style.display = 'block';
             if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'block';
@@ -175,7 +162,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (openaiCompatibleSubsection) openaiCompatibleSubsection.style.display = 'none';
             updateGeminiUsageDisplay();
         } else if (provider === 'ollama') {
-            // Show Ollama settings, hide API key and Gemini sections
             geminiPaidContainer.style.display = 'none';
             if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'none';
             if (geminiUsageSubsection) geminiUsageSubsection.style.display = 'none';
@@ -183,7 +169,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (ollamaSubsection) ollamaSubsection.style.display = 'block';
             if (openaiCompatibleSubsection) openaiCompatibleSubsection.style.display = 'none';
         } else if (provider === 'openai-compatible') {
-            // Show OpenAI-Compatible settings, hide others
             geminiPaidContainer.style.display = 'none';
             if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'none';
             if (geminiUsageSubsection) geminiUsageSubsection.style.display = 'none';
@@ -210,11 +195,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             apiKeyInput.placeholder = `Enter your ${config.name} API key`;
         }
 
-        // Update save button state when provider changes
         updateSaveButtonState();
     }
     
-    // Update Gemini usage display
     async function updateGeminiUsageDisplay() {
         const data = await browser.storage.local.get(['geminiRateLimits', 'currentGeminiKeyIndex', 'geminiApiKeys', 'geminiRateLimit']);
         const currentIndex = data.currentGeminiKeyIndex || 0;
@@ -241,14 +224,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // Update single key usage display (backward compatibility)
+    // Backward compatibility for single key mode
     async function updateSingleKeyUsageDisplay(rateLimit) {
         const now = Date.now();
-        
-        // Update daily count
+
         document.getElementById('gemini-daily-count').textContent = rateLimit.dailyCount;
-        
-        // Update last request time
+
         if (rateLimit.requests && rateLimit.requests.length > 0) {
             const lastRequest = Math.max(...rateLimit.requests);
             const minutesAgo = Math.floor((now - lastRequest) / 60000);
@@ -263,16 +244,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else {
             document.getElementById('gemini-last-request').textContent = 'Never';
         }
-        
-        // Update reset time
+
         if (rateLimit.dailyResetTime > now) {
             const hoursUntil = Math.ceil((rateLimit.dailyResetTime - now) / (1000 * 60 * 60));
             document.getElementById('gemini-reset-time').textContent = `In ${hoursUntil} hour${hoursUntil > 1 ? 's' : ''}`;
         } else {
             document.getElementById('gemini-reset-time').textContent = 'Expired (will reset on next request)';
         }
-        
-        // Update status and show warnings
+
         const usageMessage = document.getElementById('usage-message');
         const statusSpan = document.getElementById('gemini-status');
         
@@ -293,7 +272,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // Update multi-key usage display
     function updateMultiKeyUsageDisplay(keys, rateLimits, currentIndex) {
         const container = document.getElementById('all-keys-usage-stats');
         const now = Date.now();
@@ -305,9 +283,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             const card = document.createElement('div');
             card.className = `key-usage-card${isActive ? ' active' : ''}`;
-            
-            // Determine status
-            let statusBadge = '';
+
+        let statusBadge = '';
             if (isActive) {
                 statusBadge = '<span class="key-status active">🔵 ACTIVE</span>';
             } else if (rateLimit.dailyCount >= 20) {
@@ -317,16 +294,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             } else {
                 statusBadge = '<span class="key-status ready">🟢 READY</span>';
             }
-            
-            // Calculate reset time
-            let resetText = '--';
+
+        let resetText = '--';
             if (rateLimit.dailyResetTime > now) {
                 const hoursUntil = Math.ceil((rateLimit.dailyResetTime - now) / (1000 * 60 * 60));
                 resetText = `${hoursUntil}h`;
             }
-            
-            // Last request time
-            let lastRequestText = 'Never';
+
+        let lastRequestText = 'Never';
             if (rateLimit.requests && rateLimit.requests.length > 0) {
                 const lastRequest = Math.max(...rateLimit.requests);
                 const minutesAgo = Math.floor((now - lastRequest) / 60000);
@@ -338,9 +313,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     lastRequestText = `${Math.floor(minutesAgo / 60)}h ago`;
                 }
             }
-            
-            // Mask key for display
-            const maskedKey = key ? `...${key.slice(-8)}` : 'Not set';
+
+        const maskedKey = key ? `...${key.slice(-8)}` : 'Not set';
             
             card.innerHTML = `
                 <div class="key-header">
@@ -371,7 +345,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
     
-    // Add Gemini key input field
     function addGeminiKeyInput(value = '', index = -1) {
         if (index === -1) {
             index = geminiKeys.length;
@@ -396,7 +369,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             const newKey = e.target.value.trim();
             geminiKeys[index] = newKey;
 
-            // Check for duplicates in real-time
             if (newKey) {
                 const isDuplicate = geminiKeys.some((key, i) => i !== index && key.trim() === newKey);
                 if (isDuplicate) {
@@ -411,7 +383,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 input.title = '';
             }
 
-            // Update save button state
             updateSaveButtonState();
         });
         
@@ -455,7 +426,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         geminiKeysList.appendChild(keyItem);
     }
     
-    // Remove Gemini key
     function removeGeminiKey(index) {
         if (geminiKeys.length <= 1) {
             alert('You must have at least one API key configured.');
@@ -468,7 +438,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
     
-    // Refresh Gemini keys list display
     function refreshGeminiKeysList() {
         geminiKeysList.innerHTML = '';
         geminiKeys.forEach((key, index) => {
@@ -476,7 +445,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
     
-    // Test individual Gemini key
     async function testGeminiKey(apiKey, index, keyItemElement) {
         const statusSpan = keyItemElement.querySelector('.key-test-result');
         
@@ -525,17 +493,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.error(`Key #${index + 1} test error:`, error);
         }
     }
-    
-    // Initialize provider info
+
     updateProviderInfo();
     aiProviderSelect.addEventListener('change', updateProviderInfo);
-    
-    // Add Gemini key button
+
     addGeminiKeyButton.addEventListener('click', () => {
         addGeminiKeyInput('');
     });
     
-    // Reset Gemini counter button
     document.getElementById('reset-gemini-counter').addEventListener('click', async () => {
         if (confirm('Reset usage counter? Do this only after switching to a new API key.')) {
             await browser.storage.local.set({ 
@@ -552,7 +517,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
     
-    // Refresh usage button (single key)
     document.getElementById('refresh-usage').addEventListener('click', async () => {
         await updateGeminiUsageDisplay();
         const usageMessage = document.getElementById('usage-message');
@@ -565,13 +529,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 3000);
     });
     
-    // Refresh all usage button (multi key)
     document.getElementById('refresh-all-usage').addEventListener('click', async () => {
         await updateGeminiUsageDisplay();
         showMessage('✓ All usage information refreshed.', true);
     });
     
-    // Get API Key button
     getApiKeyButton.addEventListener('click', async () => {
         const provider = aiProviderSelect.value;
         const config = aiProviders[provider];
@@ -583,23 +545,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         try {
-            // Try to open in new tab
             await browser.tabs.create({ url: config.signupUrl });
         } catch (error) {
             console.error('Failed to open tab:', error);
-            // Fallback: show URL and copy to clipboard
             const url = config.signupUrl;
             try {
                 await navigator.clipboard.writeText(url);
                 showMessage(`URL copied to clipboard:\n${url}`, true);
             } catch (e) {
-                // Last resort: show alert with URL
                 alert(`Please visit:\n${url}`);
             }
         }
     });
 
-    // Function to validate and update save button state
     function updateSaveButtonState() {
         const labels = Array.from(document.querySelectorAll('.label-input'))
             .map(input => input.value.trim())
@@ -650,20 +608,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Load saved settings
     browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'customBaseUrl', 'customModel', 'debugMode', 'batchChunkSize', 'autoSortEnabled', 'customPrompt']).then(result => {
         if (result.labels && result.labels.length > 0) {
             result.labels.forEach(label => {
                 addLabelInput(label);
             });
         } else {
-            // Show instruction if no labels
             labelsContainer.innerHTML = '<div class="instruction-message">No folders/labels configured. Click "Load Folders from Mail Account" above or add custom labels below.</div>';
         }
-        
-        // Load API keys
+
         if (result.geminiApiKeys && result.geminiApiKeys.length > 0) {
-            // Multi-key mode
             geminiKeys = result.geminiApiKeys;
             geminiKeys.forEach((key, index) => {
                 addGeminiKeyInput(key, index);
@@ -677,8 +631,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             // No keys configured yet - add one empty field
             addGeminiKeyInput('', 0);
         }
-        
-        // Load Ollama settings
+
         if (result.ollamaUrl && ollamaUrlInput) {
             ollamaUrlInput.value = result.ollamaUrl;
         }
@@ -696,17 +649,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             ollamaCpuOnlyCheckbox.checked = result.ollamaCpuOnly === true;
         }
 
-        // Load OpenAI-Compatible endpoint settings
         if (result.customBaseUrl && customBaseUrlInput) {
             customBaseUrlInput.value = result.customBaseUrl;
         }
         if (result.customModel) {
-            // Check if it matches a dropdown option or use custom input
             const dropdownOptions = customModelSelect ? Array.from(customModelSelect.options).map(o => o.value) : [];
             if (dropdownOptions.includes(result.customModel)) {
                 if (customModelSelect) customModelSelect.value = result.customModel;
             } else {
-                // Not in dropdown - use custom input
                 if (customModelSelect) {
                     customModelSelect.value = 'custom';
                     if (customModelCustomInput) {
@@ -723,28 +673,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         // Set enableAi to true by default if not set
         document.getElementById('enable-ai').checked = result.enableAi !== false;
-        
-        // Set gemini paid plan checkbox
+
         geminiPaidCheckbox.checked = result.geminiPaidPlan === true;
 
-        // Load debug mode setting
         if (enableDebugCheckbox && result.debugMode !== undefined) {
             enableDebugCheckbox.checked = result.debugMode;
         }
 
-        // Load batch chunk size setting
         const batchChunkSizeInput = document.getElementById('batch-chunk-size');
         if (batchChunkSizeInput && result.batchChunkSize) {
             batchChunkSizeInput.value = result.batchChunkSize;
         }
 
-        // Load auto-sort setting
         const autoSortCheckbox = document.getElementById('enable-auto-sort');
         if (autoSortCheckbox) {
             autoSortCheckbox.checked = result.autoSortEnabled === true;
         }
 
-        // Load custom prompt setting
         const customPromptTextarea = document.getElementById('custom-prompt-text');
         if (customPromptTextarea) {
             customPromptTextarea.value = result.customPrompt || '';
@@ -753,7 +698,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateSaveButtonState();
     });
 
-    // Debug mode toggle
     if (enableDebugCheckbox) {
         enableDebugCheckbox.addEventListener('change', async () => {
             if (window.debugLogger) {
@@ -768,7 +712,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Reset custom prompt to default
     const resetPromptButton = document.getElementById('reset-prompt');
     if (resetPromptButton) {
         resetPromptButton.addEventListener('click', () => {
@@ -779,12 +722,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
     }
-    
-    // Add input listeners for validation
+
     apiKeyInput.addEventListener('input', updateSaveButtonState);
     labelsContainer.addEventListener('input', updateSaveButtonState);
 
-    // Test API connection
     testApiButton.addEventListener('click', async () => {
         const apiKey = apiKeyInput.value.trim();
         const provider = aiProviderSelect.value;
@@ -886,7 +827,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // Load IMAP folders
     loadImapFoldersButton.addEventListener('click', async () => {
         folderLoadingIndicator.style.display = 'block';
         folderSelection.style.display = 'none';
@@ -899,8 +839,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const folders = await getAllFolders(account);
                 allFolders.push(...folders);
             }
-            
-            // Filter out system folders and duplicates
+
             loadedFolders = [...new Set(allFolders
                 .filter(f => !['Inbox', 'Trash', 'Drafts', 'Sent', 'Spam', 'Junk', 'Templates', 'Outbox', 'Archives'].includes(f))
                 .map(f => f.replace(/^INBOX\./i, '').trim())
@@ -911,8 +850,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 folderLoadingIndicator.style.display = 'none';
                 return;
             }
-            
-            // Show folder preview
+
             folderCount.textContent = loadedFolders.length;
             foldersPreview.innerHTML = loadedFolders
                 .slice(0, 10)
@@ -927,8 +865,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             folderLoadingIndicator.style.display = 'none';
         }
     });
-    
-    // Use IMAP folders
+
     useImapFoldersButton.addEventListener('click', () => {
         if (confirm(`This will replace any existing folders/labels with ${loadedFolders.length} folders from your mail account. Continue?`)) {
             labelsContainer.innerHTML = '';
@@ -940,14 +877,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             showMessage(`Loaded ${loadedFolders.length} folders from your mail account. Don't forget to save!`, true);
         }
     });
-    
-    // Use custom folders
+
     useCustomFoldersButton.addEventListener('click', () => {
         folderSelection.style.display = 'none';
         showMessage('You can now add custom folders below', true);
     });
-    
-    // Helper function to recursively get all folders
+
     async function getAllFolders(account) {
         const folders = [];
         
@@ -972,18 +907,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         return folders;
     }
 
-    // Import categories/folders in bulk
     importLabelsButton.addEventListener('click', () => {
         const bulkText = bulkImportTextarea.value.trim();
         const labels = bulkText.split('\n').map(l => l.trim()).filter(l => l !== '');
-        
-        // Validation
+
         if (labels.length === 0) {
             showMessage('Please add at least one folder/label before importing. Enter labels one per line.', false);
             return;
         }
 
-        // Confirm if there are existing labels
         const existingLabels = Array.from(document.querySelectorAll('.label-input'))
             .map(input => input.value.trim())
             .filter(label => label !== '');
@@ -994,22 +926,17 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
-        // Clear existing categories/folders
         labelsContainer.innerHTML = '';
 
-        // Add each category/folder
         labels.forEach(label => {
             addLabelInput(label);
         });
 
         updateSaveButtonState();
         showMessage(`Imported ${labels.length} categories/folders. Don't forget to save!`, true);
-        bulkImportTextarea.value = ''; // Clear the textarea
+        bulkImportTextarea.value = '';
     });
 
-    // Add new label input
-    
-    // Show/hide custom model input based on selection
     if (ollamaModelSelect) {
         ollamaModelSelect.addEventListener('change', () => {
             if (ollamaModelSelect.value === 'custom') {
@@ -1021,12 +948,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Update save button when custom model input changes
     if (ollamaCustomModelInput) {
         ollamaCustomModelInput.addEventListener('input', updateSaveButtonState);
     }
-    
-    // Test Ollama connection
+
     if (testOllamaButton) {
         testOllamaButton.addEventListener('click', async () => {
             const ollamaUrl = ollamaUrlInput.value.trim() || 'http://localhost:11434';
@@ -1111,7 +1036,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Custom model dropdown change handler - show/hide custom input
     if (customModelSelect) {
         customModelSelect.addEventListener('change', () => {
             if (customModelSelect.value === 'custom') {
@@ -1123,7 +1047,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Update save button when custom endpoint inputs change
     if (customBaseUrlInput) {
         customBaseUrlInput.addEventListener('input', updateSaveButtonState);
     }
@@ -1131,7 +1054,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         customModelCustomInput.addEventListener('input', updateSaveButtonState);
     }
 
-    // Fetch models from OpenAI-compatible endpoint
     if (fetchCustomModelsButton) {
         fetchCustomModelsButton.addEventListener('click', async () => {
             const baseUrl = customBaseUrlInput ? customBaseUrlInput.value.trim().replace(/\/$/, '') : '';
@@ -1163,7 +1085,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     // Use tab injection for localhost (Thunderbird restriction)
                     modelsData = await fetchModelsViaTab(baseUrl, apiKey);
                 } else {
-                    // Direct fetch for cloud endpoints
                     const response = await fetch(baseUrl + '/models', { headers });
 
                     if (!response.ok) {
@@ -1173,7 +1094,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     modelsData = await response.json();
                 }
 
-                // Parse models - handle different response formats
                 const models = modelsData.data || modelsData.models || [];
 
                 if (models.length === 0) {
@@ -1184,7 +1104,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     return;
                 }
 
-                // Populate dropdown
                 if (customModelSelect) {
                     customModelSelect.innerHTML = '<option value="">-- Select model --</option>';
                     models.forEach(m => {
@@ -1194,7 +1113,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                         option.textContent = modelId;
                         customModelSelect.appendChild(option);
                     });
-                    // Add custom option at end
                     const customOpt = document.createElement('option');
                     customOpt.value = 'custom';
                     customOpt.textContent = 'Custom (enter manually)';
@@ -1216,14 +1134,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Test OpenAI-Compatible endpoint connection
     if (testCustomEndpointButton) {
         testCustomEndpointButton.addEventListener('click', async () => {
             const baseUrl = customBaseUrlInput ? customBaseUrlInput.value.trim() : '';
             let model = customModelSelect ? customModelSelect.value : '';
             const apiKey = customApiKeyInput ? customApiKeyInput.value.trim() : '';
 
-            // If custom selected, use custom input value
             if (model === 'custom' && customModelCustomInput) {
                 model = customModelCustomInput.value.trim();
             }
@@ -1254,7 +1170,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                     headers['Authorization'] = `Bearer ${apiKey}`;
                 }
 
-                // Normalize base URL (remove trailing slash)
                 const normalizedUrl = baseUrl.replace(/\/$/, '');
 
                 if (window.debugLogger) { window.debugLogger.info('[Custom]', 'Test connecting to: ' + normalizedUrl + '/chat/completions'); }
@@ -1301,7 +1216,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Run comprehensive Ollama diagnostics
     if (diagnoseOllamaButton) {
         diagnoseOllamaButton.addEventListener('click', async () => {
             const ollamaUrl = ollamaUrlInput.value.trim() || 'http://localhost:11434';
@@ -1310,9 +1224,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             ollamaDiagnostics.style.display = 'block';
             ollamaDiagnostics.className = 'diagnostics-result';
             ollamaDiagnostics.textContent = diagnosticOutput + 'Running tests...\n';
-            
+
             try {
-                // Test 1: Check /api/tags endpoint
                 diagnosticOutput += '📋 Test 1: List Models Endpoint\n';
                 diagnosticOutput += `   URL: ${ollamaUrl}/api/tags\n`;
                 try {
@@ -1333,8 +1246,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 } catch (error) {
                     diagnosticOutput += `   ✗ ERROR: ${error.message}\n`;
                 }
-                
-                // Test 2: Check /api/version endpoint
+
                 diagnosticOutput += '\n🔢 Test 2: Version Endpoint\n';
                 diagnosticOutput += `   URL: ${ollamaUrl}/api/version\n`;
                 try {
@@ -1350,13 +1262,11 @@ document.addEventListener('DOMContentLoaded', async function() {
                 } catch (error) {
                     diagnosticOutput += `   ✗ ERROR: ${error.message}\n`;
                 }
-                
-                // Test 3: Test pull endpoint (without actually downloading)
+
                 diagnosticOutput += '\n⬇️ Test 3: Pull Endpoint Check\n';
                 diagnosticOutput += `   URL: ${ollamaUrl}/api/pull\n`;
                 diagnosticOutput += `   Note: This endpoint is used for downloading models\n`;
-                
-                // Summary
+
                 diagnosticOutput += '\n' + '='.repeat(50) + '\n';
                 diagnosticOutput += '📊 SUMMARY:\n\n';
                 
@@ -1383,8 +1293,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             ollamaDiagnostics.textContent = diagnosticOutput;
         });
     }
-    
-    // List Ollama models
+
     if (listOllamaModelsButton) {
         listOllamaModelsButton.addEventListener('click', async () => {
             const ollamaUrl = ollamaUrlInput.value.trim() || 'http://localhost:11434';
@@ -1416,7 +1325,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Download Ollama model via tab proxy
     if (downloadOllamaModelButton) {
         downloadOllamaModelButton.addEventListener('click', async () => {
             const ollamaUrl = (ollamaUrlInput.value.trim() || 'http://localhost:11434').replace(/\/$/, '');
@@ -1434,7 +1342,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ollamaDownloadStatus.className = 'api-test-result';
                 ollamaDownloadStatus.style.display = 'block';
 
-                // Ask background to open a hidden tab and start pull
                 const headers = token ? { Authorization: `Bearer ${token}` } : {};
                 await browser.runtime.sendMessage({
                     action: 'startOllamaPull',
@@ -1449,7 +1356,6 @@ document.addEventListener('DOMContentLoaded', async function() {
                 downloadOllamaModelButton.disabled = false;
             }
         });
-        // Listen for progress events from content.js
         browser.runtime.onMessage.addListener((msg) => {
             if (msg.action === 'ollamaPullProgress') {
                 const parts = [];
@@ -1472,7 +1378,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     addLabelButton.addEventListener('click', () => {
-        // Clear instruction message if present
         const instructionMsg = labelsContainer.querySelector('.instruction-message');
         if (instructionMsg) {
             labelsContainer.innerHTML = '';
@@ -1481,7 +1386,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         updateSaveButtonState();
     });
 
-    // Save settings
     saveButton.addEventListener('click', () => {
         const labels = Array.from(document.querySelectorAll('.label-input'))
             .map(input => input.value.trim())
@@ -1490,35 +1394,28 @@ document.addEventListener('DOMContentLoaded', async function() {
         const apiKey = apiKeyInput.value.trim();
         const provider = aiProviderSelect.value;
 
-        // Extract batch chunk size with null safety and value clamping (1-20)
         const batchChunkSizeEl = document.getElementById('batch-chunk-size');
         const batchChunkSize = Math.max(1, Math.min(20, parseInt(batchChunkSizeEl?.value) || 5));
 
-        // Extract auto-sort setting
         const autoSortCheckbox = document.getElementById('enable-auto-sort');
         const autoSortEnabled = autoSortCheckbox ? autoSortCheckbox.checked : false;
 
-        // Extract custom prompt setting
         const customPromptTextarea = document.getElementById('custom-prompt-text');
         const customPrompt = customPromptTextarea ? customPromptTextarea.value.trim() : '';
 
-        // Validation
         if (labels.length === 0) {
             showMessage('Please add at least one folder/label before saving. Use "Load Folders from Mail Account" or add custom labels.', false);
             return;
         }
-        
-        // Validate API keys based on provider
+
         if (provider === 'gemini') {
-            // Filter out empty Gemini keys
             const validGeminiKeys = geminiKeys.filter(key => key && key.trim() !== '');
             
             if (validGeminiKeys.length === 0) {
                 showMessage('Please add at least one Gemini API key before saving.', false);
                 return;
             }
-            
-            // Check for duplicate keys
+
             const uniqueKeys = new Set(validGeminiKeys.map(key => key.trim().toLowerCase()));
             if (uniqueKeys.size !== validGeminiKeys.length) {
                 showMessage('⚠️ Duplicate API keys detected! Each key must be unique. Please remove duplicates before saving.', false);
@@ -1537,8 +1434,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 autoSortEnabled: autoSortEnabled,
                 customPrompt: customPrompt
             };
-            
-            // Initialize rate limits array for all keys if not exists
+
             browser.storage.local.get(['geminiRateLimits']).then(result => {
                 if (!result.geminiRateLimits || result.geminiRateLimits.length !== validGeminiKeys.length) {
                     settings.geminiRateLimits = validGeminiKeys.map(() => ({
@@ -1594,7 +1490,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             let model = customModelSelect ? customModelSelect.value : '';
             const apiKey = customApiKeyInput ? customApiKeyInput.value.trim() : '';
 
-            // If custom selected, use custom input value
             if (model === 'custom' && customModelCustomInput) {
                 model = customModelCustomInput.value.trim();
             }
@@ -1654,7 +1549,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     });
 
-    // Add category/folder input field
     function addLabelInput(value = '') {
         const labelItem = document.createElement('div');
         labelItem.className = 'label-item';
@@ -1672,8 +1566,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         removeButton.addEventListener('click', () => {
             labelItem.remove();
             updateSaveButtonState();
-            
-            // Show instruction if no labels left
+
             const remainingLabels = document.querySelectorAll('.label-input');
             if (remainingLabels.length === 0) {
                 labelsContainer.innerHTML = '<div class="instruction-message">No folders/labels configured. Click "Load Folders from Mail Account" above or add custom labels below.</div>';
@@ -1685,13 +1578,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         labelsContainer.appendChild(labelItem);
     }
 
-    // Show API test result
     function showApiTestResult(message, isSuccess) {
         apiTestResult.textContent = message;
         apiTestResult.className = `api-test-result ${isSuccess ? 'success' : 'error'}`;
     }
 
-    // Helper function to fetch models via tab injection (for localhost endpoints)
     async function fetchModelsViaTab(baseUrl, apiKey) {
         const tab = await browser.tabs.create({ url: baseUrl, active: false });
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -1723,8 +1614,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             await browser.tabs.executeScript(tab.id, { code: scriptCode });
 
-            // Poll for result
-            let result = null;
+        let result = null;
             for (let i = 0; i < 30; i++) {
                 await new Promise(resolve => setTimeout(resolve, 500));
                 try {
@@ -1749,7 +1639,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Show message to user
     function showMessage(message, isSuccess = true) {
         const messageDiv = document.createElement('div');
         messageDiv.className = 'message';
@@ -1762,13 +1651,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         }, 3000);
     }
 
-    // Function to format timestamp
     function formatTimestamp(timestamp) {
         const date = new Date(timestamp);
         return date.toLocaleString();
     }
 
-    // Function to update history table
     async function updateHistoryTable() {
         const historyBody = document.getElementById('history-body');
         const data = await browser.storage.local.get('moveHistory');
@@ -1784,7 +1671,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         `).join('');
     }
 
-    // Function to clear history
     async function clearHistory() {
         if (confirm('Are you sure you want to clear the move history?')) {
             await browser.storage.local.set({ moveHistory: [] });
@@ -1792,10 +1678,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // Initialize the page
     await updateHistoryTable();
 
-    // Add event listeners for history controls
     document.getElementById('clear-history').addEventListener('click', clearHistory);
     document.getElementById('refresh-history').addEventListener('click', updateHistoryTable);
 
@@ -1832,22 +1716,17 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         const done = (completed || 0) + (failed || 0) + (skipped || 0);
         const pct = total > 0 ? Math.round((done / total) * 100) : 0;
-
-        // Show the panel
         batchPanel.style.display = 'block';
         batchPanel.dataset.status = status;
 
-        // Provider badge
         if (batchBadge && provider) {
             batchBadge.textContent = provider;
         }
 
-        // Progress bar
         if (batchFill) {
             batchFill.style.width = pct + '%';
         }
 
-        // Status text (chunkIndex is already 1-based from background.js)
         const displayChunk = chunkIndex || 0;
         const displayTotal = totalChunks || 0;
 
@@ -1875,7 +1754,6 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
-        // Pause / Resume button toggle
         if (batchPauseBtn && batchResumeBtn) {
             if (status === 'paused') {
                 batchPauseBtn.style.display  = 'none';
@@ -1886,12 +1764,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         }
 
-        // Hide cancel button when finished
         if (batchCancelBtn) {
             batchCancelBtn.style.display = (status === 'done' || status === 'cancelled') ? 'none' : '';
         }
 
-        // Auto-hide panel 5 s after completion
         if (status === 'done' || status === 'cancelled') {
             clearTimeout(_batchHideTimer);
             _batchHideTimer = setTimeout(() => {
@@ -1900,21 +1776,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    // On page open: pick up any already-running batch from storage
     browser.storage.local.get('currentBatch').then(result => {
         if (result.currentBatch && result.currentBatch.status === 'running') {
             applyBatchProgress(result.currentBatch);
         }
     });
 
-    // Live updates from background script
     browser.runtime.onMessage.addListener(msg => {
         if (msg.action === 'batchProgress') {
             applyBatchProgress(msg);
         }
     });
 
-    // Pause button
     if (batchPauseBtn) {
         batchPauseBtn.addEventListener('click', () => {
             browser.runtime.sendMessage({ action: 'batchControl', command: 'pause' }).catch(() => {});
@@ -1925,7 +1798,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Resume button
     if (batchResumeBtn) {
         batchResumeBtn.addEventListener('click', () => {
             browser.runtime.sendMessage({ action: 'batchControl', command: 'resume' }).catch(() => {});
@@ -1935,7 +1807,6 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
 
-    // Cancel button
     if (batchCancelBtn) {
         batchCancelBtn.addEventListener('click', () => {
             if (!confirm('Cancel the current batch? Already-sorted emails will not be undone.')) return;
