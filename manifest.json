@@ -18,7 +18,6 @@
     "menus",
     "tabs",
     "messagesMove",
-    "messagesRead",
     "activeTab",
     "https://generativelanguage.googleapis.com/*",
     "http://localhost/*",

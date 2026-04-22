@@ -47,6 +47,37 @@ browser.browserAction.onClicked.addListener(() => {
     browser.runtime.openOptionsPage();
 });
 
+// Register auto-sort listener for new emails
+registerAutoSortListener();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEXT EXTRACTION HELPER
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Extract body text from a full Thunderbird message structure.
+ * Used by both batch processing and auto-sort.
+ */
+function extractTextFromParts(fullMessage) {
+    function fromParts(parts) {
+        if (!parts) return '';
+        let text = '';
+        for (const part of parts) {
+            if (part.parts) text += fromParts(part.parts);
+            if (part.contentType === 'text/plain') {
+                text += part.body + '\n';
+            } else if (part.contentType === 'text/html' && !text) {
+                text = browser.messengerUtilities.convertToPlainText(part.body);
+            } else if (part.contentType === 'message/rfc822' && part.body) {
+                text += part.body + '\n';
+            }
+        }
+        return text;
+    }
+    if (fullMessage.parts) return fromParts(fullMessage.parts);
+    return fullMessage.body || '';
+}
+
 // Ollama handling using tab injection (runs fetch in browser context)
 
 async function ollamaChatViaTab(ollamaUrl, model, prompt, authToken) {
@@ -288,7 +319,9 @@ let _batchState = {
     completed: 0,
     failed:    0,
     skipped:   0,
-    provider:  ''
+    provider:  '',
+    chunkIndex: 0,
+    totalChunks: 0
 };
 
 /** Reset batch state to defaults. */
@@ -301,7 +334,9 @@ function _resetBatchState(total, provider) {
         completed: 0,
         failed:    0,
         skipped:   0,
-        provider
+        provider,
+        chunkIndex: 0,
+        totalChunks: 0
     };
 }
 
@@ -314,7 +349,9 @@ async function _broadcastBatchProgress(status = 'running') {
         completed: _batchState.completed,
         failed:    _batchState.failed,
         skipped:   _batchState.skipped,
-        provider:  _batchState.provider
+        provider:  _batchState.provider,
+        chunkIndex: _batchState.chunkIndex,
+        totalChunks: _batchState.totalChunks
     };
     try {
         // Persist to storage so options page can pick it up on open
@@ -339,46 +376,20 @@ async function _waitWhilePaused() {
 
 /**
  * Core batch engine. Processes an array of Thunderbird message objects using
- * the currently configured AI provider with appropriate concurrency and pacing.
+ * the currently configured AI provider with chunk-based processing.
  *
  * @param {Array} messages  – Array of Thunderbird message objects (from mailTabs API)
  */
 async function batchAnalyzeEmails(messages) {
-    const settingsData = await browser.storage.local.get(['aiProvider', 'geminiPaidPlan']);
+    const settingsData = await browser.storage.local.get(['aiProvider', 'batchChunkSize']);
     const provider = settingsData.aiProvider || 'gemini';
-    const isPaidGemini = !!settingsData.geminiPaidPlan;
-
-    const providerCfg = PROVIDER_BATCH_CONFIG[provider] || { concurrency: 1, delayMs: 500 };
-    // Gemini paid tier can run with higher concurrency
-    const concurrency = (provider === 'gemini' && isPaidGemini) ? 3 : providerCfg.concurrency;
-    const delayMs     = providerCfg.delayMs;
+    const chunkSize = settingsData.batchChunkSize || 5;
 
     _resetBatchState(messages.length, provider);
     await _broadcastBatchProgress('running');
 
     if (window.debugLogger) {
-        window.debugLogger.info('[Batch]', `Starting batch: ${messages.length} emails, provider=${provider}, concurrency=${concurrency}, delayMs=${delayMs}`);
-    }
-
-    // Helper to extract body text from a full Thunderbird message
-    function extractText(fullMessage) {
-        function fromParts(parts) {
-            if (!parts) return '';
-            let text = '';
-            for (const part of parts) {
-                if (part.parts) text += fromParts(part.parts);
-                if (part.contentType === 'text/plain') {
-                    text += part.body + '\n';
-                } else if (part.contentType === 'text/html' && !text) {
-                    text = browser.messengerUtilities.convertToPlainText(part.body);
-                } else if (part.contentType === 'message/rfc822' && part.body) {
-                    text += part.body + '\n';
-                }
-            }
-            return text;
-        }
-        if (fullMessage.parts) return fromParts(fullMessage.parts);
-        return fullMessage.body || '';
+        window.debugLogger.info('[Batch]', `Starting batch: ${messages.length} emails, provider=${provider}, chunkSize=${chunkSize}`);
     }
 
     // Process a single message with one retry on failure
@@ -398,7 +409,7 @@ async function batchAnalyzeEmails(messages) {
                     return;
                 }
 
-                const emailContent = extractText(fullMessage);
+                const emailContent = extractTextFromParts(fullMessage);
                 if (!emailContent || !emailContent.trim()) {
                     _batchState.skipped++;
                     return;
@@ -431,55 +442,38 @@ async function batchAnalyzeEmails(messages) {
         }
     }
 
-    // Concurrency pool runner
-    let launchIndex = 0;
-    let lastLaunchTime = 0;
-    const inFlight = new Set();
+    // Chunk-based processing: process N emails, await all, continue
+    const totalChunks = Math.ceil(messages.length / chunkSize);
+    _batchState.totalChunks = totalChunks;
 
-    while (launchIndex < messages.length || inFlight.size > 0) {
-        // Check cancellation
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+        // Check cancellation before starting chunk
         if (_batchState.cancelled) break;
 
-        // Wait while paused (only when no new items are being launched)
-        if (_batchState.paused && launchIndex >= messages.length) {
-            await _waitWhilePaused();
+        // Wait while paused before starting chunk
+        while (_batchState.paused && !_batchState.cancelled) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        if (_batchState.cancelled) break;
+
+        // Get current chunk of messages
+        const chunkStart = chunkIndex * chunkSize;
+        const chunkEnd = Math.min(chunkStart + chunkSize, messages.length);
+        const chunkMessages = messages.slice(chunkStart, chunkEnd);
+
+        if (window.debugLogger) {
+            window.debugLogger.info('[Batch]', `Processing chunk ${chunkIndex + 1}/${totalChunks} (emails ${chunkStart + 1}-${chunkEnd} of ${messages.length})`);
         }
 
-        // Launch new tasks up to concurrency limit
-        while (
-            launchIndex < messages.length &&
-            inFlight.size < concurrency &&
-            !_batchState.cancelled &&
-            !_batchState.paused
-        ) {
-            // Enforce minimum delay between launches
-            const now = Date.now();
-            const sinceLastLaunch = now - lastLaunchTime;
-            if (delayMs > 0 && sinceLastLaunch < delayMs) {
-                await new Promise(resolve => setTimeout(resolve, delayMs - sinceLastLaunch));
-            }
+        // Launch all chunk tasks concurrently
+        const chunkPromises = chunkMessages.map(msg => processOne(msg));
 
-            const msg = messages[launchIndex++];
-            lastLaunchTime = Date.now();
+        // Await all responses before continuing to next chunk
+        await Promise.allSettled(chunkPromises);
 
-            const task = processOne(msg).finally(() => {
-                inFlight.delete(task);
-            });
-            inFlight.add(task);
-        }
-
-        // Broadcast progress after each potential change
+        // Update chunk index and broadcast progress after each chunk
+        _batchState.chunkIndex = chunkIndex + 1;
         await _broadcastBatchProgress('running');
-
-        // Yield to let in-flight promises make progress
-        if (inFlight.size > 0) {
-            await Promise.race(inFlight);
-        }
-    }
-
-    // Wait for all remaining in-flight tasks
-    if (inFlight.size > 0) {
-        await Promise.allSettled([...inFlight]);
     }
 
     const finalStatus = _batchState.cancelled ? 'cancelled' : 'done';
@@ -796,7 +790,8 @@ async function analyzeEmailContent(emailContent) {
                     notificationId,
                     "AutoSort+ Rate Limit",
                     `Rate limit reached. Waiting ${rateLimitCheck.waitTime} seconds...`
-                );                await new Promise(resolve => setTimeout(resolve, rateLimitCheck.waitTime * 1000));
+                );
+                await new Promise(resolve => setTimeout(resolve, rateLimitCheck.waitTime * 1000));
             }
             
             keyIndexToUse = rateLimitCheck.keyIndex;
@@ -897,15 +892,12 @@ async function analyzeEmailContent(emailContent) {
 
         if (provider === 'gemini') {
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKeyToUse}`;
-            if (window.debugLogger) {
-                window.debugLogger.info('[Gemini]', 'Making API request...');
-            }
 
             // Track request for rate limiting (free tier only)
             if (!settings.geminiPaidPlan) {
                 await trackGeminiRequest(keyIndexToUse);
             }
-            
+
             await updateNotification(
                 notificationId,
                 "AutoSort+ AI Analysis",
@@ -949,6 +941,10 @@ async function analyzeEmailContent(emailContent) {
                 ]
             };
 
+            if (window.debugLogger) {
+                window.debugLogger.apiRequest('Gemini', apiUrl, requestBody);
+            }
+
             response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
@@ -958,15 +954,22 @@ async function analyzeEmailContent(emailContent) {
             });
 
         } else if (provider === 'openai') {
-            if (window.debugLogger) {
-                window.debugLogger.info('[OpenAI]', 'Making API request...');
-            }
-
             await updateNotification(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Analyzing email content with OpenAI..."
             );
+
+            const requestBody = {
+                model: 'gpt-4o-mini',
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 50,
+                temperature: 0.2
+            };
+
+            if (window.debugLogger) {
+                window.debugLogger.apiRequest('OpenAI', 'https://api.openai.com/v1/chat/completions', requestBody);
+            }
 
             response = await fetch('https://api.openai.com/v1/chat/completions', {
                 method: 'POST',
@@ -974,24 +977,25 @@ async function analyzeEmailContent(emailContent) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${apiKeyToUse}`
                 },
-                body: JSON.stringify({
-                    model: 'gpt-4o-mini',
-                    messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 50,
-                    temperature: 0.2
-                })
+                body: JSON.stringify(requestBody)
             });
 
         } else if (provider === 'anthropic') {
-            if (window.debugLogger) {
-                window.debugLogger.info('[Claude]', 'Making API request...');
-            }
-
             await updateNotification(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Analyzing email content with Claude..."
             );
+
+            const requestBody = {
+                model: 'claude-3-haiku-20240307',
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 50
+            };
+
+            if (window.debugLogger) {
+                window.debugLogger.apiRequest('Claude', 'https://api.anthropic.com/v1/messages', requestBody);
+            }
 
             response = await fetch('https://api.anthropic.com/v1/messages', {
                 method: 'POST',
@@ -1000,23 +1004,26 @@ async function analyzeEmailContent(emailContent) {
                     'x-api-key': apiKeyToUse,
                     'anthropic-version': '2023-06-01'
                 },
-                body: JSON.stringify({
-                    model: 'claude-3-haiku-20240307',
-                    messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 50
-                })
+                body: JSON.stringify(requestBody)
             });
 
         } else if (provider === 'groq') {
-            if (window.debugLogger) {
-                window.debugLogger.info('[Groq]', 'Making API request...');
-            }
-
             await updateNotification(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Analyzing email content with Groq..."
             );
+
+            const requestBody = {
+                model: 'llama-3.3-70b-versatile',
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 50,
+                temperature: 0.2
+            };
+
+            if (window.debugLogger) {
+                window.debugLogger.apiRequest('Groq', 'https://api.groq.com/openai/v1/chat/completions', requestBody);
+            }
 
             response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
@@ -1024,24 +1031,26 @@ async function analyzeEmailContent(emailContent) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${apiKeyToUse}`
                 },
-                body: JSON.stringify({
-                    model: 'llama-3.3-70b-versatile',
-                    messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 50,
-                    temperature: 0.2
-                })
+                body: JSON.stringify(requestBody)
             });
 
         } else if (provider === 'mistral') {
-            if (window.debugLogger) {
-                window.debugLogger.info('[Mistral]', 'Making API request...');
-            }
-
             await updateNotification(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Analyzing email content with Mistral..."
             );
+
+            const requestBody = {
+                model: 'mistral-small-latest',
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 50,
+                temperature: 0.2
+            };
+
+            if (window.debugLogger) {
+                window.debugLogger.apiRequest('Mistral', 'https://api.mistral.ai/v1/chat/completions', requestBody);
+            }
 
             response = await fetch('https://api.mistral.ai/v1/chat/completions', {
                 method: 'POST',
@@ -1049,19 +1058,10 @@ async function analyzeEmailContent(emailContent) {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${apiKeyToUse}`
                 },
-                body: JSON.stringify({
-                    model: 'mistral-small-latest',
-                    messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 50,
-                    temperature: 0.2
-                })
+                body: JSON.stringify(requestBody)
             });
 
         } else if (provider === 'ollama') {
-            if (window.debugLogger) {
-                window.debugLogger.info('[Ollama]', 'Making API request (local)...');
-            }
-
             await updateNotification(
                 notificationId,
                 "AutoSort+ AI Analysis",
@@ -1075,37 +1075,39 @@ async function analyzeEmailContent(emailContent) {
             const ollamaNumCtx = ollamaSettings.ollamaNumCtx || 0;
             const cpuOnly = ollamaSettings.ollamaCpuOnly === true;
             const ollamaAuthToken = ollamaSettings.ollamaAuthToken || '';
-            
+
             // Use custom model if selected
             if (ollamaModel === 'custom' && ollamaSettings.ollamaCustomModel) {
                 ollamaModel = ollamaSettings.ollamaCustomModel;
             }
 
+            const requestBody = {
+                model: ollamaModel,
+                messages: [{ role: 'user', content: prompt }],
+                stream: false
+            };
+
             if (window.debugLogger) {
-                window.debugLogger.info('[Ollama]', `Using Ollama at ${ollamaUrl} with model ${ollamaModel}${cpuOnly ? ' (CPU-only)' : ''}`);
+                window.debugLogger.apiRequest('Ollama', `${ollamaUrl}/api/chat`, requestBody);
             }
 
             // Use tab injection to make the fetch (browser context, no restrictions)
             try {
                 const ollamaResponse = await ollamaChatViaTab(ollamaUrl, ollamaModel, prompt, ollamaAuthToken);
-                
+
                 if (!ollamaResponse.message || !ollamaResponse.message.content) {
                     throw new Error('Invalid Ollama response format');
                 }
-                
+
                 data = ollamaResponse;
                 response = null; // Mark as handled
-                
+
             } catch (ollamaError) {
                 console.error('[Ollama] Tab injection chat failed:', ollamaError.message);
                 throw ollamaError;
             }
 
         } else if (provider === 'openai-compatible') {
-            if (window.debugLogger) {
-                window.debugLogger.info('[Custom]', 'Making API request to OpenAI-compatible endpoint...');
-            }
-
             // Get custom endpoint settings
             const customSettings = await browser.storage.local.get(['customBaseUrl', 'customModel', 'apiKey']);
             const baseUrl = (customSettings.customBaseUrl || '').replace(/\/$/, '');
@@ -1122,6 +1124,13 @@ async function analyzeEmailContent(emailContent) {
                 `Analyzing email content with ${model}...`
             );
 
+            const requestBody = {
+                model,
+                messages: [{ role: 'user', content: prompt }],
+                max_tokens: 8192,
+                temperature: 0.2
+            };
+
             // Build headers
             const headers = {
                 'Content-Type': 'application/json'
@@ -1133,12 +1142,12 @@ async function analyzeEmailContent(emailContent) {
             // Check if this is a localhost endpoint - Thunderbird background scripts can't directly fetch localhost
             const isLocalhost = baseUrl.startsWith('http://localhost') || baseUrl.startsWith('http://127.0.0.1');
 
+            if (window.debugLogger) {
+                window.debugLogger.apiRequest('OpenAI-Compatible', `${baseUrl}/chat/completions`, requestBody);
+            }
+
             if (isLocalhost) {
                 // Use tab injection for localhost (similar to Ollama handling)
-                if (window.debugLogger) {
-                    window.debugLogger.info('[Custom]', `Using tab injection for localhost endpoint: ${baseUrl}`);
-                }
-
                 try {
                     const customResponse = await openaiCompatibleChatViaTab(baseUrl, model, prompt, apiKey);
 
@@ -1155,19 +1164,10 @@ async function analyzeEmailContent(emailContent) {
                 }
             } else {
                 // Direct fetch for non-localhost endpoints
-                if (window.debugLogger) {
-                    window.debugLogger.info('[Custom]', `Making direct fetch to: ${baseUrl}/chat/completions`);
-                }
-
                 response = await fetch(baseUrl + '/chat/completions', {
                     method: 'POST',
                     headers,
-                    body: JSON.stringify({
-                        model,
-                        messages: [{ role: 'user', content: prompt }],
-                        max_tokens: 8192,
-                        temperature: 0.2
-                    })
+                    body: JSON.stringify(requestBody)
                 });
             }
 
@@ -1176,10 +1176,6 @@ async function analyzeEmailContent(emailContent) {
         }
 
         if (response) {
-            if (window.debugLogger) {
-                window.debugLogger.info('[API]', `Response status: ${response.status}`);
-            }
-
             if (!response.ok) {
                 let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
                 
@@ -1225,7 +1221,7 @@ async function analyzeEmailContent(emailContent) {
 
             data = await response.json();
             if (window.debugLogger) {
-                window.debugLogger.info('[API]', 'Full response data received');
+                window.debugLogger.apiResponse(provider, response.status, data);
             }
         } else if (data) {
             await updateNotification(
@@ -1234,7 +1230,7 @@ async function analyzeEmailContent(emailContent) {
                 "Processing AI response..."
             );
             if (window.debugLogger) {
-                window.debugLogger.info('[API]', 'Using response from native helper');
+                window.debugLogger.apiResponse(provider, 200, data);
             }
         } else {
             await updateNotification(
@@ -1314,6 +1310,8 @@ async function analyzeEmailContent(emailContent) {
                         }
                     } else if (typeof msg === 'string') {
                         label = tryTrim(msg);
+                    } else if (msg && !content) {
+                        label = tryTrim(msg.text || msg.response || msg.result);
                     }
                 }
             } catch (e) {
@@ -1647,6 +1645,70 @@ async function showMoveResultsPopup(results) {
             "Failed to show detailed results. Check console for more information."
         );
     }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTO-SORT: Handle new emails arriving in Inbox
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Classify a single message and move it to the appropriate folder.
+ * Silent failure mode: errors logged, email stays in Inbox.
+ */
+async function classifyAndMove(message) {
+    try {
+        const fullMessage = await browser.messages.getFull(message.id);
+        if (!fullMessage) return;
+
+        const emailContent = extractTextFromParts(fullMessage);
+        if (!emailContent?.trim()) return;
+
+        const label = await analyzeEmailContent(emailContent);
+        if (!label || String(label).trim().toLowerCase() === 'null') return;
+
+        await applyLabelsToMessages([message], label);
+
+        if (window.debugLogger) {
+            window.debugLogger.info('[AutoSort]', `Auto-sorted message ${message.id} to ${label}`);
+        }
+    } catch (err) {
+        if (window.debugLogger) {
+            window.debugLogger.warn('[AutoSort]', `Failed to auto-sort message ${message.id}: ${err.message}`);
+        }
+        // Email stays in Inbox on failure - silent failure mode
+    }
+}
+
+/**
+ * Handle new mail received event. Processes messages in Inbox folder.
+ * Supports MessageList pagination via continueList.
+ */
+async function handleNewMail(folder, messageList) {
+    const settings = await browser.storage.local.get(['autoSortEnabled', 'enableAi']);
+
+    // Check if auto-sort is enabled
+    if (!settings.autoSortEnabled) return;
+    if (settings.enableAi === false) return;
+
+    // Verify this is Inbox folder (specialUse array contains "inbox")
+    if (!folder.specialUse?.includes("inbox")) return;
+
+    // Process all pages of messages
+    let page = messageList;
+    while (true) {
+        for (const message of page.messages) {
+            await classifyAndMove(message);
+        }
+        if (!page.id) break;
+        page = await browser.messages.continueList(page.id);
+    }
+}
+
+/**
+ * Register the auto-sort listener for new emails at startup.
+ */
+function registerAutoSortListener() {
+    browser.messages.onNewMailReceived.addListener(handleNewMail, false);
 }
 
 // Create context menu items

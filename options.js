@@ -651,7 +651,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Load saved settings
-    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'customBaseUrl', 'customModel', 'debugMode']).then(result => {
+    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'customBaseUrl', 'customModel', 'debugMode', 'batchChunkSize', 'autoSortEnabled']).then(result => {
         if (result.labels && result.labels.length > 0) {
             result.labels.forEach(label => {
                 addLabelInput(label);
@@ -730,6 +730,18 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Load debug mode setting
         if (enableDebugCheckbox && result.debugMode !== undefined) {
             enableDebugCheckbox.checked = result.debugMode;
+        }
+
+        // Load batch chunk size setting
+        const batchChunkSizeInput = document.getElementById('batch-chunk-size');
+        if (batchChunkSizeInput && result.batchChunkSize) {
+            batchChunkSizeInput.value = result.batchChunkSize;
+        }
+
+        // Load auto-sort setting
+        const autoSortCheckbox = document.getElementById('enable-auto-sort');
+        if (autoSortCheckbox) {
+            autoSortCheckbox.checked = result.autoSortEnabled === true;
         }
 
         updateSaveButtonState();
@@ -1459,7 +1471,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const apiKey = apiKeyInput.value.trim();
         const provider = aiProviderSelect.value;
-        
+
+        // Extract batch chunk size with null safety and value clamping (1-20)
+        const batchChunkSizeEl = document.getElementById('batch-chunk-size');
+        const batchChunkSize = Math.max(1, Math.min(20, parseInt(batchChunkSizeEl?.value) || 5));
+
+        // Extract auto-sort setting
+        const autoSortCheckbox = document.getElementById('enable-auto-sort');
+        const autoSortEnabled = autoSortCheckbox ? autoSortCheckbox.checked : false;
+
         // Validation
         if (labels.length === 0) {
             showMessage('Please add at least one folder/label before saving. Use "Load Folders from Mail Account" or add custom labels.', false);
@@ -1490,7 +1510,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 aiProvider: provider,
                 enableAi: document.getElementById('enable-ai').checked,
                 geminiPaidPlan: geminiPaidCheckbox.checked,
-                debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false
+                debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false,
+                batchChunkSize: batchChunkSize,
+                autoSortEnabled: autoSortEnabled
             };
             
             // Initialize rate limits array for all keys if not exists
@@ -1530,7 +1552,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ollamaCustomModel: ollamaCustomModelInput.value.trim(),
                 ollamaAuthToken: ollamaAuthTokenInput ? ollamaAuthTokenInput.value.trim() : '',
                 ollamaCpuOnly: ollamaCpuOnlyCheckbox.checked,
-                debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false
+                debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false,
+                batchChunkSize: batchChunkSize,
+                autoSortEnabled: autoSortEnabled
             };
 
             browser.storage.local.set(settings).then(() => {
@@ -1567,7 +1591,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 customBaseUrl: baseUrl.replace(/\/$/, ''),
                 customModel: model,
                 apiKey: apiKey,
-                debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false
+                debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false,
+                batchChunkSize: batchChunkSize,
+                autoSortEnabled: autoSortEnabled
             };
 
             browser.storage.local.set(settings).then(() => {
@@ -1588,8 +1614,9 @@ document.addEventListener('DOMContentLoaded', async function() {
                 apiKey: apiKey,
                 aiProvider: provider,
                 enableAi: document.getElementById('enable-ai').checked,
-                geminiPaidPlan: geminiPaidCheckbox.checked,
-                debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false
+                debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false,
+                batchChunkSize: batchChunkSize,
+                autoSortEnabled: autoSortEnabled
             };
 
             browser.storage.local.set(settings).then(() => {
@@ -1760,14 +1787,25 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     /**
      * Update the batch panel UI from a progress payload.
-     * @param {{ status, total, completed, failed, skipped, provider }} payload
+     * @param {{ status, total, completed, failed, skipped, provider, chunkIndex, totalChunks }} payload
      */
     function applyBatchProgress(payload) {
-        if (!batchPanel) return;
+        if (!batchPanel || !payload) return;
 
-        const { status, total, completed, failed, skipped, provider } = payload;
-        const done = completed + failed + skipped;
-        const pct  = total > 0 ? Math.round((done / total) * 100) : 0;
+        // Use defaults for safety
+        const {
+            status = 'running',
+            total = 0,
+            completed = 0,
+            failed = 0,
+            skipped = 0,
+            provider = '',
+            chunkIndex = 0,
+            totalChunks = 0
+        } = payload;
+
+        const done = (completed || 0) + (failed || 0) + (skipped || 0);
+        const pct = total > 0 ? Math.round((done / total) * 100) : 0;
 
         // Show the panel
         batchPanel.style.display = 'block';
@@ -1783,16 +1821,31 @@ document.addEventListener('DOMContentLoaded', async function() {
             batchFill.style.width = pct + '%';
         }
 
-        // Status text
+        // Status text (chunkIndex is already 1-based from background.js)
+        const displayChunk = chunkIndex || 0;
+        const displayTotal = totalChunks || 0;
+
         if (batchText) {
             if (status === 'paused') {
-                batchText.textContent = `⏸ Paused — ${done} / ${total} (${completed} sorted, ${failed} failed, ${skipped} skipped)`;
+                if (displayTotal > 0) {
+                    batchText.textContent = `⏸ Paused — chunk ${displayChunk}/${displayTotal} (${done}/${total})`;
+                } else {
+                    batchText.textContent = `⏸ Paused (${done}/${total})`;
+                }
             } else if (status === 'done') {
                 batchText.textContent = `✅ Done — sorted: ${completed}, skipped: ${skipped}, failed: ${failed}`;
             } else if (status === 'cancelled') {
-                batchText.textContent = `⏹ Cancelled after ${done} / ${total} emails`;
+                if (displayTotal > 0) {
+                    batchText.textContent = `⏹ Cancelled after chunk ${displayChunk}/${displayTotal}`;
+                } else {
+                    batchText.textContent = `⏹ Cancelled (${done}/${total})`;
+                }
             } else {
-                batchText.textContent = `Processing ${done} / ${total} — sorted: ${completed}, failed: ${failed}, skipped: ${skipped}`;
+                if (displayTotal > 0) {
+                    batchText.textContent = `Chunk ${displayChunk}/${displayTotal} — ${done}/${total} (sorted: ${completed}, failed: ${failed})`;
+                } else {
+                    batchText.textContent = `${done}/${total} (sorted: ${completed}, failed: ${failed})`;
+                }
             }
         }
 
