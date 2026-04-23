@@ -1,0 +1,549 @@
+{
+  "extensionName": {
+    "message": "AutoSort+",
+    "description": "扩展名称"
+  },
+  "extensionDescription": {
+    "message": "使用 AI 自动分类和标记您的邮件",
+    "description": "扩展描述"
+  },
+  "extensionDefaultTitle": {
+    "message": "AutoSort+ 设置",
+    "description": "浏览器操作默认标题"
+  },
+  "pageTitle": {
+    "message": "AutoSort+ 设置",
+    "description": "HTML 页面标题"
+  },
+  "pageHeading": {
+    "message": "AutoSort+ 设置",
+    "description": "页面主标题"
+  },
+  "batchProcessingTitle": {
+    "message": "批量处理进行中",
+    "description": "批量处理状态面板标题"
+  },
+  "batchPreparing": {
+    "message": "准备中…",
+    "description": "批量处理准备中文字"
+  },
+  "batchPause": {
+    "message": "⏸ 暂停",
+    "description": "批量暂停按钮文字"
+  },
+  "batchResume": {
+    "message": "▶ 继续",
+    "description": "批量继续按钮文字"
+  },
+  "batchCancel": {
+    "message": "⏹ 取消",
+    "description": "批量取消按钮文字"
+  },
+  "aiSettingsTitle": {
+    "message": "🤖 AI 设置",
+    "description": "AI 设置区段标题"
+  },
+  "providerSelectionTitle": {
+    "message": "选择提供商",
+    "description": "提供商选择子区段标题"
+  },
+  "aiProviderLabel": {
+    "message": "AI 提供商：",
+    "description": "AI 提供商选择框标签"
+  },
+  "providerGemini": {
+    "message": "Google Gemini（推荐）",
+    "description": "Gemini 提供商选项"
+  },
+  "providerOpenAI": {
+    "message": "OpenAI (ChatGPT)",
+    "description": "OpenAI 提供商选项"
+  },
+  "providerAnthropic": {
+    "message": "Anthropic Claude",
+    "description": "Anthropic 提供商选项"
+  },
+  "providerGroq": {
+    "message": "Groq（快速且免费）",
+    "description": "Groq 提供商选项"
+  },
+  "providerMistral": {
+    "message": "Mistral AI",
+    "description": "Mistral 提供商选项"
+  },
+  "providerOllama": {
+    "message": "Ollama（本地大模型）",
+    "description": "Ollama 提供商选项"
+  },
+  "providerOpenAICompatible": {
+    "message": "OpenAI 兼容（自定义端点）",
+    "description": "OpenAI 兼容提供商选项"
+  },
+  "rateLimitWarningTitle": {
+    "message": "⚠️ 频率限制警告：",
+    "description": "频率限制警告标题"
+  },
+  "rateLimitWarningText": {
+    "message": "免费 API 层在处理邮件时受到严格限制。您可能在处理 5-20 封邮件后就达到频率限制。建议购买付费计划（$5-20/月）以满足日常邮件处理需求。",
+    "description": "频率限制警告正文"
+  },
+  "ollamaConfigTitle": {
+    "message": "🏠 本地 Ollama 配置",
+    "description": "Ollama 配置子区段标题"
+  },
+  "ollamaUrlLabel": {
+    "message": "Ollama 服务器地址：",
+    "description": "Ollama 地址标签"
+  },
+  "ollamaUrlPlaceholder": {
+    "message": "http://localhost:11434",
+    "description": "Ollama 地址占位符"
+  },
+  "ollamaCpuOnly": {
+    "message": "强制仅使用 CPU（禁用 GPU 加速）",
+    "description": "Ollama CPU 模式复选框"
+  },
+  "ollamaModelLabel": {
+    "message": "Ollama 模型：",
+    "description": "Ollama 模型选择框标签"
+  },
+  "ollamaAuthTokenLabel": {
+    "message": "Ollama 认证令牌（可选）：",
+    "description": "Ollama 认证令牌标签"
+  },
+  "ollamaAuthTokenPlaceholder": {
+    "message": "如果您的 Ollama 服务器需要令牌，请在此输入",
+    "description": "Ollama 认证令牌占位符"
+  },
+  "ollamaAuthTokenHelp": {
+    "message": "在需要时用于 /api/chat 和 /api/pull 请求。",
+    "description": "Ollama 认证令牌帮助文本"
+  },
+  "ollamaCustomModelPlaceholder": {
+    "message": "输入自定义模型名称",
+    "description": "Ollama 自定义模型占位符"
+  },
+  "ollamaDownloadModelLabel": {
+    "message": "下载模型：",
+    "description": "Ollama 下载模型标签"
+  },
+  "ollamaDownloadModelPlaceholder": {
+    "message": "例如：llama3.2, mistral, qwen2.5:7b",
+    "description": "Ollama 下载模型占位符"
+  },
+  "ollamaDownloadButton": {
+    "message": "下载",
+    "description": "下载模型按钮"
+  },
+  "ollamaListModelsButton": {
+    "message": "列出已安装模型",
+    "description": "列出已安装模型按钮"
+  },
+  "ollamaTestButton": {
+    "message": "测试连接",
+    "description": "测试 Ollama 连接按钮"
+  },
+  "ollamaDiagnoseButton": {
+    "message": "运行诊断",
+    "description": "运行 Ollama 诊断按钮"
+  },
+  "ollamaModelLlama2": {
+    "message": "Llama 2",
+    "description": "Ollama Llama 2 模型选项"
+  },
+  "ollamaModelLlama32": {
+    "message": "Llama 3.2",
+    "description": "Ollama Llama 3.2 模型选项"
+  },
+  "ollamaModelMistral": {
+    "message": "Mistral",
+    "description": "Ollama Mistral 模型选项"
+  },
+  "ollamaModelPhi": {
+    "message": "Phi",
+    "description": "Ollama Phi 模型选项"
+  },
+  "ollamaModelGemma": {
+    "message": "Gemma",
+    "description": "Ollama Gemma 模型选项"
+  },
+  "ollamaModelQwen25": {
+    "message": "Qwen 2.5",
+    "description": "Ollama Qwen 2.5 模型选项"
+  },
+  "ollamaModelCustom": {
+    "message": "自定义（下方输入）",
+    "description": "Ollama 自定义模型选项"
+  },
+  "openaiCompatibleTitle": {
+    "message": "🔗 OpenAI 兼容端点",
+    "description": "OpenAI 兼容子区段标题"
+  },
+  "openaiCompatibleBaseUrlLabel": {
+    "message": "基础地址：",
+    "description": "OpenAI 兼容基础地址标签"
+  },
+  "openaiCompatibleBaseUrlPlaceholder": {
+    "message": "http://localhost:1234/v1 或 https://api.provider.com/v1",
+    "description": "OpenAI 兼容基础地址占位符"
+  },
+  "openaiCompatibleBaseUrlHelp": {
+    "message": "请输入包含 /v1 的基础地址。端点必须使用 OpenAI 格式：/v1/chat/completions。例如：LM Studio, LocalAI, vLLM, Together AI",
+    "description": "OpenAI 兼容基础地址帮助文本"
+  },
+  "openaiCompatibleModelLabel": {
+    "message": "模型：",
+    "description": "OpenAI 兼容模型选择框标签"
+  },
+  "openaiCompatibleModelSelect": {
+    "message": "-- 选择模型 --",
+    "description": "OpenAI 兼容模型默认选项"
+  },
+  "openaiCompatibleModelCustom": {
+    "message": "自定义（下方输入）",
+    "description": "OpenAI 兼容自定义模型选项"
+  },
+  "openaiCompatibleModelCustomPlaceholder": {
+    "message": "手动输入模型名称",
+    "description": "OpenAI 兼容自定义模型占位符"
+  },
+  "openaiCompatibleApiKeyLabel": {
+    "message": "API 密钥（可选）：",
+    "description": "OpenAI 兼容 API 密钥标签"
+  },
+  "openaiCompatibleApiKeyPlaceholder": {
+    "message": "本地无认证端点可留空",
+    "description": "OpenAI 兼容 API 密钥占位符"
+  },
+  "openaiCompatibleApiKeyHelp": {
+    "message": "云端提供商必需，本地服务器可选",
+    "description": "OpenAI 兼容 API 密钥帮助文本"
+  },
+  "openaiCompatibleFetchModelsButton": {
+    "message": "获取模型列表",
+    "description": "获取模型列表按钮"
+  },
+  "openaiCompatibleTestButton": {
+    "message": "测试连接",
+    "description": "测试 OpenAI 兼容连接按钮"
+  },
+  "apiKeyTitle": {
+    "message": "🔑 API 密钥配置",
+    "description": "API 密钥配置子区段标题"
+  },
+  "apiKeyLabel": {
+    "message": "API 密钥：",
+    "description": "API 密钥输入框标签"
+  },
+  "apiKeyPlaceholder": {
+    "message": "输入您的 API 密钥",
+    "description": "API 密钥输入框占位符"
+  },
+  "testApiButton": {
+    "message": "测试 API 连接",
+    "description": "测试 API 连接按钮"
+  },
+  "getApiKeyButton": {
+    "message": "获取 API 密钥",
+    "description": "获取 API 密钥按钮"
+  },
+  "geminiMultiKeysTitle": {
+    "message": "🔄 多个 Gemini API 密钥",
+    "description": "多个 Gemini 密钥子区段标题"
+  },
+  "geminiMultiKeysInfo": {
+    "message": "添加来自不同 Google Cloud 项目的多个 API 密钥。当达到频率限制时，扩展将自动在密钥间切换。",
+    "description": "多个 Gemini 密钥说明文本"
+  },
+  "addGeminiKeyButton": {
+    "message": "+ 添加另一个 Gemini 密钥",
+    "description": "添加 Gemini 密钥按钮"
+  },
+  "geminiPaidPlan": {
+    "message": "我已购买 Gemini 付费计划（解除频率限制）",
+    "description": "Gemini 付费计划复选框"
+  },
+  "generalSettingsTitle": {
+    "message": "⚙️ 常规设置",
+    "description": "常规设置子区段标题"
+  },
+  "enableAiLabel": {
+    "message": "启用 AI 邮件分类",
+    "description": "启用 AI 复选框"
+  },
+  "enableDebugLabel": {
+    "message": "启用调试模式（控制台日志）",
+    "description": "启用调试模式复选框"
+  },
+  "enableDebugHelp": {
+    "message": "打开 Thunderbird 开发者工具（Ctrl+Shift+I）查看日志",
+    "description": "调试模式帮助文本"
+  },
+  "batchChunkSizeLabel": {
+    "message": "批量处理数量：",
+    "description": "批量处理数量标签"
+  },
+  "batchChunkSizeHelp": {
+    "message": "每次处理 N 封邮件，等待所有响应后继续（1-20）",
+    "description": "批量处理数量帮助文本"
+  },
+  "enableAutoSortLabel": {
+    "message": "自动分类收件箱新邮件",
+    "description": "自动分类复选框标签"
+  },
+  "enableAutoSortHelp": {
+    "message": "使用 AI 自动分类和移动新收件箱邮件",
+    "description": "自动分类帮助文本"
+  },
+  "geminiUsageTitle": {
+    "message": "📊 Gemini API 使用情况",
+    "description": "Gemini API 使用情况子区段标题"
+  },
+  "geminiDailyCount": {
+    "message": "今日使用：{count}/20 次请求",
+    "description": "Gemini 每日使用统计",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "geminiLastRequest": {
+    "message": "最后请求：",
+    "description": "Gemini 最后请求标签"
+  },
+  "geminiNever": {
+    "message": "从未",
+    "description": "从未使用文字"
+  },
+  "geminiResetTime": {
+    "message": "每日限制重置：",
+    "description": "Gemini 每日限制重置时间标签"
+  },
+  "geminiStatus": {
+    "message": "状态：",
+    "description": "Gemini 状态标签"
+  },
+  "geminiStatusReady": {
+    "message": "就绪",
+    "description": "Gemini 就绪状态"
+  },
+  "resetGeminiCounterButton": {
+    "message": "重置计数器（新 API 密钥）",
+    "description": "重置 Gemini 计数器按钮"
+  },
+  "refreshUsageButton": {
+    "message": "刷新使用情况",
+    "description": "刷新使用情况按钮"
+  },
+  "refreshAllUsageButton": {
+    "message": "刷新全部使用情况",
+    "description": "刷新全部使用情况按钮"
+  },
+  "howAiSortingTitle": {
+    "message": "ℹ️ AI 分类工作原理",
+    "description": "AI 分类工作原理子区段标题"
+  },
+  "howAiSortingDesc": {
+    "message": "AutoSort+ 使用 AI 分析您的邮件，并根据内容自动将其分类到类别/文件夹中。AI 将：",
+    "description": "AI 分类描述"
+  },
+  "howAiSortingPoint1": {
+    "message": "阅读并理解邮件内容",
+    "description": "AI 分类能力 1"
+  },
+  "howAiSortingPoint2": {
+    "message": "识别关键主题和主题线索",
+    "description": "AI 分类能力 2"
+  },
+  "howAiSortingPoint3": {
+    "message": "将邮件匹配到合适的类别/文件夹",
+    "description": "AI 分类能力 3"
+  },
+  "howAiSortingPoint4": {
+    "message": "从您的手动修正中学习，提高准确率",
+    "description": "AI 分类能力 4"
+  },
+  "customPromptTitle": {
+    "message": "📝 自定义提示词",
+    "description": "自定义提示词区段标题"
+  },
+  "customPromptInfo": {
+    "message": "自定义发送给 AI 的邮件分类提示词。",
+    "description": "自定义提示词说明"
+  },
+  "customPromptPlaceholders": {
+    "message": "可用占位符：",
+    "description": "自定义提示词占位符标签"
+  },
+  "customPromptPlaceholderLabel": {
+    "message": "您的文件夹/类别列表",
+    "description": "labels 占位符描述"
+  },
+  "customPromptSubjectLabel": {
+    "message": "邮件主题行",
+    "description": "subject 占位符描述"
+  },
+  "customPromptAuthorLabel": {
+    "message": "发件人邮箱地址/名称",
+    "description": "author 占位符描述"
+  },
+  "customPromptAttachmentsLabel": {
+    "message": "附件文件名（逗号分隔）",
+    "description": "attachments 占位符描述"
+  },
+  "customPromptBodyLabel": {
+    "message": "邮件正文内容（推荐）",
+    "description": "body 占位符描述"
+  },
+  "customPromptEmailLabel": {
+    "message": "邮件内容（旧版，同 {body}）",
+    "description": "email 占位符描述",
+    "placeholders": {
+      "body": {
+        "content": "$1"
+      }
+    }
+  },
+  "customPromptTip": {
+    "message": "提示：使用 {subject} 和 {attachments} 可提高分类准确率。",
+    "description": "自定义提示词提示",
+    "placeholders": {
+      "subject": {
+        "content": "$1"
+      },
+      "attachments": {
+        "content": "$2"
+      }
+    }
+  },
+  "customPromptTextareaPlaceholder": {
+    "message": "输入您的自定义提示词...",
+    "description": "自定义提示词文本框占位符"
+  },
+  "resetPromptButton": {
+    "message": "恢复默认",
+    "description": "重置提示词按钮"
+  },
+  "customFoldersTitle": {
+    "message": "📁 自定义类别/文件夹",
+    "description": "自定义类别/文件夹区段标题"
+  },
+  "folderSourceTitle": {
+    "message": "文件夹来源",
+    "description": "文件夹来源子区段标题"
+  },
+  "loadImapFoldersButton": {
+    "message": "从邮件账户加载文件夹",
+    "description": "加载 IMAP 文件夹按钮"
+  },
+  "folderLoadingText": {
+    "message": "正在加载文件夹...",
+    "description": "文件夹加载提示文字"
+  },
+  "folderFoundText": {
+    "message": "在您的邮件账户中找到 {count} 个文件夹。要使用这些文件夹吗？",
+    "description": "找到文件夹提示文字",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "useImapFoldersButton": {
+    "message": "使用这些文件夹",
+    "description": "使用 IMAP 文件夹按钮"
+  },
+  "useCustomFoldersButton": {
+    "message": "改用自定义文件夹",
+    "description": "使用自定义文件夹按钮"
+  },
+  "bulkImportLabel": {
+    "message": "导入类别/文件夹（每行一个）：",
+    "description": "批量导入文本框标签"
+  },
+  "bulkImportPlaceholder": {
+    "message": "每行输入一个类别/文件夹",
+    "description": "批量导入文本框占位符"
+  },
+  "importButton": {
+    "message": "导入",
+    "description": "导入按钮"
+  },
+  "addButton": {
+    "message": "添加",
+    "description": "添加按钮"
+  },
+  "labelInputPlaceholder": {
+    "message": "输入类别/文件夹名称",
+    "description": "标签输入框占位符"
+  },
+  "moveHistoryTitle": {
+    "message": "📜 移动历史",
+    "description": "移动历史区段标题"
+  },
+  "clearHistoryButton": {
+    "message": "清除历史",
+    "description": "清除历史按钮"
+  },
+  "refreshHistoryButton": {
+    "message": "刷新",
+    "description": "刷新历史按钮"
+  },
+  "historyHeaderTimestamp": {
+    "message": "时间",
+    "description": "历史表格时间列标题"
+  },
+  "historyHeaderSubject": {
+    "message": "主题",
+    "description": "历史表格主题列标题"
+  },
+  "historyHeaderStatus": {
+    "message": "状态",
+    "description": "历史表格状态列标题"
+  },
+  "historyHeaderDestination": {
+    "message": "目标",
+    "description": "历史表格目标列标题"
+  },
+  "saveSettingsButton": {
+    "message": "保存设置",
+    "description": "保存设置按钮"
+  },
+  "providerInfoGemini": {
+    "message": "✓ 免费额度：每分钟 5 次请求，每天 20 次/API 密钥（扩展强制执行）<br>✓ 提示：在不同项目中创建多个 API 密钥，达到限制时切换密钥<br>✓ 查看使用情况：<a href=\"https://aistudio.google.com/usage\" target=\"_blank\">AI Studio 使用情况</a><br>✓ 适合：日常使用、多语言支持<br>✓ 模型：Gemini 2.5 Flash<br>✓ 勾选\"付费计划\"可解除限制",
+    "description": "Gemini 提供商信息 HTML"
+  },
+  "providerInfoOpenai": {
+    "message": "✓ 免费试用：$5 额度<br>✓ 适合：高准确率、英文内容<br>✓ 模型：GPT-4o-mini（$0.15/1M tokens）",
+    "description": "OpenAI 提供商信息 HTML"
+  },
+  "providerInfoAnthropic": {
+    "message": "✓ 免费额度：有限请求<br>✓ 适合：长邮件、详细分析<br>✓ 模型：Claude 3 Haiku",
+    "description": "Anthropic 提供商信息 HTML"
+  },
+  "providerInfoGroq": {
+    "message": "✓ 免费额度：每分钟 30 次请求<br>✓ 适合：速度（最快）<br>✓ 模型：Llama 3.3（Mixtral 已弃用）",
+    "description": "Groq 提供商信息 HTML"
+  },
+  "providerInfoMistral": {
+    "message": "✓ 免费额度：有限请求<br>✓ 适合：欧洲用户、GDPR 合规<br>✓ 模型：Mistral Small",
+    "description": "Mistral 提供商信息 HTML"
+  },
+  "providerInfoOllama": {
+    "message": "✓ 100% 免费：在本地运行<br>✓ 隐私：数据不发送到外部服务器<br>✓ 无频率限制：无限制处理邮件<br>✓ 模型：Llama 2/3、Mistral、Phi、Gemma、Qwen 等<br>✓ 需要：<a href=\"https://ollama.ai/download\" target=\"_blank\">安装 Ollama</a> 并本地运行<br>✓ 设置：安装 Ollama 后运行 \"ollama pull llama3.2\" 下载模型",
+    "description": "Ollama 提供商信息 HTML"
+  },
+  "providerInfoOpenaiCompatible": {
+    "message": "✓ 兼容：LocalAI、LM Studio、vLLM、Together AI、OpenRouter、DeepSeek、Fireworks 等<br>✓ 输入端点基础地址和模型名称<br>✓ 本地服务器可选 API 密钥<br>✓ 使用标准 /v1/chat/completions 格式",
+    "description": "OpenAI 兼容提供商信息 HTML"
+  },
+  "freeBadge": {
+    "message": "免费",
+    "description": "免费提供商徽章文本"
+  },
+  "paidBadge": {
+    "message": "付费",
+    "description": "付费提供商徽章文本"
+  }
+}

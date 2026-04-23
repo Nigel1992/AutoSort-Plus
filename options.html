@@ -2,94 +2,94 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>AutoSort+ Settings</title>
+    <title data-i18n="pageTitle">AutoSort+ Settings</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 <div class="container">
-    <h1>AutoSort+ Settings</h1>
+    <h1 data-i18n="pageHeading">AutoSort+ Settings</h1>
 
     <!-- Batch Processing Status Panel -->
     <div id="batch-status-panel" class="batch-status-panel" style="display:none;" role="status" aria-live="polite">
         <div class="batch-status-header">
             <span class="batch-status-icon">⚙️</span>
-            <span class="batch-status-title">Batch Processing In Progress</span>
+            <span class="batch-status-title" data-i18n="batchProcessingTitle">Batch Processing In Progress</span>
             <span id="batch-provider-badge" class="batch-provider-badge"></span>
         </div>
         <div class="batch-progress-bar-wrap">
             <div id="batch-progress-fill" class="batch-progress-fill" style="width:0%"></div>
         </div>
-        <p id="batch-progress-text" class="batch-progress-text">Preparing…</p>
+        <p id="batch-progress-text" class="batch-progress-text" data-i18n="batchPreparing">Preparing…</p>
         <div class="batch-controls">
-            <button id="batch-pause-btn" class="button batch-btn-pause">⏸ Pause</button>
-            <button id="batch-resume-btn" class="button batch-btn-resume" style="display:none;">▶ Resume</button>
-            <button id="batch-cancel-btn" class="button batch-btn-cancel">⏹ Cancel</button>
+            <button id="batch-pause-btn" class="button batch-btn-pause" data-i18n="batchPause">⏸ Pause</button>
+            <button id="batch-resume-btn" class="button batch-btn-resume" style="display:none;" data-i18n="batchResume">▶ Resume</button>
+            <button id="batch-cancel-btn" class="button batch-btn-cancel" data-i18n="batchCancel">⏹ Cancel</button>
         </div>
     </div>
 
     <!-- AI Settings Section -->
     <div class="section collapsible-section">
         <div class="section-header" data-section="ai-settings">
-            <h2>🤖 AI Settings</h2>
+            <h2 data-i18n="aiSettingsTitle">🤖 AI Settings</h2>
             <span class="collapse-icon">▼</span>
         </div>
         <div class="section-content" id="ai-settings">
 
             <!-- Provider Selection -->
             <div class="subsection">
-                <h3>Provider Selection</h3>
+                <h3 data-i18n="providerSelectionTitle">Provider Selection</h3>
                 <div class="input-group">
-                    <label for="ai-provider">AI Provider:</label>
+                    <label for="ai-provider" data-i18n="aiProviderLabel">AI Provider:</label>
                     <select id="ai-provider" class="provider-select">
-                        <option value="gemini">Google Gemini (Recommended)</option>
-                        <option value="openai">OpenAI (ChatGPT)</option>
-                        <option value="anthropic">Anthropic Claude</option>
-                        <option value="groq">Groq (Fast & Free)</option>
-                        <option value="mistral">Mistral AI</option>
-                        <option value="ollama">Ollama (Local LLM)</option>
-                        <option value="openai-compatible">OpenAI-Compatible (Custom Endpoint)</option>
+                        <option value="gemini" data-i18n="providerGemini">Google Gemini (Recommended)</option>
+                        <option value="openai" data-i18n="providerOpenAI">OpenAI (ChatGPT)</option>
+                        <option value="anthropic" data-i18n="providerAnthropic">Anthropic Claude</option>
+                        <option value="groq" data-i18n="providerGroq">Groq (Fast & Free)</option>
+                        <option value="mistral" data-i18n="providerMistral">Mistral AI</option>
+                        <option value="ollama" data-i18n="providerOllama">Ollama (Local LLM)</option>
+                        <option value="openai-compatible" data-i18n="providerOpenAICompatible">OpenAI-Compatible (Custom Endpoint)</option>
                     </select>
                 </div>
                 <div id="provider-info" class="provider-info"></div>
                 <div id="rate-limit-warning" class="warning-box" style="display: none;">
-                    <strong>⚠️ Rate Limit Warning:</strong> Free API tiers are severely limited when processing emails. You may only process 5-20 emails before hitting rate limits. Paid plans ($5-20/month) are recommended for daily email processing.
+                    <strong data-i18n="rateLimitWarningTitle">⚠️ Rate Limit Warning:</strong> <span data-i18n="rateLimitWarningText">Free API tiers are severely limited when processing emails. You may only process 5-20 emails before hitting rate limits. Paid plans ($5-20/month) are recommended for daily email processing.</span>
                 </div>
             </div>
 
             <!-- Ollama Settings -->
             <div class="subsection" id="ollama-settings-subsection" style="display: none;">
-                <h3>🏠 Local Ollama Configuration</h3>
-                <label for="ollama-url">Ollama Server URL:</label>
-                <input type="text" id="ollama-url" class="api-key-input" placeholder="http://localhost:11434" value="http://localhost:11434">
+                <h3 data-i18n="ollamaConfigTitle">🏠 Local Ollama Configuration</h3>
+                <label for="ollama-url" data-i18n="ollamaUrlLabel">Ollama Server URL:</label>
+                <input type="text" id="ollama-url" class="api-key-input" data-i18n-placeholder="ollamaUrlPlaceholder" placeholder="http://localhost:11434" value="http://localhost:11434">
                 <div class="checkbox-container">
                     <input type="checkbox" id="ollama-cpu-only">
-                    <label for="ollama-cpu-only">Force CPU-only mode (disable GPU acceleration)</label>
+                    <label for="ollama-cpu-only" data-i18n="ollamaCpuOnly">Force CPU-only mode (disable GPU acceleration)</label>
                 </div>
-                <label for="ollama-model">Ollama Model:</label>
+                <label for="ollama-model" data-i18n="ollamaModelLabel">Ollama Model:</label>
                 <select id="ollama-model" class="provider-select">
-                    <option value="llama2">Llama 2</option>
-                    <option value="llama3.2">Llama 3.2</option>
-                    <option value="mistral">Mistral</option>
-                    <option value="phi">Phi</option>
-                    <option value="gemma">Gemma</option>
-                    <option value="qwen2.5">Qwen 2.5</option>
-                    <option value="custom">Custom (enter below)</option>
+                    <option value="llama2" data-i18n="ollamaModelLlama2">Llama 2</option>
+                    <option value="llama3.2" data-i18n="ollamaModelLlama32">Llama 3.2</option>
+                    <option value="mistral" data-i18n="ollamaModelMistral">Mistral</option>
+                    <option value="phi" data-i18n="ollamaModelPhi">Phi</option>
+                    <option value="gemma" data-i18n="ollamaModelGemma">Gemma</option>
+                    <option value="qwen2.5" data-i18n="ollamaModelQwen25">Qwen 2.5</option>
+                    <option value="custom" data-i18n="ollamaModelCustom">Custom (enter below)</option>
                 </select>
                 <div class="input-group">
-                    <label for="ollama-auth-token">Ollama Auth Token (optional):</label>
-                    <input type="password" id="ollama-auth-token" class="api-key-input" placeholder="If your Ollama server requires a token, enter it here">
-                    <small class="help-text">Used for /api/chat and /api/pull requests when required.</small>
+                    <label for="ollama-auth-token" data-i18n="ollamaAuthTokenLabel">Ollama Auth Token (optional):</label>
+                    <input type="password" id="ollama-auth-token" class="api-key-input" data-i18n-placeholder="ollamaAuthTokenPlaceholder" placeholder="If your Ollama server requires a token, enter it here">
+                    <small class="help-text" data-i18n="ollamaAuthTokenHelp">Used for /api/chat and /api/pull requests when required.</small>
                 </div>
-                <input type="text" id="ollama-custom-model" class="api-key-input" placeholder="Enter custom model name" style="display: none; margin-top: 10px;">
+                <input type="text" id="ollama-custom-model" class="api-key-input" data-i18n-placeholder="ollamaCustomModelPlaceholder" placeholder="Enter custom model name" style="display: none; margin-top: 10px;">
                 <div class="input-group">
-                    <label for="ollama-download-model">Download Model:</label>
-                    <input type="text" id="ollama-download-model" class="api-key-input" placeholder="e.g., llama3.2, mistral, qwen2.5:7b">
+                    <label for="ollama-download-model" data-i18n="ollamaDownloadModelLabel">Download Model:</label>
+                    <input type="text" id="ollama-download-model" class="api-key-input" data-i18n-placeholder="ollamaDownloadModelPlaceholder" placeholder="e.g., llama3.2, mistral, qwen2.5:7b">
                 </div>
                 <div class="button-group">
-                    <button id="download-ollama-model" class="button">Download</button>
-                    <button id="list-ollama-models" class="button">List Installed Models</button>
-                    <button id="test-ollama" class="button">Test Connection</button>
-                    <button id="diagnose-ollama" class="button">Run Diagnostics</button>
+                    <button id="download-ollama-model" class="button" data-i18n="ollamaDownloadButton">Download</button>
+                    <button id="list-ollama-models" class="button" data-i18n="ollamaListModelsButton">List Installed Models</button>
+                    <button id="test-ollama" class="button" data-i18n="ollamaTestButton">Test Connection</button>
+                    <button id="diagnose-ollama" class="button" data-i18n="ollamaDiagnoseButton">Run Diagnostics</button>
                 </div>
                 <div id="ollama-download-status" class="api-test-result" style="display: none;"></div>
                 <div id="ollama-test-result" class="api-test-result"></div>
@@ -98,38 +98,38 @@
 
             <!-- OpenAI-Compatible Settings -->
             <div class="subsection" id="openai-compatible-settings-subsection" style="display: none;">
-                <h3>🔗 OpenAI-Compatible Endpoint</h3>
-                <label for="custom-base-url">Base URL:</label>
-                <input type="text" id="custom-base-url" class="api-key-input" placeholder="http://localhost:1234/v1 or https://api.provider.com/v1">
-                <small class="help-text">Enter base URL including /v1. Endpoint must use OpenAI format: <code>/v1/chat/completions</code>. Examples: LM Studio, LocalAI, vLLM, Together AI</small>
+                <h3 data-i18n="openaiCompatibleTitle">🔗 OpenAI-Compatible Endpoint</h3>
+                <label for="custom-base-url" data-i18n="openaiCompatibleBaseUrlLabel">Base URL:</label>
+                <input type="text" id="custom-base-url" class="api-key-input" data-i18n-placeholder="openaiCompatibleBaseUrlPlaceholder" placeholder="http://localhost:1234/v1 or https://api.provider.com/v1">
+                <small class="help-text" data-i18n="openaiCompatibleBaseUrlHelp">Enter base URL including /v1. Endpoint must use OpenAI format: <code>/v1/chat/completions</code>. Examples: LM Studio, LocalAI, vLLM, Together AI</small>
 
-                <label for="custom-model-select">Model:</label>
+                <label for="custom-model-select" data-i18n="openaiCompatibleModelLabel">Model:</label>
                 <select id="custom-model-select" class="provider-select">
-                    <option value="">-- Select model --</option>
-                    <option value="custom">Custom (enter below)</option>
+                    <option value="" data-i18n="openaiCompatibleModelSelect">-- Select model --</option>
+                    <option value="custom" data-i18n="openaiCompatibleModelCustom">Custom (enter below)</option>
                 </select>
-                <input type="text" id="custom-model-custom" class="api-key-input" placeholder="Enter model name manually" style="display: none;">
+                <input type="text" id="custom-model-custom" class="api-key-input" data-i18n-placeholder="openaiCompatibleModelCustomPlaceholder" placeholder="Enter model name manually" style="display: none;">
 
-                <label for="custom-api-key">API Key (optional):</label>
-                <input type="password" id="custom-api-key" class="api-key-input" placeholder="Leave empty for local endpoints without auth">
-                <small class="help-text">Required for cloud providers, optional for local servers</small>
+                <label for="custom-api-key" data-i18n="openaiCompatibleApiKeyLabel">API Key (optional):</label>
+                <input type="password" id="custom-api-key" class="api-key-input" data-i18n-placeholder="openaiCompatibleApiKeyPlaceholder" placeholder="Leave empty for local endpoints without auth">
+                <small class="help-text" data-i18n="openaiCompatibleApiKeyHelp">Required for cloud providers, optional for local servers</small>
 
                 <div class="button-group">
-                    <button id="fetch-custom-models" class="button">Fetch Models</button>
-                    <button id="test-custom-endpoint" class="button">Test Connection</button>
+                    <button id="fetch-custom-models" class="button" data-i18n="openaiCompatibleFetchModelsButton">Fetch Models</button>
+                    <button id="test-custom-endpoint" class="button" data-i18n="openaiCompatibleTestButton">Test Connection</button>
                 </div>
                 <div id="custom-test-result" class="api-test-result"></div>
             </div>
 
             <!-- API Key Configuration -->
             <div class="subsection" id="api-key-subsection">
-                <h3>🔑 API Key Configuration</h3>
+                <h3 data-i18n="apiKeyTitle">🔑 API Key Configuration</h3>
                 <div class="input-group">
-                    <label for="api-key" id="api-key-label">API Key:</label>
-                    <input type="password" id="api-key" class="api-key-input" placeholder="Enter your API key">
+                    <label for="api-key" id="api-key-label" data-i18n="apiKeyLabel">API Key:</label>
+                    <input type="password" id="api-key" class="api-key-input" data-i18n-placeholder="apiKeyPlaceholder" placeholder="Enter your API key">
                     <div class="button-group">
-                        <button id="test-api" class="button">Test API Connection</button>
-                        <button id="get-api-key" class="button button-link">Get API Key</button>
+                        <button id="test-api" class="button" data-i18n="testApiButton">Test API Connection</button>
+                        <button id="get-api-key" class="button button-link" data-i18n="getApiKeyButton">Get API Key</button>
                     </div>
                     <div id="api-test-result" class="api-test-result"></div>
                 </div>
@@ -137,86 +137,86 @@
 
             <!-- Multiple Gemini API Keys -->
             <div class="subsection" id="gemini-multi-keys-subsection" style="display: none;">
-                <h3>🔄 Multiple Gemini API Keys</h3>
-                <p class="info-text">Add multiple API keys from different Google Cloud projects. The extension will automatically rotate between them when rate limits are reached.</p>
+                <h3 data-i18n="geminiMultiKeysTitle">🔄 Multiple Gemini API Keys</h3>
+                <p class="info-text" data-i18n="geminiMultiKeysInfo">Add multiple API keys from different Google Cloud projects. The extension will automatically rotate between them when rate limits are reached.</p>
                 <div id="gemini-keys-list" class="gemini-keys-list"></div>
                 <div class="button-group">
-                    <button id="add-gemini-key" class="button">+ Add Another Gemini Key</button>
+                    <button id="add-gemini-key" class="button" data-i18n="addGeminiKeyButton">+ Add Another Gemini Key</button>
                 </div>
             </div>
 
             <!-- Gemini Paid Plan -->
             <div class="checkbox-container" id="gemini-paid-container" style="display: none;">
                 <input type="checkbox" id="gemini-paid-plan">
-                <label for="gemini-paid-plan">I have a Gemini paid plan (removes rate limits)</label>
+                <label for="gemini-paid-plan" data-i18n="geminiPaidPlan">I have a Gemini paid plan (removes rate limits)</label>
             </div>
 
             <!-- General Settings -->
             <div class="subsection" id="ai-general-subsection">
-                <h3>⚙️ General Settings</h3>
+                <h3 data-i18n="generalSettingsTitle">⚙️ General Settings</h3>
                 <div class="checkbox-container">
                     <input type="checkbox" id="enable-ai" checked>
-                    <label for="enable-ai">Enable AI-powered sorting</label>
+                    <label for="enable-ai" data-i18n="enableAiLabel">Enable AI-powered sorting</label>
                 </div>
                 <div class="checkbox-container">
                     <input type="checkbox" id="enable-debug">
-                    <label for="enable-debug">Enable debug mode (console logging)</label>
-                    <small class="help-text">Open Thunderbird Developer Tools (Ctrl+Shift+I) to view logs</small>
+                    <label for="enable-debug" data-i18n="enableDebugLabel">Enable debug mode (console logging)</label>
+                    <small class="help-text" data-i18n="enableDebugHelp">Open Thunderbird Developer Tools (Ctrl+Shift+I) to view logs</small>
                 </div>
                 <div class="input-group" style="margin-top: 15px;">
-                    <label for="batch-chunk-size">Batch chunk size:</label>
+                    <label for="batch-chunk-size" data-i18n="batchChunkSizeLabel">Batch chunk size:</label>
                     <input type="number" id="batch-chunk-size" min="1" max="20" value="5" style="width: 60px;">
-                    <small class="help-text">Process N emails at once, wait for all responses, then continue (1-20)</small>
+                    <small class="help-text" data-i18n="batchChunkSizeHelp">Process N emails at once, wait for all responses, then continue (1-20)</small>
                 </div>
                 <div class="checkbox-container">
                     <input type="checkbox" id="enable-auto-sort">
-                    <label for="enable-auto-sort">Auto-sort new emails in Inbox</label>
-                    <small class="help-text">Automatically classify and move new Inbox emails using AI</small>
+                    <label for="enable-auto-sort" data-i18n="enableAutoSortLabel">Auto-sort new emails in Inbox</label>
+                    <small class="help-text" data-i18n="enableAutoSortHelp">Automatically classify and move new Inbox emails using AI</small>
                 </div>
             </div>
 
             <!-- Gemini API Usage -->
             <div class="subsection" id="gemini-usage-subsection" style="display: none;">
-                <h3>📊 Gemini API Usage</h3>
+                <h3 data-i18n="geminiUsageTitle">📊 Gemini API Usage</h3>
                 <div id="single-key-usage" style="display: none;">
                     <div class="usage-stats">
                         <div class="usage-item">
-                            <strong>Today's Usage:</strong> <span id="gemini-daily-count">0</span>/20 requests
+                            <strong data-i18n="geminiDailyCount">Today's Usage:</strong> <span id="gemini-daily-count">0</span>/20 requests
                         </div>
                         <div class="usage-item">
-                            <strong>Last Request:</strong> <span id="gemini-last-request">Never</span>
+                            <strong data-i18n="geminiLastRequest">Last Request:</strong> <span id="gemini-last-request" data-i18n="geminiNever">Never</span>
                         </div>
                         <div class="usage-item">
-                            <strong>Daily Limit Resets:</strong> <span id="gemini-reset-time">--</span>
+                            <strong data-i18n="geminiResetTime">Daily Limit Resets:</strong> <span id="gemini-reset-time">--</span>
                         </div>
                         <div class="usage-item">
-                            <strong>Status:</strong> <span id="gemini-status">Ready</span>
+                            <strong data-i18n="geminiStatus">Status:</strong> <span id="gemini-status" data-i18n="geminiStatusReady">Ready</span>
                         </div>
                     </div>
                     <div class="button-group">
-                        <button id="reset-gemini-counter" class="button">Reset Counter (New API Key)</button>
-                        <button id="refresh-usage" class="button">Refresh Usage</button>
+                        <button id="reset-gemini-counter" class="button" data-i18n="resetGeminiCounterButton">Reset Counter (New API Key)</button>
+                        <button id="refresh-usage" class="button" data-i18n="refreshUsageButton">Refresh Usage</button>
                     </div>
                     <div id="usage-message" class="usage-message"></div>
                 </div>
                 <div id="multi-key-usage" style="display: none;">
                     <div id="all-keys-usage-stats" class="all-keys-usage"></div>
                     <div class="button-group">
-                        <button id="refresh-all-usage" class="button">Refresh All Usage</button>
+                        <button id="refresh-all-usage" class="button" data-i18n="refreshAllUsageButton">Refresh All Usage</button>
                     </div>
                 </div>
             </div>
 
             <!-- How AI Sorting Works -->
             <div class="subsection ai-info-subsection">
-                <h3>ℹ️ How AI Sorting Works</h3>
+                <h3 data-i18n="howAiSortingTitle">ℹ️ How AI Sorting Works</h3>
                 <div class="ai-description">
-                    <p>AutoSort+ uses AI to analyze your emails and automatically sort them into categories/folders based on their content. The AI will:</p>
+                    <p data-i18n="howAiSortingDesc">AutoSort+ uses AI to analyze your emails and automatically sort them into categories/folders based on their content. The AI will:</p>
                     <ul>
-                        <li>Read and understand email content</li>
-                        <li>Identify key topics and themes</li>
-                        <li>Match emails to appropriate categories/folders</li>
-                        <li>Learn from your manual corrections to improve accuracy</li>
+                        <li data-i18n="howAiSortingPoint1">Read and understand email content</li>
+                        <li data-i18n="howAiSortingPoint2">Identify key topics and themes</li>
+                        <li data-i18n="howAiSortingPoint3">Match emails to appropriate categories/folders</li>
+                        <li data-i18n="howAiSortingPoint4">Learn from your manual corrections to improve accuracy</li>
                     </ul>
                 </div>
             </div>
@@ -227,83 +227,83 @@
     <!-- Custom Prompt Section -->
     <div class="section collapsible-section collapsed">
         <div class="section-header" data-section="custom-prompt">
-            <h2>📝 Custom Prompt</h2>
+            <h2 data-i18n="customPromptTitle">📝 Custom Prompt</h2>
             <span class="collapse-icon">▶</span>
         </div>
         <div class="section-content" id="custom-prompt">
-            <p class="info-text">Customize the prompt sent to AI for email classification.</p>
-            <p><strong>Available placeholders:</strong></p>
+            <p class="info-text" data-i18n="customPromptInfo">Customize the prompt sent to AI for email classification.</p>
+            <p><strong data-i18n="customPromptPlaceholders">Available placeholders:</strong></p>
             <ul>
-                <li><code>{labels}</code> — Your folder/label list</li>
-                <li><code>{subject}</code> — Email subject line</li>
-                <li><code>{author}</code> — Sender email address/name</li>
-                <li><code>{attachments}</code> — Attachment filenames (comma-separated)</li>
-                <li><code>{body}</code> — Email body content (recommended)</li>
-                <li><code>{email}</code> — Email content (legacy, same as {body})</li>
+                <li><code>{labels}</code> — <span data-i18n="customPromptPlaceholderLabel">Your folder/label list</span></li>
+                <li><code>{subject}</code> — <span data-i18n="customPromptSubjectLabel">Email subject line</span></li>
+                <li><code>{author}</code> — <span data-i18n="customPromptAuthorLabel">Sender email address/name</span></li>
+                <li><code>{attachments}</code> — <span data-i18n="customPromptAttachmentsLabel">Attachment filenames (comma-separated)</span></li>
+                <li><code>{body}</code> — <span data-i18n="customPromptBodyLabel">Email body content (recommended)</span></li>
+                <li><code>{email}</code> — <span data-i18n="customPromptEmailLabel">Email content (legacy, same as {body})</span></li>
             </ul>
-            <p class="hint">💡 Tip: Use <code>{subject}</code> and <code>{attachments}</code> for better classification accuracy.</p>
-            <textarea id="custom-prompt-text" class="prompt-textarea" placeholder="Enter your custom prompt..." rows="10"></textarea>
-            <button id="reset-prompt" class="button">Reset to Default</button>
+            <p class="hint">💡 <span data-i18n="customPromptTip">Tip: Use <code>{subject}</code> and <code>{attachments}</code> for better classification accuracy.</span></p>
+            <textarea id="custom-prompt-text" class="prompt-textarea" data-i18n-placeholder="customPromptTextareaPlaceholder" placeholder="Enter your custom prompt..." rows="10"></textarea>
+            <button id="reset-prompt" class="button" data-i18n="resetPromptButton">Reset to Default</button>
         </div>
     </div>
 
     <!-- Custom Categories/Folders Section -->
     <div class="section collapsible-section">
         <div class="section-header" data-section="folders-settings">
-            <h2>📁 Custom Categories/Folders</h2>
+            <h2 data-i18n="customFoldersTitle">📁 Custom Categories/Folders</h2>
             <span class="collapse-icon">▼</span>
         </div>
         <div class="section-content" id="folders-settings">
             <!-- Folder Source -->
             <div class="folder-source">
-                <h3>Folder Source</h3>
-                <button id="load-imap-folders" class="button">Load Folders from Mail Account</button>
-                <div id="folder-loading" class="loading-indicator" style="display: none;">Loading folders...</div>
+                <h3 data-i18n="folderSourceTitle">Folder Source</h3>
+                <button id="load-imap-folders" class="button" data-i18n="loadImapFoldersButton">Load Folders from Mail Account</button>
+                <div id="folder-loading" class="loading-indicator" style="display: none;" data-i18n="folderLoadingText">Loading folders...</div>
                 <div id="folder-selection" class="folder-selection" style="display: none;">
-                    <p>Found <span id="folder-count">0</span> folders in your mail account. Would you like to use these?</p>
+                    <p id="folder-found-text">Found <span id="folder-count">0</span> folders in your mail account. Would you like to use these?</p>
                     <div id="folders-preview" class="folders-preview"></div>
                     <div class="button-group">
-                        <button id="use-imap-folders" class="button primary">Use These Folders</button>
-                        <button id="use-custom-folders" class="button">Use Custom Folders Instead</button>
+                        <button id="use-imap-folders" class="button primary" data-i18n="useImapFoldersButton">Use These Folders</button>
+                        <button id="use-custom-folders" class="button" data-i18n="useCustomFoldersButton">Use Custom Folders Instead</button>
                     </div>
                 </div>
             </div>
             <!-- Bulk Import -->
             <div class="bulk-import">
-                <label for="bulk-import-text">Import Categories/Folders (one per line):</label>
-                <textarea id="bulk-import-text" class="bulk-import-textarea" placeholder="Enter categories/folders, one per line"></textarea>
-                <button id="import-labels" class="button">Import</button>
+                <label for="bulk-import-text" data-i18n="bulkImportLabel">Import Categories/Folders (one per line):</label>
+                <textarea id="bulk-import-text" class="bulk-import-textarea" data-i18n-placeholder="bulkImportPlaceholder" placeholder="Enter categories/folders, one per line"></textarea>
+                <button id="import-labels" class="button" data-i18n="importButton">Import</button>
             </div>
             <!-- Labels Container -->
             <div id="labels-container">
                 <div class="label-item">
-                    <input type="text" class="label-input" placeholder="Enter category/folder name">
+                    <input type="text" class="label-input" data-i18n-placeholder="labelInputPlaceholder" placeholder="Enter category/folder name">
                     <button class="remove-label">×</button>
                 </div>
             </div>
-            <button id="add-label" class="button">Add</button>
+            <button id="add-label" class="button" data-i18n="addButton">Add</button>
         </div>
     </div>
 
     <!-- Move History Section -->
     <div class="section collapsible-section collapsed">
         <div class="section-header" data-section="history-settings">
-            <h2>📜 Move History</h2>
+            <h2 data-i18n="moveHistoryTitle">📜 Move History</h2>
             <span class="collapse-icon">▶</span>
         </div>
         <div class="section-content" id="history-settings">
             <div class="history-controls">
-                <button id="clear-history" class="button">Clear History</button>
-                <button id="refresh-history" class="button">Refresh</button>
+                <button id="clear-history" class="button" data-i18n="clearHistoryButton">Clear History</button>
+                <button id="refresh-history" class="button" data-i18n="refreshHistoryButton">Refresh</button>
             </div>
             <div class="history-container">
                 <table id="history-table">
                     <thead>
                         <tr>
-                            <th>Timestamp</th>
-                            <th>Subject</th>
-                            <th>Status</th>
-                            <th>Destination</th>
+                            <th data-i18n="historyHeaderTimestamp">Timestamp</th>
+                            <th data-i18n="historyHeaderSubject">Subject</th>
+                            <th data-i18n="historyHeaderStatus">Status</th>
+                            <th data-i18n="historyHeaderDestination">Destination</th>
                         </tr>
                     </thead>
                     <tbody id="history-body">
@@ -316,10 +316,11 @@
 
     <!-- Save Section -->
     <div class="section save-section">
-        <button id="save-settings" class="button primary">Save Settings</button>
+        <button id="save-settings" class="button primary" data-i18n="saveSettingsButton">Save Settings</button>
     </div>
 
 </div>
+<script src="js/i18n.js"></script>
 <script src="js/logger.js"></script>
 <script src="options.js"></script>
 </body>

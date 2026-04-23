@@ -1,4 +1,9 @@
 document.addEventListener('DOMContentLoaded', async function() {
+    // Apply i18n translations first
+    if (typeof applyTranslations === 'function') {
+        applyTranslations();
+    }
+
     if (window.debugLogger) {
         window.debugLogger.init();
     }
@@ -98,45 +103,45 @@ document.addEventListener('DOMContentLoaded', async function() {
     // AI Provider configurations
     const aiProviders = {
         gemini: {
-            name: 'Google Gemini',
+            name: i18n.get('providerGemini'),
             signupUrl: 'https://aistudio.google.com/app/apikey',
-            info: '✓ Free tier: 5 requests/minute, 20/day per API key (enforced by addon)<br>✓ Tip: Create multiple API keys in different projects, switch keys when limit reached<br>✓ Check usage: <a href="https://aistudio.google.com/usage" target="_blank">AI Studio Usage</a><br>✓ Best for: General use, multilingual support<br>✓ Models: Gemini 2.5 Flash<br>✓ Check "paid plan" option to remove limits',
+            info: i18n.get('providerInfoGemini'),
             isFree: true
         },
         openai: {
-            name: 'OpenAI',
+            name: i18n.get('providerOpenAI'),
             signupUrl: 'https://platform.openai.com/signup',
-            info: '✓ Free trial: $5 credit<br>✓ Best for: High accuracy, English content<br>✓ Models: GPT-4o-mini ($0.15/1M tokens)',
+            info: i18n.get('providerInfoOpenai'),
             isFree: false
         },
         anthropic: {
-            name: 'Anthropic Claude',
+            name: i18n.get('providerAnthropic'),
             signupUrl: 'https://console.anthropic.com/',
-            info: '✓ Free tier: Limited requests<br>✓ Best for: Long emails, detailed analysis<br>✓ Models: Claude 3 Haiku',
+            info: i18n.get('providerInfoAnthropic'),
             isFree: true
         },
         groq: {
-            name: 'Groq',
+            name: i18n.get('providerGroq'),
             signupUrl: 'https://console.groq.com/',
-            info: '✓ Free tier: 30 requests/minute<br>✓ Best for: Speed (fastest)<br>✓ Models: Llama 3.3 (Mixtral deprecated)',
+            info: i18n.get('providerInfoGroq'),
             isFree: true
         },
         mistral: {
-            name: 'Mistral AI',
+            name: i18n.get('providerMistral'),
             signupUrl: 'https://console.mistral.ai/',
-            info: '✓ Free tier: Limited requests<br>✓ Best for: European users, GDPR compliance<br>✓ Models: Mistral Small',
+            info: i18n.get('providerInfoMistral'),
             isFree: true
         },
         ollama: {
-            name: 'Ollama (Local LLM)',
+            name: i18n.get('providerOllama'),
             signupUrl: 'https://ollama.ai/',
-            info: '✓ 100% Free: Runs locally on your machine<br>✓ Privacy: No data sent to external servers<br>✓ No rate limits: Process unlimited emails<br>✓ Models: Llama 2/3, Mistral, Phi, Gemma, Qwen, and more<br>✓ Requires: <a href="https://ollama.ai/download" target="_blank">Ollama installed</a> and running locally<br>✓ Setup: Install Ollama, run "ollama pull llama3.2" to download a model',
+            info: i18n.get('providerInfoOllama'),
             isFree: true
         },
         'openai-compatible': {
-            name: 'OpenAI-Compatible',
+            name: i18n.get('providerOpenAICompatible'),
             signupUrl: '',
-            info: '✓ Compatible with: LocalAI, LM Studio, vLLM, Together AI, OpenRouter, DeepSeek, Fireworks, etc.<br>✓ Enter your endpoint base URL and model name<br>✓ API key optional for local servers<br>✓ Uses standard /v1/chat/completions format',
+            info: i18n.get('providerInfoOpenaiCompatible'),
             isFree: true
         }
     };
@@ -186,13 +191,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         providerInfo.innerHTML = `
             <div class="provider-details">
-                <strong>${config.name}</strong> ${config.isFree ? '<span class="free-badge">FREE</span>' : '<span class="paid-badge">PAID</span>'}
+                <strong>${config.name}</strong> ${config.isFree ? '<span class="free-badge">' + i18n.get('freeBadge', 'FREE') + '</span>' : '<span class="paid-badge">' + i18n.get('paidBadge', 'PAID') + '</span>'}
                 <p>${config.info}</p>
             </div>
         `;
 
         if (provider !== 'ollama' && provider !== 'openai-compatible') {
-            apiKeyInput.placeholder = `Enter your ${config.name} API key`;
+            apiKeyInput.placeholder = i18n.get('apiKeyPlaceholder');
         }
 
         updateSaveButtonState();
@@ -234,7 +239,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             const lastRequest = Math.max(...rateLimit.requests);
             const minutesAgo = Math.floor((now - lastRequest) / 60000);
             if (minutesAgo < 1) {
-                document.getElementById('gemini-last-request').textContent = 'Just now';
+                document.getElementById('gemini-last-request').textContent = i18n.get('geminiNever');
+                document.getElementById('gemini-last-request').dataset.i18nFallback = 'just_now';
             } else if (minutesAgo < 60) {
                 document.getElementById('gemini-last-request').textContent = `${minutesAgo} minute${minutesAgo > 1 ? 's' : ''} ago`;
             } else {
@@ -242,31 +248,31 @@ document.addEventListener('DOMContentLoaded', async function() {
                 document.getElementById('gemini-last-request').textContent = `${hoursAgo} hour${hoursAgo > 1 ? 's' : ''} ago`;
             }
         } else {
-            document.getElementById('gemini-last-request').textContent = 'Never';
+            document.getElementById('gemini-last-request').textContent = i18n.get('geminiNever');
         }
 
         if (rateLimit.dailyResetTime > now) {
             const hoursUntil = Math.ceil((rateLimit.dailyResetTime - now) / (1000 * 60 * 60));
             document.getElementById('gemini-reset-time').textContent = `In ${hoursUntil} hour${hoursUntil > 1 ? 's' : ''}`;
         } else {
-            document.getElementById('gemini-reset-time').textContent = 'Expired (will reset on next request)';
+            document.getElementById('gemini-reset-time').textContent = i18n.get('geminiResetExpired', 'Expired (will reset on next request)');
         }
 
         const usageMessage = document.getElementById('usage-message');
         const statusSpan = document.getElementById('gemini-status');
         
         if (rateLimit.dailyCount >= 20) {
-            statusSpan.textContent = '🔴 Limit Reached';
+            statusSpan.textContent = '🔴 ' + i18n.get('geminiStatusLimitReached', 'Limit Reached');
             statusSpan.style.color = '#dc3545';
             usageMessage.className = 'usage-message warning';
-            usageMessage.textContent = '⚠️ Daily limit reached! Create a new API key in a different project and update it above to continue processing emails.';
+            usageMessage.textContent = '⚠️ ' + i18n.get('geminiLimitMessage', 'Daily limit reached! Create a new API key in a different project and update it above to continue processing emails.');
         } else if (rateLimit.dailyCount >= 15) {
-            statusSpan.textContent = '🟡 Nearly Full';
+            statusSpan.textContent = '🟡 ' + i18n.get('geminiStatusNearlyFull', 'Nearly Full');
             statusSpan.style.color = '#ffc107';
             usageMessage.className = 'usage-message warning';
-            usageMessage.textContent = `⚠️ Only ${20 - rateLimit.dailyCount} requests remaining today. Consider switching to a new API key soon.`;
+            usageMessage.textContent = `⚠️ ${i18n.get('geminiRemainingMessage', 'Only')} ${20 - rateLimit.dailyCount} ${i18n.get('requestsRemainingToday', 'requests remaining today. Consider switching to a new API key soon.')}`;
         } else {
-            statusSpan.textContent = '🟢 Ready';
+            statusSpan.textContent = '🟢 ' + i18n.get('geminiStatusReady', 'Ready');
             statusSpan.style.color = '#28a745';
             usageMessage.style.display = 'none';
         }
@@ -362,7 +368,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const input = document.createElement('input');
         input.type = 'password';
         input.className = 'gemini-api-key-input';
-        input.placeholder = 'Enter Gemini API key from another project';
+        input.placeholder = i18n.get('geminiKeyInputPlaceholder', 'Enter Gemini API key from another project');
         input.value = value;
         input.dataset.index = index;
         input.addEventListener('input', (e) => {
@@ -388,7 +394,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const testButton = document.createElement('button');
         testButton.className = 'button';
-        testButton.textContent = 'Test';
+        testButton.textContent = i18n.get('testButton', 'Test');
         testButton.addEventListener('click', () => {
             const keyValue = input.value.trim();
             if (!keyValue) {

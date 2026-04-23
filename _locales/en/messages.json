@@ -1,0 +1,549 @@
+{
+  "extensionName": {
+    "message": "AutoSort+",
+    "description": "Extension name"
+  },
+  "extensionDescription": {
+    "message": "Automatically sort and label your emails with custom rules using AI",
+    "description": "Extension description"
+  },
+  "extensionDefaultTitle": {
+    "message": "AutoSort+ Settings",
+    "description": "Default title shown in browser action"
+  },
+  "pageTitle": {
+    "message": "AutoSort+ Settings",
+    "description": "HTML page title"
+  },
+  "pageHeading": {
+    "message": "AutoSort+ Settings",
+    "description": "Main page heading"
+  },
+  "batchProcessingTitle": {
+    "message": "Batch Processing In Progress",
+    "description": "Batch processing status panel title"
+  },
+  "batchPreparing": {
+    "message": "Preparing…",
+    "description": "Batch processing preparing text"
+  },
+  "batchPause": {
+    "message": "⏸ Pause",
+    "description": "Batch pause button text"
+  },
+  "batchResume": {
+    "message": "▶ Resume",
+    "description": "Batch resume button text"
+  },
+  "batchCancel": {
+    "message": "⏹ Cancel",
+    "description": "Batch cancel button text"
+  },
+  "aiSettingsTitle": {
+    "message": "🤖 AI Settings",
+    "description": "AI settings section header"
+  },
+  "providerSelectionTitle": {
+    "message": "Provider Selection",
+    "description": "Provider selection subsection header"
+  },
+  "aiProviderLabel": {
+    "message": "AI Provider:",
+    "description": "AI provider select label"
+  },
+  "providerGemini": {
+    "message": "Google Gemini (Recommended)",
+    "description": "Gemini provider option"
+  },
+  "providerOpenAI": {
+    "message": "OpenAI (ChatGPT)",
+    "description": "OpenAI provider option"
+  },
+  "providerAnthropic": {
+    "message": "Anthropic Claude",
+    "description": "Anthropic provider option"
+  },
+  "providerGroq": {
+    "message": "Groq (Fast & Free)",
+    "description": "Groq provider option"
+  },
+  "providerMistral": {
+    "message": "Mistral AI",
+    "description": "Mistral provider option"
+  },
+  "providerOllama": {
+    "message": "Ollama (Local LLM)",
+    "description": "Ollama provider option"
+  },
+  "providerOpenAICompatible": {
+    "message": "OpenAI-Compatible (Custom Endpoint)",
+    "description": "OpenAI-Compatible provider option"
+  },
+  "rateLimitWarningTitle": {
+    "message": "⚠️ Rate Limit Warning:",
+    "description": "Rate limit warning header"
+  },
+  "rateLimitWarningText": {
+    "message": "Free API tiers are severely limited when processing emails. You may only process 5-20 emails before hitting rate limits. Paid plans ($5-20/month) are recommended for daily email processing.",
+    "description": "Rate limit warning text"
+  },
+  "ollamaConfigTitle": {
+    "message": "🏠 Local Ollama Configuration",
+    "description": "Ollama configuration subsection header"
+  },
+  "ollamaUrlLabel": {
+    "message": "Ollama Server URL:",
+    "description": "Ollama URL label"
+  },
+  "ollamaUrlPlaceholder": {
+    "message": "http://localhost:11434",
+    "description": "Ollama URL placeholder"
+  },
+  "ollamaCpuOnly": {
+    "message": "Force CPU-only mode (disable GPU acceleration)",
+    "description": "Ollama CPU-only checkbox"
+  },
+  "ollamaModelLabel": {
+    "message": "Ollama Model:",
+    "description": "Ollama model select label"
+  },
+  "ollamaAuthTokenLabel": {
+    "message": "Ollama Auth Token (optional):",
+    "description": "Ollama auth token label"
+  },
+  "ollamaAuthTokenPlaceholder": {
+    "message": "If your Ollama server requires a token, enter it here",
+    "description": "Ollama auth token placeholder"
+  },
+  "ollamaAuthTokenHelp": {
+    "message": "Used for /api/chat and /api/pull requests when required.",
+    "description": "Ollama auth token help text"
+  },
+  "ollamaCustomModelPlaceholder": {
+    "message": "Enter custom model name",
+    "description": "Ollama custom model placeholder"
+  },
+  "ollamaDownloadModelLabel": {
+    "message": "Download Model:",
+    "description": "Ollama download model label"
+  },
+  "ollamaDownloadModelPlaceholder": {
+    "message": "e.g., llama3.2, mistral, qwen2.5:7b",
+    "description": "Ollama download model placeholder"
+  },
+  "ollamaDownloadButton": {
+    "message": "Download",
+    "description": "Download model button"
+  },
+  "ollamaListModelsButton": {
+    "message": "List Installed Models",
+    "description": "List installed models button"
+  },
+  "ollamaTestButton": {
+    "message": "Test Connection",
+    "description": "Test Ollama connection button"
+  },
+  "ollamaDiagnoseButton": {
+    "message": "Run Diagnostics",
+    "description": "Run Ollama diagnostics button"
+  },
+  "ollamaModelLlama2": {
+    "message": "Llama 2",
+    "description": "Ollama Llama 2 model option"
+  },
+  "ollamaModelLlama32": {
+    "message": "Llama 3.2",
+    "description": "Ollama Llama 3.2 model option"
+  },
+  "ollamaModelMistral": {
+    "message": "Mistral",
+    "description": "Ollama Mistral model option"
+  },
+  "ollamaModelPhi": {
+    "message": "Phi",
+    "description": "Ollama Phi model option"
+  },
+  "ollamaModelGemma": {
+    "message": "Gemma",
+    "description": "Ollama Gemma model option"
+  },
+  "ollamaModelQwen25": {
+    "message": "Qwen 2.5",
+    "description": "Ollama Qwen 2.5 model option"
+  },
+  "ollamaModelCustom": {
+    "message": "Custom (enter below)",
+    "description": "Ollama custom model option"
+  },
+  "openaiCompatibleTitle": {
+    "message": "🔗 OpenAI-Compatible Endpoint",
+    "description": "OpenAI-Compatible subsection header"
+  },
+  "openaiCompatibleBaseUrlLabel": {
+    "message": "Base URL:",
+    "description": "OpenAI-Compatible base URL label"
+  },
+  "openaiCompatibleBaseUrlPlaceholder": {
+    "message": "http://localhost:1234/v1 or https://api.provider.com/v1",
+    "description": "OpenAI-Compatible base URL placeholder"
+  },
+  "openaiCompatibleBaseUrlHelp": {
+    "message": "Enter base URL including /v1. Endpoint must use OpenAI format: /v1/chat/completions. Examples: LM Studio, LocalAI, vLLM, Together AI",
+    "description": "OpenAI-Compatible base URL help text"
+  },
+  "openaiCompatibleModelLabel": {
+    "message": "Model:",
+    "description": "OpenAI-Compatible model select label"
+  },
+  "openaiCompatibleModelSelect": {
+    "message": "-- Select model --",
+    "description": "OpenAI-Compatible model select default option"
+  },
+  "openaiCompatibleModelCustom": {
+    "message": "Custom (enter below)",
+    "description": "OpenAI-Compatible custom model option"
+  },
+  "openaiCompatibleModelCustomPlaceholder": {
+    "message": "Enter model name manually",
+    "description": "OpenAI-Compatible custom model placeholder"
+  },
+  "openaiCompatibleApiKeyLabel": {
+    "message": "API Key (optional):",
+    "description": "OpenAI-Compatible API key label"
+  },
+  "openaiCompatibleApiKeyPlaceholder": {
+    "message": "Leave empty for local endpoints without auth",
+    "description": "OpenAI-Compatible API key placeholder"
+  },
+  "openaiCompatibleApiKeyHelp": {
+    "message": "Required for cloud providers, optional for local servers",
+    "description": "OpenAI-Compatible API key help text"
+  },
+  "openaiCompatibleFetchModelsButton": {
+    "message": "Fetch Models",
+    "description": "Fetch models button"
+  },
+  "openaiCompatibleTestButton": {
+    "message": "Test Connection",
+    "description": "Test OpenAI-Compatible connection button"
+  },
+  "apiKeyTitle": {
+    "message": "🔑 API Key Configuration",
+    "description": "API key configuration subsection header"
+  },
+  "apiKeyLabel": {
+    "message": "API Key:",
+    "description": "API key input label"
+  },
+  "apiKeyPlaceholder": {
+    "message": "Enter your API key",
+    "description": "API key input placeholder"
+  },
+  "testApiButton": {
+    "message": "Test API Connection",
+    "description": "Test API connection button"
+  },
+  "getApiKeyButton": {
+    "message": "Get API Key",
+    "description": "Get API key button"
+  },
+  "geminiMultiKeysTitle": {
+    "message": "🔄 Multiple Gemini API Keys",
+    "description": "Multiple Gemini keys subsection header"
+  },
+  "geminiMultiKeysInfo": {
+    "message": "Add multiple API keys from different Google Cloud projects. The extension will automatically rotate between them when rate limits are reached.",
+    "description": "Multiple Gemini keys info text"
+  },
+  "addGeminiKeyButton": {
+    "message": "+ Add Another Gemini Key",
+    "description": "Add Gemini key button"
+  },
+  "geminiPaidPlan": {
+    "message": "I have a Gemini paid plan (removes rate limits)",
+    "description": "Gemini paid plan checkbox"
+  },
+  "generalSettingsTitle": {
+    "message": "⚙️ General Settings",
+    "description": "General settings subsection header"
+  },
+  "enableAiLabel": {
+    "message": "Enable AI-powered sorting",
+    "description": "Enable AI checkbox"
+  },
+  "enableDebugLabel": {
+    "message": "Enable debug mode (console logging)",
+    "description": "Enable debug mode checkbox"
+  },
+  "enableDebugHelp": {
+    "message": "Open Thunderbird Developer Tools (Ctrl+Shift+I) to view logs",
+    "description": "Debug mode help text"
+  },
+  "batchChunkSizeLabel": {
+    "message": "Batch chunk size:",
+    "description": "Batch chunk size label"
+  },
+  "batchChunkSizeHelp": {
+    "message": "Process N emails at once, wait for all responses, then continue (1-20)",
+    "description": "Batch chunk size help text"
+  },
+  "enableAutoSortLabel": {
+    "message": "Auto-sort new emails in Inbox",
+    "description": "Auto-sort checkbox label"
+  },
+  "enableAutoSortHelp": {
+    "message": "Automatically classify and move new Inbox emails using AI",
+    "description": "Auto-sort help text"
+  },
+  "geminiUsageTitle": {
+    "message": "📊 Gemini API Usage",
+    "description": "Gemini API usage subsection header"
+  },
+  "geminiDailyCount": {
+    "message": "Today's Usage: {count}/20 requests",
+    "description": "Gemini daily usage count",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "geminiLastRequest": {
+    "message": "Last Request:",
+    "description": "Gemini last request label"
+  },
+  "geminiNever": {
+    "message": "Never",
+    "description": "Never used text"
+  },
+  "geminiResetTime": {
+    "message": "Daily Limit Resets:",
+    "description": "Gemini daily limit reset time label"
+  },
+  "geminiStatus": {
+    "message": "Status:",
+    "description": "Gemini status label"
+  },
+  "geminiStatusReady": {
+    "message": "Ready",
+    "description": "Gemini ready status"
+  },
+  "resetGeminiCounterButton": {
+    "message": "Reset Counter (New API Key)",
+    "description": "Reset Gemini counter button"
+  },
+  "refreshUsageButton": {
+    "message": "Refresh Usage",
+    "description": "Refresh usage button"
+  },
+  "refreshAllUsageButton": {
+    "message": "Refresh All Usage",
+    "description": "Refresh all usage button"
+  },
+  "howAiSortingTitle": {
+    "message": "ℹ️ How AI Sorting Works",
+    "description": "How AI sorting works subsection header"
+  },
+  "howAiSortingDesc": {
+    "message": "AutoSort+ uses AI to analyze your emails and automatically sort them into categories/folders based on their content. The AI will:",
+    "description": "AI sorting description"
+  },
+  "howAiSortingPoint1": {
+    "message": "Read and understand email content",
+    "description": "AI sorting capability 1"
+  },
+  "howAiSortingPoint2": {
+    "message": "Identify key topics and themes",
+    "description": "AI sorting capability 2"
+  },
+  "howAiSortingPoint3": {
+    "message": "Match emails to appropriate categories/folders",
+    "description": "AI sorting capability 3"
+  },
+  "howAiSortingPoint4": {
+    "message": "Learn from your manual corrections to improve accuracy",
+    "description": "AI sorting capability 4"
+  },
+  "customPromptTitle": {
+    "message": "📝 Custom Prompt",
+    "description": "Custom prompt section header"
+  },
+  "customPromptInfo": {
+    "message": "Customize the prompt sent to AI for email classification.",
+    "description": "Custom prompt info text"
+  },
+  "customPromptPlaceholders": {
+    "message": "Available placeholders:",
+    "description": "Custom prompt placeholders label"
+  },
+  "customPromptPlaceholderLabel": {
+    "message": "Your folder/label list",
+    "description": "Labels placeholder description"
+  },
+  "customPromptSubjectLabel": {
+    "message": "Email subject line",
+    "description": "Subject placeholder description"
+  },
+  "customPromptAuthorLabel": {
+    "message": "Sender email address/name",
+    "description": "Author placeholder description"
+  },
+  "customPromptAttachmentsLabel": {
+    "message": "Attachment filenames (comma-separated)",
+    "description": "Attachments placeholder description"
+  },
+  "customPromptBodyLabel": {
+    "message": "Email body content (recommended)",
+    "description": "Body placeholder description"
+  },
+  "customPromptEmailLabel": {
+    "message": "Email content (legacy, same as {body})",
+    "description": "Email placeholder description",
+    "placeholders": {
+      "body": {
+        "content": "$1"
+      }
+    }
+  },
+  "customPromptTip": {
+    "message": "Tip: Use {subject} and {attachments} for better classification accuracy.",
+    "description": "Custom prompt tip",
+    "placeholders": {
+      "subject": {
+        "content": "$1"
+      },
+      "attachments": {
+        "content": "$2"
+      }
+    }
+  },
+  "customPromptTextareaPlaceholder": {
+    "message": "Enter your custom prompt...",
+    "description": "Custom prompt textarea placeholder"
+  },
+  "resetPromptButton": {
+    "message": "Reset to Default",
+    "description": "Reset prompt button"
+  },
+  "customFoldersTitle": {
+    "message": "📁 Custom Categories/Folders",
+    "description": "Custom categories/folders section header"
+  },
+  "folderSourceTitle": {
+    "message": "Folder Source",
+    "description": "Folder source subsection header"
+  },
+  "loadImapFoldersButton": {
+    "message": "Load Folders from Mail Account",
+    "description": "Load IMAP folders button"
+  },
+  "folderLoadingText": {
+    "message": "Loading folders...",
+    "description": "Folder loading indicator text"
+  },
+  "folderFoundText": {
+    "message": "Found {count} folders in your mail account. Would you like to use these?",
+    "description": "Folder found text",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "useImapFoldersButton": {
+    "message": "Use These Folders",
+    "description": "Use IMAP folders button"
+  },
+  "useCustomFoldersButton": {
+    "message": "Use Custom Folders Instead",
+    "description": "Use custom folders button"
+  },
+  "bulkImportLabel": {
+    "message": "Import Categories/Folders (one per line):",
+    "description": "Bulk import textarea label"
+  },
+  "bulkImportPlaceholder": {
+    "message": "Enter categories/folders, one per line",
+    "description": "Bulk import textarea placeholder"
+  },
+  "importButton": {
+    "message": "Import",
+    "description": "Import button"
+  },
+  "addButton": {
+    "message": "Add",
+    "description": "Add button"
+  },
+  "labelInputPlaceholder": {
+    "message": "Enter category/folder name",
+    "description": "Label input placeholder"
+  },
+  "moveHistoryTitle": {
+    "message": "📜 Move History",
+    "description": "Move history section header"
+  },
+  "clearHistoryButton": {
+    "message": "Clear History",
+    "description": "Clear history button"
+  },
+  "refreshHistoryButton": {
+    "message": "Refresh",
+    "description": "Refresh history button"
+  },
+  "historyHeaderTimestamp": {
+    "message": "Timestamp",
+    "description": "History table timestamp header"
+  },
+  "historyHeaderSubject": {
+    "message": "Subject",
+    "description": "History table subject header"
+  },
+  "historyHeaderStatus": {
+    "message": "Status",
+    "description": "History table status header"
+  },
+  "historyHeaderDestination": {
+    "message": "Destination",
+    "description": "History table destination header"
+  },
+  "saveSettingsButton": {
+    "message": "Save Settings",
+    "description": "Save settings button"
+  },
+  "providerInfoGemini": {
+    "message": "✓ Free tier: 5 requests/minute, 20/day per API key (enforced by addon)<br>✓ Tip: Create multiple API keys in different projects, switch keys when limit reached<br>✓ Check usage: <a href=\"https://aistudio.google.com/usage\" target=\"_blank\">AI Studio Usage</a><br>✓ Best for: General use, multilingual support<br>✓ Models: Gemini 2.5 Flash<br>✓ Check \"paid plan\" option to remove limits",
+    "description": "Gemini provider info HTML"
+  },
+  "providerInfoOpenai": {
+    "message": "✓ Free trial: $5 credit<br>✓ Best for: High accuracy, English content<br>✓ Models: GPT-4o-mini ($0.15/1M tokens)",
+    "description": "OpenAI provider info HTML"
+  },
+  "providerInfoAnthropic": {
+    "message": "✓ Free tier: Limited requests<br>✓ Best for: Long emails, detailed analysis<br>✓ Models: Claude 3 Haiku",
+    "description": "Anthropic provider info HTML"
+  },
+  "providerInfoGroq": {
+    "message": "✓ Free tier: 30 requests/minute<br>✓ Best for: Speed (fastest)<br>✓ Models: Llama 3.3 (Mixtral deprecated)",
+    "description": "Groq provider info HTML"
+  },
+  "providerInfoMistral": {
+    "message": "✓ Free tier: Limited requests<br>✓ Best for: European users, GDPR compliance<br>✓ Models: Mistral Small",
+    "description": "Mistral provider info HTML"
+  },
+  "providerInfoOllama": {
+    "message": "✓ 100% Free: Runs locally on your machine<br>✓ Privacy: No data sent to external servers<br>✓ No rate limits: Process unlimited emails<br>✓ Models: Llama 2/3, Mistral, Phi, Gemma, Qwen, and more<br>✓ Requires: <a href=\"https://ollama.ai/download\" target=\"_blank\">Ollama installed</a> and running locally<br>✓ Setup: Install Ollama, run \"ollama pull llama3.2\" to download a model",
+    "description": "Ollama provider info HTML"
+  },
+  "providerInfoOpenaiCompatible": {
+    "message": "✓ Compatible with: LocalAI, LM Studio, vLLM, Together AI, OpenRouter, DeepSeek, Fireworks, etc.<br>✓ Enter your endpoint base URL and model name<br>✓ API key optional for local servers<br>✓ Uses standard /v1/chat/completions format",
+    "description": "OpenAI-Compatible provider info HTML"
+  },
+  "freeBadge": {
+    "message": "FREE",
+    "description": "Free provider badge text"
+  },
+  "paidBadge": {
+    "message": "PAID",
+    "description": "Paid provider badge text"
+  }
+}
