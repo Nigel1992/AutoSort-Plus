@@ -152,10 +152,9 @@ async function ollamaChatViaTab(ollamaUrl, model, prompt, authToken, numCtx = 0)
     // Open a hidden tab at localhost to make the fetch (browser context, not restricted)
     const tab = await browser.tabs.create({ url: ollamaUrl, active: false });
 
-    // Wait for tab to load
-    await new Promise(resolve => setTimeout(resolve, 500));
-
     try {
+        // Wait for tab to load
+        await new Promise(resolve => setTimeout(resolve, 500));
         // Build the request headers
         const headers = { 'Content-Type': 'application/json' };
         if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
@@ -195,8 +194,8 @@ async function ollamaChatViaTab(ollamaUrl, model, prompt, authToken, numCtx = 0)
         
         // Wait for result (with polling to be safe)
         let result = null;
-        for (let i = 0; i < 60; i++) { // 30 seconds max
-            await new Promise(resolve => setTimeout(resolve, 500));
+        for (let i = 0; i < 40; i++) { // 10 seconds max (250ms intervals)
+            await new Promise(resolve => setTimeout(resolve, 250));
             
             try {
                 const results = await browser.tabs.executeScript(tab.id, { 
@@ -224,7 +223,7 @@ async function ollamaChatViaTab(ollamaUrl, model, prompt, authToken, numCtx = 0)
 
     } finally {
         // Close the tab
-        try { await browser.tabs.remove(tab.id); } catch (e) {}
+        try { await browser.tabs.remove(tab.id); } catch (e) { console.warn('[AutoSort+] Failed to close tab after Ollama fetch:', e.message); }
     }
 }
 
@@ -232,10 +231,9 @@ async function openaiCompatibleChatViaTab(baseUrl, model, prompt, apiKey) {
     // Open a hidden tab at the endpoint URL to make the fetch (browser context, not restricted)
     const tab = await browser.tabs.create({ url: baseUrl, active: false });
 
-    // Wait for tab to load
-    await new Promise(resolve => setTimeout(resolve, 500));
-
     try {
+        // Wait for tab to load
+        await new Promise(resolve => setTimeout(resolve, 500));
         // Build the request headers
         const headers = { 'Content-Type': 'application/json' };
         if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
@@ -274,8 +272,8 @@ async function openaiCompatibleChatViaTab(baseUrl, model, prompt, apiKey) {
 
         // Wait for result (with polling to be safe)
         let result = null;
-        for (let i = 0; i < 60; i++) { // 30 seconds max
-            await new Promise(resolve => setTimeout(resolve, 500));
+        for (let i = 0; i < 40; i++) { // 10 seconds max (250ms intervals)
+            await new Promise(resolve => setTimeout(resolve, 250));
 
             try {
                 const results = await browser.tabs.executeScript(tab.id, {
@@ -303,7 +301,7 @@ async function openaiCompatibleChatViaTab(baseUrl, model, prompt, apiKey) {
 
     } finally {
         // Close the tab
-        try { await browser.tabs.remove(tab.id); } catch (e) {}
+        try { await browser.tabs.remove(tab.id); } catch (e) { console.warn('[AutoSort+] Failed to close tab after OpenAI-compat fetch:', e.message); }
     }
 }
 
@@ -411,6 +409,25 @@ function _resetBatchState(total, provider) {
         chunkIndex: 0,
         totalChunks: 0
     };
+}
+
+/** Atomically acquire the batch lock. Returns true if acquired, false if already running. */
+function _acquireBatchLock() {
+    if (_batchState.running) return false;
+    _batchState.running = true;
+    return true;
+}
+
+/** Release the batch lock when an early-exit path aborts before batchAnalyzeEmails runs. */
+function _releaseBatchLock() {
+    _batchState.running = false;
+}
+
+/** Return the next UTC midnight as a millisecond timestamp. Used for daily rate-limit resets. */
+function _nextUtcMidnight() {
+    const d = new Date(Date.now());
+    d.setUTCHours(24, 0, 0, 0);
+    return d.getTime();
 }
 
 /** Broadcast current batch progress to any open options pages. */
@@ -585,7 +602,7 @@ async function batchAnalyzeEmails(messages) {
 let geminiRateLimitMutex = Promise.resolve();
 
 async function checkAndTrackGeminiRateLimit(keyIndex = null) {
-    // Chain onto mutex for atomic operation
+    // Chain onto mutex for atomic operation; .catch() prevents permanent lockup
     return geminiRateLimitMutex = geminiRateLimitMutex.then(async () => {
         const now = Date.now();
     const data = await browser.storage.local.get([
@@ -607,7 +624,7 @@ async function checkAndTrackGeminiRateLimit(keyIndex = null) {
         const rateLimits = data.geminiRateLimits || keys.map(() => ({
             requests: [],
             dailyCount: 0,
-            dailyResetTime: now + (24 * 60 * 60 * 1000)
+            dailyResetTime: _nextUtcMidnight()
         }));
         let currentIndex = keyIndex ?? (data.currentGeminiKeyIndex || 0);
 
@@ -617,10 +634,10 @@ async function checkAndTrackGeminiRateLimit(keyIndex = null) {
         while (attempts < keys.length) {
             const rateLimit = rateLimits[currentIndex];
 
-            // Reset daily if expired
+            // Reset daily if expired — uses UTC midnight for consistent daily boundaries
             if (now > rateLimit.dailyResetTime) {
                 rateLimit.dailyCount = 0;
-                rateLimit.dailyResetTime = now + (24 * 60 * 60 * 1000);
+                rateLimit.dailyResetTime = _nextUtcMidnight();
                 rateLimit.requests = [];
             }
 
@@ -682,16 +699,17 @@ async function checkAndTrackGeminiRateLimit(keyIndex = null) {
     }
 
     // Legacy single-key mode
+    const utcReset = _nextUtcMidnight();
     const rateLimit = data.geminiRateLimit || {
         requests: [],
         dailyCount: 0,
-        dailyResetTime: now + (24 * 60 * 60 * 1000)
+        dailyResetTime: utcReset
     };
 
-    // Reset daily if expired
+    // Reset daily if expired — uses UTC midnight for consistent daily boundaries
     if (now > rateLimit.dailyResetTime) {
         rateLimit.dailyCount = 0;
-        rateLimit.dailyResetTime = now + (24 * 60 * 60 * 1000);
+        rateLimit.dailyResetTime = utcReset;
         rateLimit.requests = [];
     }
 
@@ -739,6 +757,10 @@ async function checkAndTrackGeminiRateLimit(keyIndex = null) {
     }
 
     return { allowed: true, waitTime: 0, keyIndex: null };
+    }).catch(err => {
+        console.error('[RateLimit] Mutex error, resetting lock:', err.message);
+        geminiRateLimitMutex = Promise.resolve();
+        throw err;
     });
 }
 
@@ -1051,7 +1073,8 @@ async function analyzeEmailContent(emailContent, emailContext = null) {
             };
 
             if (window.debugLogger) {
-                window.debugLogger.apiRequest('Gemini', apiUrl, requestBody);
+                const sanitizedUrl = apiUrl.replace(/key=[^&]+/, 'key=***REDACTED***');
+                window.debugLogger.apiRequest('Gemini', sanitizedUrl, requestBody);
             }
 
             response = await fetch(apiUrl, {
@@ -1489,7 +1512,9 @@ async function storeMoveHistory(result) {
         const history = data.moveHistory || [];
         history.unshift({
             timestamp: new Date().toISOString(),
-            ...result
+            subject: (result.subject || '').substring(0, 200),   // truncate to 200 chars
+            status: result.status || 'unknown',
+            destination: (result.destination || '').substring(0, 200)
         });
         // Keep only the last 100 entries
         if (history.length > 100) {
@@ -1569,23 +1594,6 @@ async function applyLabelsToMessages(messages, label) {
                 "AutoSort+ Processing",
                 `Finding destination folder for message ${successCount + errorCount + 1}/${messageCount}...`
             );
-
-            // Legacy findFolder function - kept for edge cases
-            const findFolder = (folders, targetName) => {
-                for (const folder of folders) {
-                    if (window.debugLogger) {
-                        window.debugLogger.info('[Folder]', `Checking folder: ${folder.name}`);
-                    }
-                    if (folder.name === targetName) {
-                        return folder;
-                    }
-                    if (folder.subFolders) {
-                        const found = findFolder(folder.subFolders, targetName);
-                        if (found) return found;
-                    }
-                }
-                return null;
-            };
 
             // Use cached folder lookup instead of recursive search
             let targetFolder = folderCache.get(`${message.folder.accountId}:${label}`);
@@ -1771,9 +1779,8 @@ async function processWithConcurrency(items, processor, limit = 3) {
     const executing = new Set();
 
     for (const item of items) {
-        const promise = processor(item).then(result => {
+        const promise = processor(item).finally(() => {
             executing.delete(promise);
-            return result;
         });
         executing.add(promise);
         results.push(promise);
@@ -1820,10 +1827,14 @@ async function classifyAndMove(message) {
  * Supports MessageList pagination via continueList.
  */
 async function handleNewMail(folder, messageList) {
+    // Guard: don't auto-sort if a manual batch is already running
+    if (_batchState.running) return;
+
     const settings = await browser.storage.local.get(['autoSortEnabled', 'enableAi', 'aiProvider']);
 
-    // Check if auto-sort is enabled
-    if (!settings.autoSortEnabled) return;
+    // Check if auto-sort is enabled (defaults to true for backward compatibility)
+    const autoSortEnabled = settings.autoSortEnabled !== false;
+    if (!autoSortEnabled) return;
     if (settings.enableAi === false) return;
 
     // Verify this is Inbox folder (specialUse array contains "inbox")
@@ -1941,8 +1952,8 @@ browser.menus.onClicked.addListener(async (info, tab) => {
         }
 
         try {
-            // Guard: refuse if a batch is already running
-            if (_batchState.running) {
+            // Guard: refuse if a batch is already running (atomic check-and-set)
+            if (!_acquireBatchLock()) {
                 await showNotification(
                     'AutoSort+ Busy',
                     'A batch is already in progress. Please wait or cancel it from the settings page.'
@@ -1955,6 +1966,7 @@ browser.menus.onClicked.addListener(async (info, tab) => {
             if (!mailTabs || mailTabs.length === 0) {
                 console.error('No active mail tab found');
                 await showNotification('AutoSort+ Error', 'No active mail tab found');
+                _releaseBatchLock();
                 return;
             }
 
@@ -1963,6 +1975,7 @@ browser.menus.onClicked.addListener(async (info, tab) => {
             if (!selectedMessageList || !selectedMessageList.messages || selectedMessageList.messages.length === 0) {
                 console.error('No messages selected');
                 await showNotification('AutoSort+ Error', 'No messages selected for analysis');
+                _releaseBatchLock();
                 return;
             }
 
@@ -1977,9 +1990,13 @@ browser.menus.onClicked.addListener(async (info, tab) => {
             );
 
             // Hand off to the batch engine (runs async, does not block the event listener)
-            batchAnalyzeEmails(messages);
+            batchAnalyzeEmails(messages).catch(err => {
+                console.error('[AutoSort+] Batch analysis failed:', err);
+                _releaseBatchLock();
+            });
 
         } catch (error) {
+            _releaseBatchLock();
             console.error('Error starting batch analysis:', error);
             await showNotification('AutoSort+ Error', `Error: ${error.message}`);
         }

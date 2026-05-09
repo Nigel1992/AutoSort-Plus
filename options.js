@@ -1,3 +1,14 @@
+/** Escape HTML special characters to prevent XSS in innerHTML assignments. */
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
     // Apply i18n translations first
     if (typeof applyTranslations === 'function') {
@@ -191,7 +202,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         providerInfo.innerHTML = `
             <div class="provider-details">
-                <strong>${config.name}</strong> ${config.isFree ? '<span class="free-badge">' + i18n.get('freeBadge', 'FREE') + '</span>' : '<span class="paid-badge">' + i18n.get('paidBadge', 'PAID') + '</span>'}
+                <strong>${config.name}</strong> ${config.isFree ? '<span class="free-badge">' + i18n.get('freeBadge') + '</span>' : '<span class="paid-badge">' + i18n.get('paidBadge') + '</span>'}
                 <p>${config.info}</p>
             </div>
         `;
@@ -240,12 +251,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             const minutesAgo = Math.floor((now - lastRequest) / 60000);
             if (minutesAgo < 1) {
                 document.getElementById('gemini-last-request').textContent = i18n.get('geminiNever');
-                document.getElementById('gemini-last-request').dataset.i18nFallback = 'just_now';
             } else if (minutesAgo < 60) {
-                document.getElementById('gemini-last-request').textContent = `${minutesAgo} minute${minutesAgo > 1 ? 's' : ''} ago`;
+                document.getElementById('gemini-last-request').textContent = i18n.get('minutesAgo', [minutesAgo, minutesAgo > 1 ? 's' : '']);
             } else {
                 const hoursAgo = Math.floor(minutesAgo / 60);
-                document.getElementById('gemini-last-request').textContent = `${hoursAgo} hour${hoursAgo > 1 ? 's' : ''} ago`;
+                document.getElementById('gemini-last-request').textContent = i18n.get('hoursAgo', [hoursAgo, hoursAgo > 1 ? 's' : '']);
             }
         } else {
             document.getElementById('gemini-last-request').textContent = i18n.get('geminiNever');
@@ -253,26 +263,26 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         if (rateLimit.dailyResetTime > now) {
             const hoursUntil = Math.ceil((rateLimit.dailyResetTime - now) / (1000 * 60 * 60));
-            document.getElementById('gemini-reset-time').textContent = `In ${hoursUntil} hour${hoursUntil > 1 ? 's' : ''}`;
+            document.getElementById('gemini-reset-time').textContent = i18n.get('inHours', [hoursUntil, hoursUntil > 1 ? 's' : '']);
         } else {
-            document.getElementById('gemini-reset-time').textContent = i18n.get('geminiResetExpired', 'Expired (will reset on next request)');
+            document.getElementById('gemini-reset-time').textContent = i18n.get('geminiResetExpired');
         }
 
         const usageMessage = document.getElementById('usage-message');
         const statusSpan = document.getElementById('gemini-status');
         
         if (rateLimit.dailyCount >= 20) {
-            statusSpan.textContent = '🔴 ' + i18n.get('geminiStatusLimitReached', 'Limit Reached');
+            statusSpan.textContent = '🔴 ' + i18n.get('geminiStatusLimitReached');
             statusSpan.style.color = '#dc3545';
             usageMessage.className = 'usage-message warning';
-            usageMessage.textContent = '⚠️ ' + i18n.get('geminiLimitMessage', 'Daily limit reached! Create a new API key in a different project and update it above to continue processing emails.');
+            usageMessage.textContent = '⚠️ ' + i18n.get('geminiLimitMessage');
         } else if (rateLimit.dailyCount >= 15) {
-            statusSpan.textContent = '🟡 ' + i18n.get('geminiStatusNearlyFull', 'Nearly Full');
+            statusSpan.textContent = '🟡 ' + i18n.get('geminiStatusNearlyFull');
             statusSpan.style.color = '#ffc107';
             usageMessage.className = 'usage-message warning';
-            usageMessage.textContent = `⚠️ ${i18n.get('geminiRemainingMessage', 'Only')} ${20 - rateLimit.dailyCount} ${i18n.get('requestsRemainingToday', 'requests remaining today. Consider switching to a new API key soon.')}`;
+            usageMessage.textContent = `⚠️ ${i18n.get('geminiRemainingMessage')} ${20 - rateLimit.dailyCount} ${i18n.get('requestsRemainingToday')}`;
         } else {
-            statusSpan.textContent = '🟢 ' + i18n.get('geminiStatusReady', 'Ready');
+            statusSpan.textContent = '🟢 ' + i18n.get('geminiStatusReady');
             statusSpan.style.color = '#28a745';
             usageMessage.style.display = 'none';
         }
@@ -292,56 +302,56 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         let statusBadge = '';
             if (isActive) {
-                statusBadge = '<span class="key-status active">🔵 ACTIVE</span>';
+                statusBadge = `<span class="key-status active">${i18n.get('keyActive')}</span>`;
             } else if (rateLimit.dailyCount >= 20) {
-                statusBadge = '<span class="key-status limit">🔴 LIMIT</span>';
+                statusBadge = `<span class="key-status limit">${i18n.get('keyLimit')}</span>`;
             } else if (rateLimit.dailyCount >= 15) {
-                statusBadge = '<span class="key-status warning">🟡 NEAR LIMIT</span>';
+                statusBadge = `<span class="key-status warning">${i18n.get('keyNearLimit')}</span>`;
             } else {
-                statusBadge = '<span class="key-status ready">🟢 READY</span>';
+                statusBadge = `<span class="key-status ready">${i18n.get('keyReady')}</span>`;
             }
 
         let resetText = '--';
             if (rateLimit.dailyResetTime > now) {
                 const hoursUntil = Math.ceil((rateLimit.dailyResetTime - now) / (1000 * 60 * 60));
-                resetText = `${hoursUntil}h`;
+                resetText = i18n.get('inHoursShort', [hoursUntil]);
             }
 
-        let lastRequestText = 'Never';
+        let lastRequestText = i18n.get('geminiNever');
             if (rateLimit.requests && rateLimit.requests.length > 0) {
                 const lastRequest = Math.max(...rateLimit.requests);
                 const minutesAgo = Math.floor((now - lastRequest) / 60000);
                 if (minutesAgo < 1) {
-                    lastRequestText = 'Just now';
+                    lastRequestText = i18n.get('justNow');
                 } else if (minutesAgo < 60) {
-                    lastRequestText = `${minutesAgo}m ago`;
+                    lastRequestText = i18n.get('minutesAgoShort', [minutesAgo]);
                 } else {
-                    lastRequestText = `${Math.floor(minutesAgo / 60)}h ago`;
+                    lastRequestText = i18n.get('hoursAgoShort', [Math.floor(minutesAgo / 60)]);
                 }
             }
 
-        const maskedKey = key ? `...${key.slice(-8)}` : 'Not set';
+        const maskedKey = key ? `...${key.slice(-8)}` : i18n.get('keyNotSet');
             
             card.innerHTML = `
                 <div class="key-header">
-                    <span class="key-title">Key ${index + 1}: ${maskedKey}</span>
+                    <span class="key-title">${i18n.get('keyLabel', [index + 1])} ${maskedKey}</span>
                     ${statusBadge}
                 </div>
                 <div class="key-stats">
                     <div class="stat-item">
-                        <span class="stat-label">Usage:</span>
+                        <span class="stat-label">${i18n.get('statUsage')}</span>
                         <span class="stat-value">${rateLimit.dailyCount}/20</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Last:</span>
+                        <span class="stat-label">${i18n.get('statLast')}</span>
                         <span class="stat-value">${lastRequestText}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Resets:</span>
+                        <span class="stat-label">${i18n.get('statResets')}</span>
                         <span class="stat-value">${resetText}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Available:</span>
+                        <span class="stat-label">${i18n.get('statAvailable')}</span>
                         <span class="stat-value">${20 - rateLimit.dailyCount}</span>
                     </div>
                 </div>
@@ -368,7 +378,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const input = document.createElement('input');
         input.type = 'password';
         input.className = 'gemini-api-key-input';
-        input.placeholder = i18n.get('geminiKeyInputPlaceholder', 'Enter Gemini API key from another project');
+        input.placeholder = i18n.get('geminiKeyInputPlaceholder');
         input.value = value;
         input.dataset.index = index;
         input.addEventListener('input', (e) => {
@@ -379,7 +389,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 const isDuplicate = geminiKeys.some((key, i) => i !== index && key.trim() === newKey);
                 if (isDuplicate) {
                     input.style.borderColor = '#dc3545';
-                    input.title = '⚠️ This key is already added!';
+                    input.title = i18n.get('keyAlreadyAddedTitle');
                 } else {
                     input.style.borderColor = '';
                     input.title = '';
@@ -394,21 +404,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         const testButton = document.createElement('button');
         testButton.className = 'button';
-        testButton.textContent = i18n.get('testButton', 'Test');
+        testButton.textContent = i18n.get('testButton');
         testButton.addEventListener('click', () => {
             const keyValue = input.value.trim();
             if (!keyValue) {
-                statusSpan.textContent = '⚠️ Enter key first';
+                statusSpan.textContent = i18n.get('enterKeyFirst');
                 statusSpan.className = 'key-test-result error';
                 return;
             }
-            
+
             // Check for duplicates before testing
             const isDuplicate = geminiKeys.some((key, i) => i !== index && key.trim() === keyValue);
             if (isDuplicate) {
-                statusSpan.textContent = '⚠️ Duplicate key';
+                statusSpan.textContent = i18n.get('duplicateKey');
                 statusSpan.className = 'key-test-result error';
-                statusSpan.title = 'This key is already added in the list';
+                statusSpan.title = i18n.get('duplicateKeyTitle');
                 return;
             }
             
@@ -434,11 +444,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     function removeGeminiKey(index) {
         if (geminiKeys.length <= 1) {
-            alert('You must have at least one API key configured.');
+            alert(i18n.get('mustHaveOneKey'));
             return;
         }
-        
-        if (confirm(`Remove API key #${index + 1}?`)) {
+
+        if (confirm(i18n.get('removeApiKeyConfirm', [index + 1]))) {
             geminiKeys.splice(index, 1);
             refreshGeminiKeysList();
         }
@@ -455,13 +465,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         const statusSpan = keyItemElement.querySelector('.key-test-result');
         
         if (!apiKey) {
-            statusSpan.textContent = '⚠️ Enter key first';
+            statusSpan.textContent = i18n.get('enterKeyFirst');
             statusSpan.className = 'key-test-result error';
             return;
         }
         
         try {
-            statusSpan.textContent = 'Testing...';
+            statusSpan.textContent = i18n.get('testingStatus');
             statusSpan.className = 'key-test-result testing';
             
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
@@ -476,25 +486,25 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             
             if (response.ok) {
-                statusSpan.textContent = '✓ Valid';
+                statusSpan.textContent = i18n.get('validKey');
                 statusSpan.className = 'key-test-result success';
             } else if (response.status === 429) {
-                statusSpan.textContent = '⚠️ Limit reached';
+                statusSpan.textContent = i18n.get('limitReachedGemini');
                 statusSpan.className = 'key-test-result error';
-                statusSpan.title = 'This key has reached its daily rate limit (20/day). Will reset in ~24 hours.';
+                statusSpan.title = i18n.get('limitReachedGeminiTitle');
                 console.error(`Key #${index + 1} has reached rate limit (429)`);
             } else if (response.status === 401 || response.status === 403) {
-                statusSpan.textContent = '✗ Invalid key';
+                statusSpan.textContent = i18n.get('invalidKey');
                 statusSpan.className = 'key-test-result error';
-                statusSpan.title = 'API key is invalid or expired. Check your key in Google AI Studio.';
+                statusSpan.title = i18n.get('invalidKeyTitle');
                 console.error(`Key #${index + 1} test failed: ${response.status}`);
             } else {
-                statusSpan.textContent = `✗ Failed (${response.status})`;
+                statusSpan.textContent = i18n.get('testFailed', [response.status]);
                 statusSpan.className = 'key-test-result error';
                 console.error(`Key #${index + 1} test failed:`, response.status);
             }
         } catch (error) {
-            statusSpan.textContent = `✗ Error`;
+            statusSpan.textContent = i18n.get('errorStatus');
             statusSpan.className = 'key-test-result error';
             console.error(`Key #${index + 1} test error:`, error);
         }
@@ -508,7 +518,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
     
     document.getElementById('reset-gemini-counter').addEventListener('click', async () => {
-        if (confirm('Reset usage counter? Do this only after switching to a new API key.')) {
+        if (confirm(i18n.get('resetCounterConfirm'))) {
             await browser.storage.local.set({ 
                 geminiRateLimit: { 
                     requests: [], 
@@ -519,7 +529,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             await updateGeminiUsageDisplay();
             const usageMessage = document.getElementById('usage-message');
             usageMessage.className = 'usage-message info';
-            usageMessage.textContent = '✓ Usage counter reset. You can now process up to 20 more emails today with your new API key.';
+            usageMessage.textContent = i18n.get('counterResetMsg');
         }
     });
     
@@ -527,7 +537,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         await updateGeminiUsageDisplay();
         const usageMessage = document.getElementById('usage-message');
         usageMessage.className = 'usage-message info';
-        usageMessage.textContent = '✓ Usage information refreshed.';
+        usageMessage.textContent = i18n.get('usageRefreshed');
         setTimeout(() => {
             if (usageMessage.classList.contains('info')) {
                 usageMessage.style.display = 'none';
@@ -537,7 +547,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     document.getElementById('refresh-all-usage').addEventListener('click', async () => {
         await updateGeminiUsageDisplay();
-        showMessage('✓ All usage information refreshed.', true);
+        showMessage(i18n.get('allUsageRefreshed'), true);
     });
     
     getApiKeyButton.addEventListener('click', async () => {
@@ -546,7 +556,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
         // Skip if provider has no signup URL (like openai-compatible)
         if (!config.signupUrl) {
-            showMessage('This provider doesn\'t have a signup URL. Configure the endpoint directly in the settings above.', false);
+            showMessage(i18n.get('noSignupUrl'), false);
             return;
         }
 
@@ -557,9 +567,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             const url = config.signupUrl;
             try {
                 await navigator.clipboard.writeText(url);
-                showMessage(`URL copied to clipboard:\n${url}`, true);
+                showMessage(i18n.get('urlCopied', [url]), true);
             } catch (e) {
-                alert(`Please visit:\n${url}`);
+                alert(i18n.get('pleaseVisit', [url]));
             }
         }
     });
@@ -606,7 +616,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 else missingItems.push('API key');
             }
 
-            saveButton.title = `Please configure: ${missingItems.join(' and ')}`;
+            saveButton.title = i18n.get('pleaseConfigure', [missingItems.join(' and ')]);
         } else {
             saveButton.disabled = false;
             saveButton.classList.remove('disabled');
@@ -615,12 +625,18 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'customBaseUrl', 'customModel', 'debugMode', 'batchChunkSize', 'autoSortEnabled', 'customPrompt']).then(result => {
+        // Migration: default autoSortEnabled to true for users upgrading from older versions
+        if (result.autoSortEnabled === undefined) {
+            browser.storage.local.set({ autoSortEnabled: true }).catch(() => {});
+            result.autoSortEnabled = true;
+        }
+
         if (result.labels && result.labels.length > 0) {
             result.labels.forEach(label => {
                 addLabelInput(label);
             });
         } else {
-            labelsContainer.innerHTML = '<div class="instruction-message">No folders/labels configured. Click "Load Folders from Mail Account" above or add custom labels below.</div>';
+            labelsContainer.innerHTML = '<div class="instruction-message">' + i18n.get('noFoldersInstruction') + '</div>';
         }
 
         if (result.geminiApiKeys && result.geminiApiKeys.length > 0) {
@@ -709,10 +725,10 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (window.debugLogger) {
                 if (enableDebugCheckbox.checked) {
                     await window.debugLogger.enable();
-                    showMessage('✓ Debug mode enabled. Open Thunderbird Developer Tools (Ctrl+Shift+I) to view logs.', true);
+                    showMessage(i18n.get('debugEnabled'), true);
                 } else {
                     await window.debugLogger.disable();
-                    showMessage('✓ Debug mode disabled.', true);
+                    showMessage(i18n.get('debugDisabled'), true);
                 }
             }
         });
@@ -724,7 +740,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const customPromptTextarea = document.getElementById('custom-prompt-text');
             if (customPromptTextarea) {
                 customPromptTextarea.value = '';
-                showMessage('Custom prompt cleared. Default prompt will be used.', true);
+                showMessage(i18n.get('promptCleared'), true);
             }
         });
     }
@@ -738,21 +754,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Skip for Ollama and OpenAI-Compatible as they have their own test buttons
         if (provider === 'ollama') {
-            showApiTestResult('Please use the "Test Ollama Connection" button below', false);
+            showApiTestResult(i18n.get('useOllamaTestButton'), false);
             return;
         }
         if (provider === 'openai-compatible') {
-            showApiTestResult('Please use the "Test Connection" button in the OpenAI-Compatible section', false);
+            showApiTestResult(i18n.get('useCustomTestButton'), false);
             return;
         }
         
         if (!apiKey) {
-            showApiTestResult('Please enter an API key', false);
+            showApiTestResult(i18n.get('enterApiKey'), false);
             return;
         }
 
         try {
-            showApiTestResult('Testing connection...', false);
+            showApiTestResult(i18n.get('testingConnection'), false);
             
             let response;
             if (provider === 'gemini') {
@@ -823,13 +839,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             if (response.ok) {
-                showApiTestResult('✓ API connection successful!', true);
+                showApiTestResult(i18n.get('apiConnectionSuccess'), true);
             } else {
                 const error = await response.json();
-                showApiTestResult(`API Error: ${error.error?.message || error.message || 'Unknown error'}`, false);
+                showApiTestResult(i18n.get('apiError', [error.error?.message || error.message || 'Unknown error']), false);
             }
         } catch (error) {
-            showApiTestResult(`Connection Error: ${error.message}`, false);
+            showApiTestResult(i18n.get('connectionError', [error.message]), false);
         }
     });
 
@@ -852,7 +868,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             )].sort();
             
             if (loadedFolders.length === 0) {
-                showMessage('No folders found. You can create custom folders instead.', false);
+                showMessage(i18n.get('noFoldersFound'), false);
                 folderLoadingIndicator.style.display = 'none';
                 return;
             }
@@ -860,12 +876,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             folderCount.textContent = loadedFolders.length;
             foldersPreview.innerHTML = loadedFolders
                 .slice(0, 10)
-                .map(f => `<div class="folder-preview-item">${f}</div>`)
-                .join('') + (loadedFolders.length > 10 ? `<div class="folder-preview-item">...and ${loadedFolders.length - 10} more</div>` : '');
+                .map(f => `<div class="folder-preview-item">${escapeHtml(f)}</div>`)
+                .join('') + (loadedFolders.length > 10 ? `<div class="folder-preview-item">${escapeHtml(i18n.get('andMore', [loadedFolders.length - 10]))}</div>` : '');
             
             folderSelection.style.display = 'block';
         } catch (error) {
-            showMessage(`Error loading folders: ${error.message}`, false);
+            showMessage(i18n.get('errorLoadingFolders', [error.message]), false);
             console.error('Error loading folders:', error);
         } finally {
             folderLoadingIndicator.style.display = 'none';
@@ -873,20 +889,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
 
     useImapFoldersButton.addEventListener('click', () => {
-        if (confirm(`This will replace any existing folders/labels with ${loadedFolders.length} folders from your mail account. Continue?`)) {
+        if (confirm(i18n.get('replaceFoldersConfirm', [loadedFolders.length]))) {
             labelsContainer.innerHTML = '';
             loadedFolders.forEach(folder => {
                 addLabelInput(folder);
             });
             folderSelection.style.display = 'none';
             updateSaveButtonState();
-            showMessage(`Loaded ${loadedFolders.length} folders from your mail account. Don't forget to save!`, true);
+            showMessage(i18n.get('loadedFoldersMsg', [loadedFolders.length]), true);
         }
     });
 
     useCustomFoldersButton.addEventListener('click', () => {
         folderSelection.style.display = 'none';
-        showMessage('You can now add custom folders below', true);
+        showMessage(i18n.get('addCustomFoldersMsg'), true);
     });
 
     async function getAllFolders(account) {
@@ -918,7 +934,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const labels = bulkText.split('\n').map(l => l.trim()).filter(l => l !== '');
 
         if (labels.length === 0) {
-            showMessage('Please add at least one folder/label before importing. Enter labels one per line.', false);
+            showMessage(i18n.get('importOneLabelRequired'), false);
             return;
         }
 
@@ -927,7 +943,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             .filter(label => label !== '');
             
         if (existingLabels.length > 0) {
-            if (!confirm(`This will replace your ${existingLabels.length} existing folders/labels with ${labels.length} new ones. Continue?`)) {
+            if (!confirm(i18n.get('replaceExistingConfirm', [existingLabels.length, labels.length]))) {
                 return;
             }
         }
@@ -939,7 +955,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
 
         updateSaveButtonState();
-        showMessage(`Imported ${labels.length} categories/folders. Don't forget to save!`, true);
+        showMessage(i18n.get('importedFoldersMsg', [labels.length]), true);
         bulkImportTextarea.value = '';
     });
 
@@ -966,14 +982,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (selectedModel === 'custom') {
                 selectedModel = ollamaCustomModelInput.value.trim();
                 if (!selectedModel) {
-                    ollamaTestResult.textContent = '⚠️ Please enter a custom model name first';
+                    ollamaTestResult.textContent = i18n.get('enterCustomModelFirst');
                     ollamaTestResult.className = 'api-test-result error';
                     return;
                 }
             }
             
             try {
-                ollamaTestResult.textContent = 'Testing connection and checking model...';
+                ollamaTestResult.textContent = i18n.get('testingConnectionModels');
                 ollamaTestResult.className = 'api-test-result';
                 
                 const testUrl = `${ollamaUrl}/api/tags`;
@@ -999,7 +1015,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         : [];
                     
                     if (installedModels.length === 0) {
-                        ollamaTestResult.textContent = `⚠️ Ollama is running but no models installed. Enter a model name in "Download Model" and click "Download" to get started.`;
+                        ollamaTestResult.textContent = i18n.get('ollamaRunningNoModels');
                         ollamaTestResult.className = 'api-test-result error';
                     } else {
                         // Extract base model name (before colon) for regex matching
@@ -1008,10 +1024,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                         
                         const modelFound = installedBases.some(base => base === selectedBase);
                         if (modelFound) {
-                            ollamaTestResult.textContent = `✓ Connected! Model "${selectedModel}" is installed and ready. Available: ${installedModels.join(', ')}`;
+                            ollamaTestResult.textContent = i18n.get('connectedModelReady', [selectedModel, installedModels.join(', ')]);
                             ollamaTestResult.className = 'api-test-result success';
                         } else {
-                            ollamaTestResult.textContent = `✗ Model "${selectedModel}" not installed. Available models: ${installedModels.join(', ')}. Use "Download Model" to install it.`;
+                            ollamaTestResult.textContent = i18n.get('modelNotInstalled', [selectedModel, installedModels.join(', ')]);
                             ollamaTestResult.className = 'api-test-result error';
                         }
                     }
@@ -1031,12 +1047,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                             errorMsg = errorText || `HTTP ${response.status}`;
                         }
                     }
-                    ollamaTestResult.textContent = `✗ Error: ${errorMsg}`;
+                    ollamaTestResult.textContent = i18n.get('ollamaErrorLabel', [errorMsg]);
                     ollamaTestResult.className = 'api-test-result error';
                 }
             } catch (error) {
                 console.error('[Ollama Test] Exception:', error);
-                ollamaTestResult.textContent = `✗ Connection failed: ${error.message}. Make sure Ollama is running (try: ollama serve)`;
+                ollamaTestResult.textContent = i18n.get('ollamaConnectionFailed', [error.message]);
                 ollamaTestResult.className = 'api-test-result error';
             }
         });
@@ -1067,7 +1083,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (!baseUrl) {
                 if (customTestResult) {
-                    customTestResult.textContent = '⚠️ Please enter a base URL first';
+                    customTestResult.textContent = i18n.get('enterBaseUrlFirst');
                     customTestResult.className = 'api-test-result error';
                 }
                 return;
@@ -1075,7 +1091,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             try {
                 if (customTestResult) {
-                    customTestResult.textContent = 'Fetching models from endpoint...';
+                    customTestResult.textContent = i18n.get('fetchingModels');
                     customTestResult.className = 'api-test-result';
                 }
 
@@ -1104,14 +1120,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 if (models.length === 0) {
                     if (customTestResult) {
-                        customTestResult.textContent = '⚠️ No models found at this endpoint';
+                        customTestResult.textContent = i18n.get('noModelsEndpoint');
                         customTestResult.className = 'api-test-result error';
                     }
                     return;
                 }
 
                 if (customModelSelect) {
-                    customModelSelect.innerHTML = '<option value="">-- Select model --</option>';
+                    customModelSelect.innerHTML = `<option value="">-- ${i18n.get('openaiCompatibleModelSelect')} --</option>`;
                     models.forEach(m => {
                         const modelId = m.id || m.name || m;
                         const option = document.createElement('option');
@@ -1121,19 +1137,19 @@ document.addEventListener('DOMContentLoaded', async function() {
                     });
                     const customOpt = document.createElement('option');
                     customOpt.value = 'custom';
-                    customOpt.textContent = 'Custom (enter manually)';
+                    customOpt.textContent = i18n.get('openaiCompatibleModelCustom');
                     customModelSelect.appendChild(customOpt);
                 }
 
                 if (customTestResult) {
-                    customTestResult.textContent = `✓ Found ${models.length} models. Select from dropdown or use "Custom" option.`;
+                    customTestResult.textContent = i18n.get('foundModelsMsg', [models.length]);
                     customTestResult.className = 'api-test-result success';
                 }
 
             } catch (error) {
                 console.error('[Fetch Models] Error:', error);
                 if (customTestResult) {
-                    customTestResult.textContent = `✗ Failed to fetch models: ${error.message}`;
+                    customTestResult.textContent = i18n.get('failedFetchModels', [error.message]);
                     customTestResult.className = 'api-test-result error';
                 }
             }
@@ -1152,14 +1168,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             if (!baseUrl) {
                 if (customTestResult) {
-                    customTestResult.textContent = '⚠️ Please enter a base URL';
+                    customTestResult.textContent = i18n.get('enterBaseUrl');
                     customTestResult.className = 'api-test-result error';
                 }
                 return;
             }
             if (!model) {
                 if (customTestResult) {
-                    customTestResult.textContent = '⚠️ Please enter a model name';
+                    customTestResult.textContent = i18n.get('enterModelName');
                     customTestResult.className = 'api-test-result error';
                 }
                 return;
@@ -1167,7 +1183,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             try {
                 if (customTestResult) {
-                    customTestResult.textContent = 'Testing connection...';
+                    customTestResult.textContent = i18n.get('testingConnection');
                     customTestResult.className = 'api-test-result';
                 }
 
@@ -1194,7 +1210,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
                 if (response.ok) {
                     if (customTestResult) {
-                        customTestResult.textContent = `✓ Connected successfully! Model "${model}" is ready at ${normalizedUrl}`;
+                        customTestResult.textContent = i18n.get('connectedSuccessfully', [model, normalizedUrl]);
                         customTestResult.className = 'api-test-result success';
                     }
                 } else {
@@ -1208,14 +1224,14 @@ document.addEventListener('DOMContentLoaded', async function() {
                         errorMsg = `HTTP ${response.status}: ${response.statusText}`;
                     }
                     if (customTestResult) {
-                        customTestResult.textContent = `✗ Error: ${errorMsg}`;
+                    customTestResult.textContent = i18n.get('genericErrorLabel', [errorMsg]);
                         customTestResult.className = 'api-test-result error';
                     }
                 }
             } catch (error) {
                 console.error('[Custom Endpoint Test] Exception:', error);
                 if (customTestResult) {
-                    customTestResult.textContent = `✗ Connection failed: ${error.message}. Check the base URL and ensure the endpoint is running.`;
+                    customTestResult.textContent = i18n.get('customConnectionFailed', [error.message]);
                     customTestResult.className = 'api-test-result error';
                 }
             }
@@ -1225,14 +1241,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (diagnoseOllamaButton) {
         diagnoseOllamaButton.addEventListener('click', async () => {
             const ollamaUrl = ollamaUrlInput.value.trim() || 'http://localhost:11434';
-            let diagnosticOutput = '🔍 OLLAMA DIAGNOSTICS\n' + '='.repeat(50) + '\n\n';
-            
+            let diagnosticOutput = i18n.get('diagnosticsTitle') + '\n' + '='.repeat(50) + '\n\n';
+
             ollamaDiagnostics.style.display = 'block';
             ollamaDiagnostics.className = 'diagnostics-result';
-            ollamaDiagnostics.textContent = diagnosticOutput + 'Running tests...\n';
+            ollamaDiagnostics.textContent = diagnosticOutput + i18n.get('diagnosticsRunning') + '\n';
 
             try {
-                diagnosticOutput += '📋 Test 1: List Models Endpoint\n';
+                diagnosticOutput += i18n.get('testListModels') + '\n';
                 diagnosticOutput += `   URL: ${ollamaUrl}/api/tags\n`;
                 try {
                     const tagsResponse = await fetch(`${ollamaUrl}/api/tags`);
@@ -1244,7 +1260,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         if (data.models && data.models.length > 0) {
                             diagnosticOutput += '   Installed models: ' + data.models.map(m => m.name).join(', ') + '\n';
                         } else {
-                            diagnosticOutput += '   ⚠️ No models installed\n';
+                            diagnosticOutput += '   ' + i18n.get('noInstalledModels') + '\n';
                         }
                     } else {
                         diagnosticOutput += `   ✗ FAILED\n`;
@@ -1253,7 +1269,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     diagnosticOutput += `   ✗ ERROR: ${error.message}\n`;
                 }
 
-                diagnosticOutput += '\n🔢 Test 2: Version Endpoint\n';
+                diagnosticOutput += '\n' + i18n.get('testVersion') + '\n';
                 diagnosticOutput += `   URL: ${ollamaUrl}/api/version\n`;
                 try {
                     const versionResponse = await fetch(`${ollamaUrl}/api/version`);
@@ -1261,37 +1277,37 @@ document.addEventListener('DOMContentLoaded', async function() {
                     
                     if (versionResponse.ok) {
                         const data = await versionResponse.json();
-                        diagnosticOutput += `   ✓ SUCCESS - Ollama version: ${data.version || 'unknown'}\n`;
+                        diagnosticOutput += `   ✓ SUCCESS - Ollama version: ${data.version || i18n.get('unknownVersion')}\n`;
                     } else {
-                        diagnosticOutput += `   ⚠️ Endpoint not available (older Ollama version)\n`;
+                        diagnosticOutput += `   ` + i18n.get('versionNotAvailable') + `\n`;
                     }
                 } catch (error) {
                     diagnosticOutput += `   ✗ ERROR: ${error.message}\n`;
                 }
 
-                diagnosticOutput += '\n⬇️ Test 3: Pull Endpoint Check\n';
+                diagnosticOutput += '\n' + i18n.get('testPullEndpoint') + '\n';
                 diagnosticOutput += `   URL: ${ollamaUrl}/api/pull\n`;
-                diagnosticOutput += `   Note: This endpoint is used for downloading models\n`;
+                diagnosticOutput += '   ' + i18n.get('pullEndpointNote') + '\n';
 
                 diagnosticOutput += '\n' + '='.repeat(50) + '\n';
-                diagnosticOutput += '📊 SUMMARY:\n\n';
+                diagnosticOutput += i18n.get('diagnosticsSummary') + '\n\n';
                 
                 if (diagnosticOutput.includes('✓ SUCCESS - Found')) {
-                    diagnosticOutput += '✓ Ollama is running and accessible\n';
-                    diagnosticOutput += `✓ API base URL: ${ollamaUrl}\n`;
+                    diagnosticOutput += i18n.get('ollamaRunningOk') + '\n';
+                    diagnosticOutput += i18n.get('diagnosticsApiUrl', [ollamaUrl]) + '\n';
                     ollamaDiagnostics.className = 'diagnostics-result success';
                 } else {
-                    diagnosticOutput += '✗ Cannot connect to Ollama\n';
-                    diagnosticOutput += '\nTroubleshooting:\n';
-                    diagnosticOutput += '1. Check if Ollama is running: ps aux | grep ollama\n';
-                    diagnosticOutput += '2. Start Ollama: ollama serve\n';
-                    diagnosticOutput += `3. Test manually: curl ${ollamaUrl}/api/tags\n`;
-                    diagnosticOutput += '4. Check if port 11434 is in use: lsof -i :11434\n';
+                    diagnosticOutput += i18n.get('cannotConnectOllama') + '\n';
+                    diagnosticOutput += '\n' + i18n.get('troubleshootingLabel') + '\n';
+                    diagnosticOutput += i18n.get('troubleshootRunning') + '\n';
+                    diagnosticOutput += i18n.get('troubleshootStart') + '\n';
+                    diagnosticOutput += i18n.get('troubleshootTest', [ollamaUrl]) + '\n';
+                    diagnosticOutput += i18n.get('troubleshootPort') + '\n';
                     ollamaDiagnostics.className = 'diagnostics-result error';
                 }
                 
             } catch (error) {
-                diagnosticOutput += '\n❌ CRITICAL ERROR:\n';
+                diagnosticOutput += '\n' + i18n.get('criticalError') + '\n';
                 diagnosticOutput += error.message + '\n';
                 ollamaDiagnostics.className = 'diagnostics-result error';
             }
@@ -1305,7 +1321,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             const ollamaUrl = ollamaUrlInput.value.trim() || 'http://localhost:11434';
             
             try {
-                ollamaTestResult.textContent = 'Fetching models...';
+                ollamaTestResult.textContent = i18n.get('fetchingModelsStatus');
                 ollamaTestResult.className = 'api-test-result';
                 
                 const response = await fetch(`${ollamaUrl}/api/tags`);
@@ -1314,18 +1330,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const data = await response.json();
                     if (data.models && data.models.length > 0) {
                         const modelNames = data.models.map(m => m.name).join(', ');
-                        ollamaTestResult.textContent = `✓ Available models: ${modelNames}`;
+                        ollamaTestResult.textContent = i18n.get('availableModels', [modelNames]);
                         ollamaTestResult.className = 'api-test-result success';
                     } else {
-                        ollamaTestResult.textContent = '⚠️ No models installed. Run "ollama pull llama3.2" to download one.';
+                        ollamaTestResult.textContent = i18n.get('noModelsInstalledHint');
                         ollamaTestResult.className = 'api-test-result error';
                     }
                 } else {
-                    ollamaTestResult.textContent = '✗ Failed to fetch models';
+                    ollamaTestResult.textContent = i18n.get('failedFetchModelsSimple');
                     ollamaTestResult.className = 'api-test-result error';
                 }
             } catch (error) {
-                ollamaTestResult.textContent = `✗ Connection failed: ${error.message}. Is Ollama running?`;
+                ollamaTestResult.textContent = i18n.get('ollamaConnectionFailedSimple', [error.message]);
                 ollamaTestResult.className = 'api-test-result error';
             }
         });
@@ -1337,14 +1353,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             const modelName = ollamaDownloadModelInput.value.trim();
             const token = ollamaAuthTokenInput && ollamaAuthTokenInput.value.trim();
             if (!modelName) {
-                ollamaDownloadStatus.textContent = '⚠️ Please enter a model name to download';
+                ollamaDownloadStatus.textContent = i18n.get('enterModelDownload');
                 ollamaDownloadStatus.className = 'api-test-result error';
                 ollamaDownloadStatus.style.display = 'block';
                 return;
             }
             try {
                 downloadOllamaModelButton.disabled = true;
-                ollamaDownloadStatus.textContent = `Starting download of ${modelName}...`;
+                ollamaDownloadStatus.textContent = i18n.get('startingDownload', [modelName]);
                 ollamaDownloadStatus.className = 'api-test-result';
                 ollamaDownloadStatus.style.display = 'block';
 
@@ -1356,7 +1372,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                     headers
                 });
             } catch (e) {
-                ollamaDownloadStatus.textContent = `✗ Failed to start: ${e.message}`;
+                ollamaDownloadStatus.textContent = i18n.get('failedStart', [e.message]);
                 ollamaDownloadStatus.className = 'api-test-result error';
             } finally {
                 downloadOllamaModelButton.disabled = false;
@@ -1372,10 +1388,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ollamaDownloadStatus.style.display = 'block';
             } else if (msg.action === 'ollamaPullComplete') {
                 if (msg.ok) {
-                    ollamaDownloadStatus.textContent = '✓ Download complete';
+                    ollamaDownloadStatus.textContent = i18n.get('downloadComplete');
                     ollamaDownloadStatus.className = 'api-test-result success';
                 } else {
-                    ollamaDownloadStatus.textContent = `✗ Download failed: ${msg.error || 'unknown error'}`;
+                    ollamaDownloadStatus.textContent = i18n.get('downloadFailed', [msg.error || i18n.get('unknownError')]);
                     ollamaDownloadStatus.className = 'api-test-result error';
                 }
                 ollamaDownloadStatus.style.display = 'block';
@@ -1410,7 +1426,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const customPrompt = customPromptTextarea ? customPromptTextarea.value.trim() : '';
 
         if (labels.length === 0) {
-            showMessage('Please add at least one folder/label before saving. Use "Load Folders from Mail Account" or add custom labels.', false);
+            showMessage(i18n.get('addFolderBeforeSave'), false);
             return;
         }
 
@@ -1418,13 +1434,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             const validGeminiKeys = geminiKeys.filter(key => key && key.trim() !== '');
             
             if (validGeminiKeys.length === 0) {
-                showMessage('Please add at least one Gemini API key before saving.', false);
+                showMessage(i18n.get('addGeminiKeyBeforeSave'), false);
                 return;
             }
 
             const uniqueKeys = new Set(validGeminiKeys.map(key => key.trim().toLowerCase()));
             if (uniqueKeys.size !== validGeminiKeys.length) {
-                showMessage('⚠️ Duplicate API keys detected! Each key must be unique. Please remove duplicates before saving.', false);
+                showMessage(i18n.get('duplicateApiKeys'), false);
                 return;
             }
             
@@ -1451,10 +1467,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
                 
                 browser.storage.local.set(settings).then(() => {
-                    showMessage('✓ Settings saved successfully! Multiple Gemini API keys configured for automatic rotation.', true);
+                    showMessage(i18n.get('settingsSavedMultiKey'), true);
                     updateSaveButtonState();
                 }).catch(error => {
-                    showMessage('Error saving settings: ' + error, false);
+                    showMessage(i18n.get('errorSavingSettings', [error]), false);
                 });
             });
         } else if (provider === 'ollama') {
@@ -1463,7 +1479,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (ollamaModel === 'custom') {
                 ollamaModel = ollamaCustomModelInput.value.trim();
                 if (!ollamaModel) {
-                    showMessage('Please enter a custom model name for Ollama.', false);
+                    showMessage(i18n.get('enterOllamaModel'), false);
                     return;
                 }
             }
@@ -1484,8 +1500,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
 
             browser.storage.local.set(settings).then(() => {
-                const cpuMode = ollamaCpuOnlyCheckbox.checked ? ' (CPU-only mode)' : '';
-                showMessage(`✓ Settings saved successfully! Ollama is configured for local email processing${cpuMode}.`, true);
+                const cpuMode = ollamaCpuOnlyCheckbox.checked ? ' (' + i18n.get('ollamaCpuOnly') + ')' : '';
+                showMessage(i18n.get('settingsSavedOllama', [cpuMode]), true);
                 updateSaveButtonState();
             }).catch(error => {
                 showMessage('Error saving settings: ' + error, false);
@@ -1501,11 +1517,11 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
 
             if (!baseUrl) {
-                showMessage('Please enter a base URL for the custom endpoint.', false);
+                showMessage(i18n.get('enterCustomBaseUrl'), false);
                 return;
             }
             if (!model) {
-                showMessage('Please select or enter a model name for the custom endpoint.', false);
+                showMessage(i18n.get('enterCustomModel'), false);
                 return;
             }
 
@@ -1523,7 +1539,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
 
             browser.storage.local.set(settings).then(() => {
-                showMessage('✓ Settings saved successfully! Custom OpenAI-compatible endpoint configured.', true);
+                showMessage(i18n.get('settingsSavedCustomEndpoint'), true);
                 updateSaveButtonState();
             }).catch(error => {
                 showMessage('Error saving settings: ' + error, false);
@@ -1531,7 +1547,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         } else {
             // Other providers use single key
             if (!apiKey) {
-                showMessage('Please enter your API key before saving. Click "Get API Key" to obtain one.', false);
+                showMessage(i18n.get('enterApiKeyBeforeSave'), false);
                 return;
             }
 
@@ -1547,7 +1563,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             };
 
             browser.storage.local.set(settings).then(() => {
-                showMessage('✓ Settings saved successfully! You can now use AutoSort+ to analyze emails.', true);
+                showMessage(i18n.get('settingsSavedSuccess'), true);
                 updateSaveButtonState();
             }).catch(error => {
                 showMessage('Error saving settings: ' + error, false);
@@ -1562,7 +1578,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const input = document.createElement('input');
         input.type = 'text';
         input.className = 'label-input';
-        input.placeholder = 'Enter category/folder name';
+        input.placeholder = i18n.get('labelInputPlaceholder');
         input.value = value;
         input.addEventListener('input', updateSaveButtonState);
 
@@ -1575,7 +1591,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
             const remainingLabels = document.querySelectorAll('.label-input');
             if (remainingLabels.length === 0) {
-                labelsContainer.innerHTML = '<div class="instruction-message">No folders/labels configured. Click "Load Folders from Mail Account" above or add custom labels below.</div>';
+                labelsContainer.innerHTML = '<div class="instruction-message">' + i18n.get('noFoldersInstruction') + '</div>';
             }
         });
 
@@ -1591,9 +1607,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     async function fetchModelsViaTab(baseUrl, apiKey) {
         const tab = await browser.tabs.create({ url: baseUrl, active: false });
-        await new Promise(resolve => setTimeout(resolve, 500));
 
         try {
+            await new Promise(resolve => setTimeout(resolve, 500));
             const headers = { 'Content-Type': 'application/json' };
             if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
@@ -1621,8 +1637,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             await browser.tabs.executeScript(tab.id, { code: scriptCode });
 
         let result = null;
-            for (let i = 0; i < 30; i++) {
-                await new Promise(resolve => setTimeout(resolve, 500));
+            for (let i = 0; i < 40; i++) { // 10 seconds max (250ms intervals)
+                await new Promise(resolve => setTimeout(resolve, 250));
                 try {
                     const results = await browser.tabs.executeScript(tab.id, { code: 'window.__models_result || null' });
                     if (results && results[0]) {
@@ -1641,7 +1657,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             return result.data;
 
         } finally {
-            try { await browser.tabs.remove(tab.id); } catch (e) {}
+            try { await browser.tabs.remove(tab.id); } catch (e) { console.warn('[Options] Failed to close tab:', e.message); }
         }
     }
 
@@ -1670,15 +1686,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         historyBody.innerHTML = history.map(entry => `
             <tr>
                 <td class="timestamp">${formatTimestamp(entry.timestamp)}</td>
-                <td>${entry.subject}</td>
-                <td class="${entry.status.toLowerCase()}">${entry.status}</td>
-                <td>${entry.destination}</td>
+                <td>${escapeHtml(entry.subject)}</td>
+                <td class="${escapeHtml(entry.status.toLowerCase())}">${escapeHtml(entry.status)}</td>
+                <td>${escapeHtml(entry.destination)}</td>
             </tr>
         `).join('');
     }
 
     async function clearHistory() {
-        if (confirm('Are you sure you want to clear the move history?')) {
+        if (confirm(i18n.get('clearHistoryConfirm'))) {
             await browser.storage.local.set({ moveHistory: [] });
             await updateHistoryTable();
         }
@@ -1739,23 +1755,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (batchText) {
             if (status === 'paused') {
                 if (displayTotal > 0) {
-                    batchText.textContent = `⏸ Paused — chunk ${displayChunk}/${displayTotal} (${done}/${total})`;
+                    batchText.textContent = i18n.get('batchPausedChunk', [displayChunk, displayTotal, done, total]);
                 } else {
-                    batchText.textContent = `⏸ Paused (${done}/${total})`;
+                    batchText.textContent = i18n.get('batchPausedSimple', [done, total]);
                 }
             } else if (status === 'done') {
-                batchText.textContent = `✅ Done — sorted: ${completed}, skipped: ${skipped}, failed: ${failed}`;
+                batchText.textContent = i18n.get('batchDone', [completed, skipped, failed]);
             } else if (status === 'cancelled') {
                 if (displayTotal > 0) {
-                    batchText.textContent = `⏹ Cancelled after chunk ${displayChunk}/${displayTotal}`;
+                    batchText.textContent = i18n.get('batchCancelledChunk', [displayChunk, displayTotal]);
                 } else {
-                    batchText.textContent = `⏹ Cancelled (${done}/${total})`;
+                    batchText.textContent = i18n.get('batchCancelledSimple', [done, total]);
                 }
             } else {
                 if (displayTotal > 0) {
-                    batchText.textContent = `Chunk ${displayChunk}/${displayTotal} — ${done}/${total} (sorted: ${completed}, failed: ${failed})`;
+                    batchText.textContent = i18n.get('batchRunningChunk', [displayChunk, displayTotal, done, total, completed, failed]);
                 } else {
-                    batchText.textContent = `${done}/${total} (sorted: ${completed}, failed: ${failed})`;
+                    batchText.textContent = i18n.get('batchRunningSimple', [done, total, completed, failed]);
                 }
             }
         }
@@ -1798,7 +1814,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         batchPauseBtn.addEventListener('click', () => {
             browser.runtime.sendMessage({ action: 'batchControl', command: 'pause' }).catch(() => {});
             if (batchPanel) batchPanel.dataset.status = 'paused';
-            if (batchText)  batchText.textContent = '⏸ Pausing… current request will finish first.';
+            if (batchText)  batchText.textContent = i18n.get('batchPausing');
             if (batchPauseBtn)  batchPauseBtn.style.display  = 'none';
             if (batchResumeBtn) batchResumeBtn.style.display = '';
         });
@@ -1815,9 +1831,9 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     if (batchCancelBtn) {
         batchCancelBtn.addEventListener('click', () => {
-            if (!confirm('Cancel the current batch? Already-sorted emails will not be undone.')) return;
+            if (!confirm(i18n.get('batchCancelConfirm'))) return;
             browser.runtime.sendMessage({ action: 'batchControl', command: 'cancel' }).catch(() => {});
-            if (batchText) batchText.textContent = '⏹ Cancelling… current request will finish first.';
+            if (batchText) batchText.textContent = i18n.get('batchCancelling');
             if (batchCancelBtn) batchCancelBtn.disabled = true;
         });
     }

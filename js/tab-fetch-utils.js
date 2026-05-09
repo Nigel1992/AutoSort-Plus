@@ -24,9 +24,9 @@ async function fetchViaTab(baseUrl, options = {}) {
     } = options;
 
     const tab = await browser.tabs.create({ url: baseUrl, active: false });
-    await new Promise(resolve => setTimeout(resolve, 500));
 
     try {
+        await new Promise(resolve => setTimeout(resolve, 500));
         const headersJson = JSON.stringify({ 'Content-Type': 'application/json', ...headers });
         const bodyJson = JSON.stringify(body);
 
@@ -34,7 +34,7 @@ async function fetchViaTab(baseUrl, options = {}) {
 (async () => {
     try {
         const headers = ${headersJson};
-        const response = await fetch(window.location.origin + '${endpoint}', {
+        const response = await fetch(window.location.origin + ${JSON.stringify(endpoint)}, {
             method: 'POST',
             headers,
             body: ${bodyJson}
@@ -54,11 +54,12 @@ async function fetchViaTab(baseUrl, options = {}) {
 
         await browser.tabs.executeScript(tab.id, { code: scriptCode });
 
-        const maxIterations = Math.ceil(timeoutMs / 500);
+        const pollIntervalMs = 250;
+        const maxIterations = Math.ceil(timeoutMs / pollIntervalMs);
         let result = null;
 
         for (let i = 0; i < maxIterations; i++) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, pollIntervalMs));
 
             try {
                 const results = await browser.tabs.executeScript(tab.id, {
@@ -86,7 +87,7 @@ async function fetchViaTab(baseUrl, options = {}) {
     } finally {
         try {
             await browser.tabs.remove(tab.id);
-        } catch (e) {}
+        } catch (e) { console.warn('[TabFetch] Failed to close tab:', e.message); }
     }
 }
 
