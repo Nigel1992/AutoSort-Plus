@@ -93,7 +93,8 @@ self.onmessage = async function(event) {
                                 try {
                                     return JSON.parse(line);
                                 } catch (e) {
-                                    console.warn("[Ollama Worker] JSON parse warning, skipped: " + line);
+                                    // Non-JSON lines (heartbeats, etc.) are expected in streaming — log at debug level
+                                    console.debug("[Ollama Worker] Non-JSON stream line skipped: " + (line || '').substring(0, 80));
                                     return null;
                                 }
                             })
