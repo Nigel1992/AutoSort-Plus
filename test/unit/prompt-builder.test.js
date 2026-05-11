@@ -14,7 +14,7 @@ const DEFAULT_PROMPT = `You are an email classification assistant. Analyze this 
 **Email Body:**
 {body}
 
-Consider the subject line, sender context, attachment filename(s), and body content to determine the most appropriate category. Respond with only the exact label name, or "null" if no label fits well.`;
+Consider the subject line, sender context, attachment filenames, and body content to determine the most appropriate category. Respond with only the exact label name, or "null" if no label fits well.`;
 
 function buildPrompt(template, values) {
   let prompt = template || DEFAULT_PROMPT;
@@ -81,7 +81,7 @@ describe('custom prompt with missing placeholders', () => {
     assert.ok(prompt.includes('Hello world'));
   });
 
-  it('injects body but not labels when labels absent from template', () => {
+  it('skips placeholders not in custom template', () => {
     const customPrompt = 'Classify: {body}';
     const values = {
       labels: 'Finance, Marketing',
@@ -92,11 +92,10 @@ describe('custom prompt with missing placeholders', () => {
     };
     const prompt = buildPrompt(customPrompt, values);
 
-    // body was in template, so it is replaced. labels is NOT in template,
-    // so it is never injected — the current implementation only replaces
-    // placeholders that already exist in the template string.
+    // body is in template -> replaced
     assert.ok(prompt.includes('body text'));
-    assert.ok(!prompt.includes('{body}'));
+    // labels is NOT in template -> silently skipped (simplified behavior)
+    assert.ok(!prompt.includes('Finance, Marketing'));
   });
 
   it('supports legacy {email} placeholder', () => {
