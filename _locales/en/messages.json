@@ -1263,5 +1263,8 @@
   "overallAccuracy": { "message": "Overall Accuracy:", "description": "Overall accuracy label" },
   "totalProcessed": { "message": "Total Processed:", "description": "Total processed count" },
   "corrections": { "message": "Corrections:", "description": "Corrections count" },
-  "refreshAccuracy": { "message": "Refresh", "description": "Refresh accuracy button" }
+  "refreshAccuracy": { "message": "Refresh", "description": "Refresh accuracy button" },
+  "etaMinutes": { "message": "~{minutes} min remaining", "description": "ETA in minutes", "placeholders": { "minutes": { "content": "$1" } } },
+  "etaSeconds": { "message": "~{seconds} sec remaining", "description": "ETA in seconds", "placeholders": { "seconds": { "content": "$1" } } },
+  "etaAlmostDone": { "message": "Almost done...", "description": "ETA when nearly complete" }
 }

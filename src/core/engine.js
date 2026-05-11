@@ -41,6 +41,8 @@ window.AutoSortPlus.engine = {
   },
 
   async _broadcastBatchProgress(status = 'running') {
+    const remainingChunks = this._batchState.totalChunks - this._batchState.chunkIndex;
+    const etaMs = remainingChunks * this._batchState.avgChunkTime;
     const payload = {
       action: 'batchProgress',
       status,
@@ -53,7 +55,8 @@ window.AutoSortPlus.engine = {
       totalChunks: this._batchState.totalChunks,
       startTime: this._batchState.startTime,
       chunkTimes: this._batchState.chunkTimes,
-      avgChunkTime: this._batchState.avgChunkTime
+      avgChunkTime: this._batchState.avgChunkTime,
+      etaMs
     };
     try {
       await AutoSortPlus.storage.set({ currentBatch: { ...payload, startTime: Date.now() } });

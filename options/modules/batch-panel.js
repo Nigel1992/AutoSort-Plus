@@ -38,6 +38,16 @@ class BatchPanel {
       else if (status === 'done') this.text.textContent = i18n.get('batchDone', [completed, skipped, failed]);
       else if (status === 'cancelled') this.text.textContent = i18n.get('batchCancelledChunk', [chunkIndex || 0, totalChunks]);
       else this.text.textContent = i18n.get('batchRunningChunk', [chunkIndex || 0, totalChunks, done, total, completed, failed]);
+
+      // ETA display
+      if (payload.etaMs != null && payload.etaMs > 0 && status === 'running') {
+        const etaText = payload.etaMs > 60000
+          ? `~${Math.ceil(payload.etaMs / 60000)} min`
+          : payload.etaMs > 10000
+            ? `~${Math.round(payload.etaMs / 1000)} sec`
+            : 'Almost done...';
+        this.text.textContent += ` — ${etaText}`;
+      }
     }
 
     if (this.pauseBtn && this.resumeBtn) {
