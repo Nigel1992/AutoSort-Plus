@@ -289,6 +289,17 @@ window.AutoSortPlus.engine = {
 
   async analyzeEmail(emailContent, emailContext = null) {
     try {
+      // Check for learned corrections first
+      const correction = await AutoSortPlus.learning.findMatch(
+        emailContext?.subject, emailContext?.author
+      );
+      if (correction) {
+        if (window.debugLogger) {
+          window.debugLogger.info('[Learning]', `Using learned correction: "${correction}" for "${emailContext?.subject}"`);
+        }
+        return correction;
+      }
+
       const notificationId = await AutoSortPlus.notification.show('AutoSort+ AI Analysis', 'Starting email analysis...');
 
       const settings = await AutoSortPlus.storage.get([
@@ -584,6 +595,24 @@ window.AutoSortPlus.engine = {
     } catch (error) {
       console.error('Error showing results:', error);
       await AutoSortPlus.notification.show('AutoSort+ Error', 'Failed to show detailed results. Check console for more information.');
+    }
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  // Learning Feedback
+  // ───────────────────────────────────────────────────────────────────────
+
+  async recordManualLabel(messages, label) {
+    // Record correction for each message
+    for (const message of messages) {
+      try {
+        const fullMessage = await messenger.messages.getFull(message.id);
+        if (!fullMessage) continue;
+        const ctx = await AutoSortPlus.emailExtractor.extract(fullMessage, message);
+        await AutoSortPlus.learning.recordCorrection(label, label, ctx.subject, ctx.author);
+      } catch (e) {
+        if (window.debugLogger) window.debugLogger.warn('[Learning]', `Failed to record correction: ${e.message}`);
+      }
     }
   },
 

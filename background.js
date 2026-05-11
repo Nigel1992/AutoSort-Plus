@@ -104,6 +104,9 @@
           const messages = await messenger.mailTabs.getSelectedMessages(mailTabs[0].id);
           if (messages && messages.messages && messages.messages.length > 0) {
             await AutoSortPlus.engine.applyLabels(messages.messages, label);
+            if (AutoSortPlus.engine) {
+              await AutoSortPlus.engine.recordManualLabel(messages.messages, label);
+            }
           } else {
             await AutoSortPlus.notification.show('AutoSort+ Error', 'No messages selected.');
           }

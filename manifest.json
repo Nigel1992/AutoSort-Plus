@@ -32,6 +32,7 @@
       "src/providers/index.js",
       "src/features/email-extractor.js",
       "src/features/label-match.js", "src/features/prompt-builder.js",
+      "src/features/learning.js",
       "src/core/storage.js", "src/core/notification.js",
       "src/core/auto-sort.js", "src/core/engine.js",
       "background.js"
