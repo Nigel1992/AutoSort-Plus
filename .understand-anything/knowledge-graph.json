@@ -1,0 +1,1954 @@
+{
+  "nodes": [
+    {
+      "id": "config:_locales/en/messages.json",
+      "type": "config",
+      "name": "messages.json",
+      "filePath": "_locales/en/messages.json",
+      "summary": "English locale message strings for browser extension i18n, covering all UI labels, tooltips, and notification text.",
+      "tags": [
+        "configuration",
+        "i18n",
+        "localization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:_locales/zh_CN/messages.json",
+      "type": "config",
+      "name": "messages.json",
+      "filePath": "_locales/zh_CN/messages.json",
+      "summary": "Chinese (Simplified) locale message strings mirroring the English locale for browser extension i18n.",
+      "tags": [
+        "configuration",
+        "i18n",
+        "localization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "config:.github/FUNDING.yml",
+      "type": "config",
+      "name": "FUNDING.yml",
+      "filePath": ".github/FUNDING.yml",
+      "summary": "GitHub funding configuration specifying sponsorship platforms for the project.",
+      "tags": [
+        "configuration",
+        "github",
+        "funding"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:.github/ISSUE_TEMPLATE/config.yml",
+      "type": "config",
+      "name": "config.yml",
+      "filePath": ".github/ISSUE_TEMPLATE/config.yml",
+      "summary": "GitHub issue template configuration controlling blank issue creation and template selection behavior.",
+      "tags": [
+        "configuration",
+        "github",
+        "issue-template"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:api_ollama/ollama-popup.js",
+      "type": "file",
+      "name": "ollama-popup.js",
+      "filePath": "api_ollama/ollama-popup.js",
+      "summary": "Popup UI script for the Ollama API integration, handling email analysis requests sent to a local Ollama instance and displaying results.",
+      "tags": [
+        "api-handler",
+        "ollama",
+        "popup-ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:background.js",
+      "type": "file",
+      "name": "background.js",
+      "filePath": "background.js",
+      "summary": "Extension service worker providing the core email analysis, classification, and auto-sort engine with batch processing, Gemini rate limiting, and multi-provider LLM support.",
+      "tags": [
+        "entry-point",
+        "service-worker",
+        "batch-engine",
+        "email-processing",
+        "llm-integration",
+        "tested"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:content.js",
+      "type": "file",
+      "name": "content.js",
+      "filePath": "content.js",
+      "summary": "Content script that initializes debug logging from storage settings and listens for storage changes to toggle logging at runtime.",
+      "tags": [
+        "content-script",
+        "debug-logging"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:js/i18n.js",
+      "type": "file",
+      "name": "i18n.js",
+      "filePath": "js/i18n.js",
+      "summary": "Internationalization module providing a getMessage wrapper and applyTranslations function that processes data-i18n attributes across the DOM.",
+      "tags": [
+        "utility",
+        "i18n",
+        "translation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:js/logger.js",
+      "type": "file",
+      "name": "logger.js",
+      "filePath": "js/logger.js",
+      "summary": "DebugLogger class providing tagged, color-coded console logging with queue-based buffering when debug mode is disabled, controllable via browser storage.",
+      "tags": [
+        "utility",
+        "debug-logging",
+        "service"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:js/ollama.js",
+      "type": "file",
+      "name": "ollama.js",
+      "filePath": "js/ollama.js",
+      "summary": "Ollama client class providing a constructor that normalizes host URL and exposes the base configuration for Ollama API communication.",
+      "tags": [
+        "service",
+        "ollama",
+        "api-client"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:js/providers-config.js",
+      "type": "file",
+      "name": "providers-config.js",
+      "filePath": "js/providers-config.js",
+      "summary": "Provider configuration module defining supported LLM providers with batch size, context window, and metadata, plus validation and lookup helpers.",
+      "tags": [
+        "configuration",
+        "provider",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:js/tab-fetch-utils.js",
+      "type": "file",
+      "name": "tab-fetch-utils.js",
+      "filePath": "js/tab-fetch-utils.js",
+      "summary": "Tab-based fetch utilities that create hidden browser tabs to bypass CORS restrictions when calling LLM APIs, with utilities for Ollama and OpenAI-compatible endpoints.",
+      "tags": [
+        "utility",
+        "fetch",
+        "cors-workaround"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:js/workers/ollama-worker.js",
+      "type": "file",
+      "name": "ollama-worker.js",
+      "filePath": "js/workers/ollama-worker.js",
+      "summary": "Web Worker wrapper around the Ollama client for offloading LLM API calls to a background thread, importing ollama.js.",
+      "tags": [
+        "worker",
+        "ollama",
+        "background-thread"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:manifest.json",
+      "type": "config",
+      "name": "manifest.json",
+      "filePath": "manifest.json",
+      "summary": "Browser extension manifest declaring permissions, background service worker, content scripts, options page, and i18n locale configuration for the AutoSort+ extension.",
+      "tags": [
+        "configuration",
+        "extension-manifest",
+        "webextension"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:test-auto-sort.test.js",
+      "type": "file",
+      "name": "test-auto-sort.test.js",
+      "filePath": "test-auto-sort.test.js",
+      "summary": "Test file validating the auto-sort storage migration fix, comparing before/after behavior of handleNewMailCheck and getAutoSortValue functions.",
+      "tags": [
+        "test",
+        "migration",
+        "auto-sort"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:options.js",
+      "type": "file",
+      "name": "options.js",
+      "filePath": "options.js",
+      "summary": "Extension options page controller managing provider settings, API keys, model configuration, Gemini rate limit settings, label management, and move history display with i18n support.",
+      "tags": [
+        "entry-point",
+        "settings-ui",
+        "provider-management",
+        "i18n"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "config:docs/_config.yml",
+      "type": "config",
+      "name": "_config.yml",
+      "filePath": "docs/_config.yml",
+      "summary": "Jekyll site configuration for the project documentation hosted on GitHub Pages.",
+      "tags": [
+        "configuration",
+        "documentation",
+        "jekyll"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:.github/ISSUE_TEMPLATE/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": ".github/ISSUE_TEMPLATE/README.md",
+      "summary": "Documentation explaining the available GitHub issue templates for bug reports, feature requests, and Ollama-specific issues.",
+      "tags": [
+        "documentation",
+        "issue-template",
+        "contribution-guide"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:background.js:extractEmailContext",
+      "type": "function",
+      "name": "extractEmailContext",
+      "filePath": "background.js",
+      "lineRange": [
+        78,
+        128
+      ],
+      "summary": "Extracts email context including body text, sender info, subject, and attachment names for LLM analysis input.",
+      "tags": [
+        "email-processing",
+        "data-extraction"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:background.js:batchAnalyzeEmails",
+      "type": "function",
+      "name": "batchAnalyzeEmails",
+      "filePath": "background.js",
+      "lineRange": [
+        473,
+        595
+      ],
+      "summary": "Core batch processing engine that chunks email messages, processes them with concurrency control, and broadcasts progress updates.",
+      "tags": [
+        "batch-engine",
+        "concurrency",
+        "email-processing"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:background.js:analyzeEmailContent",
+      "type": "function",
+      "name": "analyzeEmailContent",
+      "filePath": "background.js",
+      "lineRange": [
+        828,
+        1506
+      ],
+      "summary": "Main email analysis function that sends email content to the configured LLM provider, handles rate limiting, retries, and parses the classification response to determine folder/label assignment.",
+      "tags": [
+        "llm-integration",
+        "email-processing",
+        "rate-limiting"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:background.js:checkAndTrackGeminiRateLimit",
+      "type": "function",
+      "name": "checkAndTrackGeminiRateLimit",
+      "filePath": "background.js",
+      "lineRange": [
+        604,
+        765
+      ],
+      "summary": "Gemini API rate limiter enforcing per-key request limits with daily reset, multi-key rotation support, and paid plan awareness.",
+      "tags": [
+        "rate-limiting",
+        "gemini",
+        "api-management"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:background.js:applyLabelsToMessages",
+      "type": "function",
+      "name": "applyLabelsToMessages",
+      "filePath": "background.js",
+      "lineRange": [
+        1530,
+        1723
+      ],
+      "summary": "Applies labels to email messages across folders with caching, error handling, and progress notification updates.",
+      "tags": [
+        "email-processing",
+        "label-management"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:background.js:handleNewMail",
+      "type": "function",
+      "name": "handleNewMail",
+      "filePath": "background.js",
+      "lineRange": [
+        1829,
+        1861
+      ],
+      "summary": "Handles new mail arrival events, triggering auto-sort classification and move for incoming emails when no batch operation is running.",
+      "tags": [
+        "event-handler",
+        "auto-sort",
+        "email-processing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:background.js:processWithConcurrency",
+      "type": "function",
+      "name": "processWithConcurrency",
+      "filePath": "background.js",
+      "lineRange": [
+        1777,
+        1794
+      ],
+      "summary": "Generic concurrency control utility that processes items with a configurable maximum parallelism limit.",
+      "tags": [
+        "utility",
+        "concurrency"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:background.js:showMoveResultsPopup",
+      "type": "function",
+      "name": "showMoveResultsPopup",
+      "filePath": "background.js",
+      "lineRange": [
+        1726,
+        1762
+      ],
+      "summary": "Displays a popup window summarizing email move operation results including success/failure counts per destination.",
+      "tags": [
+        "ui",
+        "notification"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:background.js:showNotification",
+      "type": "function",
+      "name": "showNotification",
+      "filePath": "background.js",
+      "lineRange": [
+        782,
+        807
+      ],
+      "summary": "Shows a browser notification with title and message, with optional persistence.",
+      "tags": [
+        "notification",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:background.js:updateNotification",
+      "type": "function",
+      "name": "updateNotification",
+      "filePath": "background.js",
+      "lineRange": [
+        810,
+        825
+      ],
+      "summary": "Updates an existing notification with new title and message for progress tracking.",
+      "tags": [
+        "notification",
+        "ui"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:background.js:ollamaChatViaTab",
+      "type": "function",
+      "name": "ollamaChatViaTab",
+      "filePath": "background.js",
+      "lineRange": [
+        151,
+        228
+      ],
+      "summary": "Sends Ollama chat completions via a hidden browser tab to bypass CORS, with streaming response support.",
+      "tags": [
+        "ollama",
+        "cors-workaround",
+        "api-client"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:background.js:openaiCompatibleChatViaTab",
+      "type": "function",
+      "name": "openaiCompatibleChatViaTab",
+      "filePath": "background.js",
+      "lineRange": [
+        230,
+        306
+      ],
+      "summary": "Sends OpenAI-compatible chat completions via a hidden browser tab to bypass CORS restrictions.",
+      "tags": [
+        "openai",
+        "cors-workaround",
+        "api-client"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:background.js:callOllamaViaTab",
+      "type": "function",
+      "name": "callOllamaViaTab",
+      "filePath": "background.js",
+      "lineRange": [
+        308,
+        360
+      ],
+      "summary": "Generic Ollama API call via hidden tab for non-chat endpoints.",
+      "tags": [
+        "ollama",
+        "cors-workaround",
+        "api-client"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:background.js:storeMoveHistory",
+      "type": "function",
+      "name": "storeMoveHistory",
+      "filePath": "background.js",
+      "lineRange": [
+        1509,
+        1527
+      ],
+      "summary": "Persists email move results to browser storage for display in the options page history table.",
+      "tags": [
+        "storage",
+        "history"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:background.js:rebuildLabelSubmenu",
+      "type": "function",
+      "name": "rebuildLabelSubmenu",
+      "filePath": "background.js",
+      "lineRange": [
+        1878,
+        1902
+      ],
+      "summary": "Rebuilds the label submenu in the extension popup dynamically from available labels.",
+      "tags": [
+        "ui",
+        "label-management"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:background.js:_resetBatchState",
+      "type": "function",
+      "name": "_resetBatchState",
+      "filePath": "background.js",
+      "lineRange": [
+        399,
+        412
+      ],
+      "summary": "Resets batch processing state variables for a given provider and total count.",
+      "tags": [
+        "batch-engine",
+        "state-management"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:background.js:_broadcastBatchProgress",
+      "type": "function",
+      "name": "_broadcastBatchProgress",
+      "filePath": "background.js",
+      "lineRange": [
+        434,
+        454
+      ],
+      "summary": "Broadcasts batch processing progress to other extension components via message passing.",
+      "tags": [
+        "batch-engine",
+        "messaging"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:background.js:extractTextFromParts",
+      "type": "function",
+      "name": "extractTextFromParts",
+      "filePath": "background.js",
+      "lineRange": [
+        131,
+        134
+      ],
+      "summary": "Extracts plain text from multipart email message parts.",
+      "tags": [
+        "email-processing",
+        "data-extraction"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:background.js:registerAutoSortListener",
+      "type": "function",
+      "name": "registerAutoSortListener",
+      "filePath": "background.js",
+      "lineRange": [
+        1866,
+        1868
+      ],
+      "summary": "Registers the onNewMail listener that triggers auto-sort when new emails arrive.",
+      "tags": [
+        "event-handler",
+        "auto-sort"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:background.js:classifyAndMove",
+      "type": "function",
+      "name": "classifyAndMove",
+      "filePath": "background.js",
+      "lineRange": [
+        1800,
+        1823
+      ],
+      "summary": "Classifies a single email using the LLM and moves it to the determined destination folder.",
+      "tags": [
+        "email-processing",
+        "classification"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:js/logger.js:DebugLogger",
+      "type": "class",
+      "name": "DebugLogger",
+      "filePath": "js/logger.js",
+      "lineRange": [
+        6,
+        134
+      ],
+      "summary": "Centralized debug logger with tagged output, color-coded categories (API, batch, sort), queue-based buffering, and runtime toggle via browser storage.",
+      "tags": [
+        "utility",
+        "debug-logging",
+        "singleton"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "class:js/ollama.js:Ollama",
+      "type": "class",
+      "name": "Ollama",
+      "filePath": "js/ollama.js",
+      "lineRange": [
+        7,
+        93
+      ],
+      "summary": "Ollama API client class that normalizes the host URL and provides configuration for API communication.",
+      "tags": [
+        "service",
+        "ollama",
+        "api-client"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:api_ollama/ollama-popup.js:handleOllamaAnalyze",
+      "type": "function",
+      "name": "handleOllamaAnalyze",
+      "filePath": "api_ollama/ollama-popup.js",
+      "lineRange": [
+        49,
+        125
+      ],
+      "summary": "Handles Ollama analyze requests from the popup UI, sends the prompt to the configured Ollama instance, and displays the streaming response.",
+      "tags": [
+        "api-handler",
+        "ollama",
+        "popup-ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:api_ollama/ollama-popup.js:sendResultToBackground",
+      "type": "function",
+      "name": "sendResultToBackground",
+      "filePath": "api_ollama/ollama-popup.js",
+      "lineRange": [
+        127,
+        134
+      ],
+      "summary": "Sends Ollama analysis results back to the background script via extension messaging.",
+      "tags": [
+        "messaging",
+        "ollama"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:js/i18n.js:applyTranslations",
+      "type": "function",
+      "name": "applyTranslations",
+      "filePath": "js/i18n.js",
+      "lineRange": [
+        26,
+        44
+      ],
+      "summary": "Applies translations to DOM elements by processing data-i18n, data-i18n-placeholder, and data-i18n-title attributes using the browser i18n API.",
+      "tags": [
+        "i18n",
+        "translation",
+        "dom"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:js/providers-config.js:getProviderBatchConfig",
+      "type": "function",
+      "name": "getProviderBatchConfig",
+      "filePath": "js/providers-config.js",
+      "lineRange": [
+        82,
+        84
+      ],
+      "summary": "Returns batch size configuration for a given LLM provider.",
+      "tags": [
+        "provider",
+        "configuration"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:js/providers-config.js:isValidProvider",
+      "type": "function",
+      "name": "isValidProvider",
+      "filePath": "js/providers-config.js",
+      "lineRange": [
+        86,
+        88
+      ],
+      "summary": "Validates whether a given provider name is in the supported providers list.",
+      "tags": [
+        "provider",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:js/providers-config.js:getProviderInfo",
+      "type": "function",
+      "name": "getProviderInfo",
+      "filePath": "js/providers-config.js",
+      "lineRange": [
+        90,
+        92
+      ],
+      "summary": "Returns metadata info (name, icon, context window) for a given LLM provider.",
+      "tags": [
+        "provider",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:js/tab-fetch-utils.js:fetchViaTab",
+      "type": "function",
+      "name": "fetchViaTab",
+      "filePath": "js/tab-fetch-utils.js",
+      "lineRange": [
+        17,
+        92
+      ],
+      "summary": "Creates a hidden browser tab to execute fetch calls, bypassing CORS restrictions for LLM API requests.",
+      "tags": [
+        "fetch",
+        "cors-workaround",
+        "utility"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:js/tab-fetch-utils.js:ollamaChatViaTabUtil",
+      "type": "function",
+      "name": "ollamaChatViaTabUtil",
+      "filePath": "js/tab-fetch-utils.js",
+      "lineRange": [
+        97,
+        105
+      ],
+      "summary": "Convenience wrapper for Ollama chat completions via tab-based fetch.",
+      "tags": [
+        "ollama",
+        "fetch",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:js/tab-fetch-utils.js:openaiCompatChatViaTabUtil",
+      "type": "function",
+      "name": "openaiCompatChatViaTabUtil",
+      "filePath": "js/tab-fetch-utils.js",
+      "lineRange": [
+        110,
+        118
+      ],
+      "summary": "Convenience wrapper for OpenAI-compatible chat completions via tab-based fetch.",
+      "tags": [
+        "openai",
+        "fetch",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:options.js:escapeHtml",
+      "type": "function",
+      "name": "escapeHtml",
+      "filePath": "options.js",
+      "lineRange": [
+        2,
+        10
+      ],
+      "summary": "Escapes HTML special characters to prevent XSS in rendered content.",
+      "tags": [
+        "utility",
+        "security",
+        "sanitization"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:.github/ISSUE_TEMPLATE/bug_ollama.md",
+      "type": "document",
+      "name": "bug_ollama.md",
+      "filePath": ".github/ISSUE_TEMPLATE/bug_ollama.md",
+      "summary": "Ollama-specific bug report template with structured sections for debugging steps, environment details, and console output.",
+      "tags": [
+        "documentation",
+        "issue-template",
+        "ollama",
+        "debugging"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:.github/ISSUE_TEMPLATE/bug_report.md",
+      "type": "document",
+      "name": "bug_report.md",
+      "filePath": ".github/ISSUE_TEMPLATE/bug_report.md",
+      "summary": "General bug report template for non-Ollama issues in the AutoSort+ extension.",
+      "tags": [
+        "documentation",
+        "issue-template",
+        "bug-report"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:.github/ISSUE_TEMPLATE/feature_ollama.md",
+      "type": "document",
+      "name": "feature_ollama.md",
+      "filePath": ".github/ISSUE_TEMPLATE/feature_ollama.md",
+      "summary": "Ollama-specific feature request template with sections for proposed solutions, alternatives, and Thunderbird extension context.",
+      "tags": [
+        "documentation",
+        "issue-template",
+        "feature-request",
+        "ollama"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:.github/ISSUE_TEMPLATE/feature_request.md",
+      "type": "document",
+      "name": "feature_request.md",
+      "filePath": ".github/ISSUE_TEMPLATE/feature_request.md",
+      "summary": "General feature request template for non-Ollama enhancements to AutoSort+.",
+      "tags": [
+        "documentation",
+        "issue-template",
+        "feature-request"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:.github/ISSUE_TEMPLATE/question.md",
+      "type": "document",
+      "name": "question.md",
+      "filePath": ".github/ISSUE_TEMPLATE/question.md",
+      "summary": "Question template with environment details for Thunderbird, Ollama, and AutoSort+ versions, plus troubleshooting section.",
+      "tags": [
+        "documentation",
+        "issue-template",
+        "question"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:.github/pull_request_template.md",
+      "type": "document",
+      "name": "pull_request_template.md",
+      "filePath": ".github/pull_request_template.md",
+      "summary": "Pull request template with description, type of change, testing steps, and checklist sections.",
+      "tags": [
+        "documentation",
+        "pull-request-template",
+        "ci-cd"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:api_ollama/index.html",
+      "type": "file",
+      "name": "index.html",
+      "filePath": "api_ollama/index.html",
+      "summary": "HTML page serving as the Ollama API test endpoint for the AutoSort+ extension popup or settings interface.",
+      "tags": [
+        "markup",
+        "ollama",
+        "api-handler",
+        "test-page"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:CHANGELOG_OLLAMA.md",
+      "type": "document",
+      "name": "CHANGELOG_OLLAMA.md",
+      "filePath": "CHANGELOG_OLLAMA.md",
+      "summary": "Detailed changelog for Ollama integration v1.2.3.3 covering CPU-only mode, in-app model download, API endpoints, storage schema, and testing recommendations.",
+      "tags": [
+        "documentation",
+        "changelog",
+        "ollama",
+        "release-notes"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:docs/index.md",
+      "type": "document",
+      "name": "docs/index.md",
+      "filePath": "docs/index.md",
+      "summary": "Comprehensive project documentation covering features, quick start guide, usage guides, privacy/security, troubleshooting, architecture, and contribution guidelines.",
+      "tags": [
+        "documentation",
+        "overview",
+        "getting-started",
+        "architecture"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:docs/superpowers/specs/2026-04-23-i18n-support-design.md",
+      "type": "document",
+      "name": "2026-04-23-i18n-support-design.md",
+      "filePath": "docs/superpowers/specs/2026-04-23-i18n-support-design.md",
+      "summary": "Technical design specification for i18n support including locale files, manifest configuration, HTML translation, JavaScript translation helpers, and dynamic string handling.",
+      "tags": [
+        "documentation",
+        "spec",
+        "i18n",
+        "design"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:GITHUB_RELEASE_INSTRUCTIONS.md",
+      "type": "document",
+      "name": "GITHUB_RELEASE_INSTRUCTIONS.md",
+      "filePath": "GITHUB_RELEASE_INSTRUCTIONS.md",
+      "summary": "Step-by-step instructions for creating GitHub releases, uploading artifacts, and updating Reddit posts for AutoSort+ releases.",
+      "tags": [
+        "documentation",
+        "release",
+        "github",
+        "deployment"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:memory/MEMORY.md",
+      "type": "document",
+      "name": "MEMORY.md",
+      "filePath": "memory/MEMORY.md",
+      "summary": "Index file for AutoSort+ project memory, linking to detailed project overview and knowledge base.",
+      "tags": [
+        "documentation",
+        "memory",
+        "index"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:memory/project_autosortplus_overview.md",
+      "type": "document",
+      "name": "project_autosortplus_overview.md",
+      "filePath": "memory/project_autosortplus_overview.md",
+      "summary": "Project overview documenting core files, JS modules, 7 AI providers, architecture patterns, storage keys, and i18n configuration.",
+      "tags": [
+        "documentation",
+        "overview",
+        "architecture",
+        "memory"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:OLLAMA_403_DEBUG.md",
+      "type": "document",
+      "name": "OLLAMA_403_DEBUG.md",
+      "filePath": "OLLAMA_403_DEBUG.md",
+      "summary": "Debugging notes for Ollama 403 errors including root cause analysis, changes to background.js and ollama.js, auth token investigation, and recommended testing flow.",
+      "tags": [
+        "documentation",
+        "debugging",
+        "ollama",
+        "error-handling"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:OLLAMA_POPUP_FIX.md",
+      "type": "document",
+      "name": "OLLAMA_POPUP_FIX.md",
+      "filePath": "OLLAMA_POPUP_FIX.md",
+      "summary": "Documentation of the popup window architecture fix for Ollama 403 errors, covering the problem, solution architecture, and code changes to background.js and ollama-popup.js.",
+      "tags": [
+        "documentation",
+        "bug-fix",
+        "ollama",
+        "popup"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:OLLAMA_SETUP.md",
+      "type": "document",
+      "name": "OLLAMA_SETUP.md",
+      "filePath": "OLLAMA_SETUP.md",
+      "summary": "Complete setup guide for local Ollama LLM with AutoSort+ covering installation, configuration, usage, troubleshooting, performance tips, and comparison with cloud providers.",
+      "tags": [
+        "documentation",
+        "setup-guide",
+        "ollama",
+        "getting-started"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:options.html",
+      "type": "file",
+      "name": "options.html",
+      "filePath": "options.html",
+      "summary": "Extension options/settings page HTML providing the UI for configuring AI providers, API keys, folders, and AutoSort+ preferences.",
+      "tags": [
+        "markup",
+        "settings",
+        "ui",
+        "options-page"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "Primary project documentation covering features, multi-provider AI support, installation, quick start, provider setup, technical architecture, troubleshooting, changelog, roadmap, and community links.",
+      "tags": [
+        "documentation",
+        "overview",
+        "entry-point",
+        "readme"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:REDDIT_POST.md",
+      "type": "document",
+      "name": "REDDIT_POST.md",
+      "filePath": "REDDIT_POST.md",
+      "summary": "Draft Reddit reply post for announcing Ollama support, answering user questions about recommended models, setup, and known issues for the test release.",
+      "tags": [
+        "documentation",
+        "community",
+        "reddit",
+        "announcement"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:RELEASE_NOTES_OLLAMA_TEST.md",
+      "type": "document",
+      "name": "RELEASE_NOTES_OLLAMA_TEST.md",
+      "filePath": "RELEASE_NOTES_OLLAMA_TEST.md",
+      "summary": "Test release notes for v1.2.3.1-ollama-test covering Ollama integration, quick start guide, known issues, debugging steps, and technical details.",
+      "tags": [
+        "documentation",
+        "release-notes",
+        "ollama",
+        "test-release"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:release_notes.md",
+      "type": "document",
+      "name": "release_notes.md",
+      "filePath": "release_notes.md",
+      "summary": "Consolidated release notes covering versions v1.0.0 through v1.2.3.3 with bug fixes, new features, improvements, and installation instructions.",
+      "tags": [
+        "documentation",
+        "release-notes",
+        "changelog"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:styles.css",
+      "type": "file",
+      "name": "styles.css",
+      "filePath": "styles.css",
+      "summary": "Global stylesheet for the AutoSort+ Thunderbird extension providing UI styling for settings page, popup, status indicators, and extension components.",
+      "tags": [
+        "markup",
+        "styles",
+        "ui",
+        "css"
+      ],
+      "complexity": "complex"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:extractEmailContext",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:batchAnalyzeEmails",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:analyzeEmailContent",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:checkAndTrackGeminiRateLimit",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:applyLabelsToMessages",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:handleNewMail",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:processWithConcurrency",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:showMoveResultsPopup",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:showNotification",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:updateNotification",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:ollamaChatViaTab",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:openaiCompatibleChatViaTab",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:callOllamaViaTab",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:storeMoveHistory",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:rebuildLabelSubmenu",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:_resetBatchState",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:_broadcastBatchProgress",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:extractTextFromParts",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:registerAutoSortListener",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:classifyAndMove",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:content.js",
+      "target": "file:js/logger.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:api_ollama/ollama-popup.js",
+      "target": "function:api_ollama/ollama-popup.js:handleOllamaAnalyze",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:api_ollama/ollama-popup.js",
+      "target": "function:api_ollama/ollama-popup.js:sendResultToBackground",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:js/i18n.js",
+      "target": "function:js/i18n.js:applyTranslations",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:js/logger.js",
+      "target": "class:js/logger.js:DebugLogger",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:js/ollama.js",
+      "target": "class:js/ollama.js:Ollama",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:js/ollama.js",
+      "target": "class:js/ollama.js:Ollama",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:js/providers-config.js",
+      "target": "function:js/providers-config.js:getProviderBatchConfig",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:js/providers-config.js",
+      "target": "function:js/providers-config.js:isValidProvider",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:js/providers-config.js",
+      "target": "function:js/providers-config.js:getProviderInfo",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:js/tab-fetch-utils.js",
+      "target": "function:js/tab-fetch-utils.js:fetchViaTab",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:js/tab-fetch-utils.js",
+      "target": "function:js/tab-fetch-utils.js:ollamaChatViaTabUtil",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:js/tab-fetch-utils.js",
+      "target": "function:js/tab-fetch-utils.js:openaiCompatChatViaTabUtil",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:js/workers/ollama-worker.js",
+      "target": "file:js/ollama.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:options.js",
+      "target": "function:options.js:escapeHtml",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:background.js",
+      "target": "file:js/providers-config.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:background.js",
+      "target": "file:js/tab-fetch-utils.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:background.js",
+      "target": "file:js/ollama.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:options.js",
+      "target": "file:js/i18n.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:options.js",
+      "target": "file:js/providers-config.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:options.js",
+      "target": "file:js/tab-fetch-utils.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:background.js",
+      "target": "file:test-auto-sort.test.js",
+      "type": "tested_by",
+      "direction": "forward",
+      "weight": 0.5,
+      "description": "Direction corrected (was test → production)"
+    },
+    {
+      "source": "config:manifest.json",
+      "target": "file:background.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:manifest.json",
+      "target": "file:content.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:manifest.json",
+      "target": "file:options.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:_locales/en/messages.json",
+      "target": "file:options.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:_locales/zh_CN/messages.json",
+      "target": "file:options.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:_locales/en/messages.json",
+      "target": "file:api_ollama/ollama-popup.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:_locales/zh_CN/messages.json",
+      "target": "file:api_ollama/ollama-popup.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:docs/_config.yml",
+      "target": "document:.github/ISSUE_TEMPLATE/README.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:analyzeEmailContent",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:checkAndTrackGeminiRateLimit",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:applyLabelsToMessages",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:showMoveResultsPopup",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:showNotification",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:updateNotification",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:storeMoveHistory",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:extractEmailContext",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:extractTextFromParts",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:rebuildLabelSubmenu",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:background.js",
+      "target": "function:background.js:classifyAndMove",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:background.js:extractEmailContext",
+      "target": "function:background.js:extractTextFromParts",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:background.js:batchAnalyzeEmails",
+      "target": "function:background.js:_resetBatchState",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:background.js:batchAnalyzeEmails",
+      "target": "function:background.js:_broadcastBatchProgress",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:background.js:analyzeEmailContent",
+      "target": "function:background.js:showNotification",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:background.js:analyzeEmailContent",
+      "target": "function:background.js:updateNotification",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:background.js:analyzeEmailContent",
+      "target": "function:background.js:checkAndTrackGeminiRateLimit",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:background.js:applyLabelsToMessages",
+      "target": "function:background.js:showNotification",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:background.js:applyLabelsToMessages",
+      "target": "function:background.js:updateNotification",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:js/tab-fetch-utils.js",
+      "target": "function:js/tab-fetch-utils.js:ollamaChatViaTabUtil",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:js/tab-fetch-utils.js",
+      "target": "function:js/tab-fetch-utils.js:openaiCompatChatViaTabUtil",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:js/tab-fetch-utils.js:ollamaChatViaTabUtil",
+      "target": "function:js/tab-fetch-utils.js:fetchViaTab",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:js/tab-fetch-utils.js:openaiCompatChatViaTabUtil",
+      "target": "function:js/tab-fetch-utils.js:fetchViaTab",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "document:.github/ISSUE_TEMPLATE/bug_ollama.md",
+      "target": "document:.github/ISSUE_TEMPLATE/bug_report.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.github/ISSUE_TEMPLATE/feature_ollama.md",
+      "target": "document:.github/ISSUE_TEMPLATE/feature_request.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CHANGELOG_OLLAMA.md",
+      "target": "document:OLLAMA_SETUP.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:CHANGELOG_OLLAMA.md",
+      "target": "document:release_notes.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/index.md",
+      "target": "document:README.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/index.md",
+      "target": "document:docs/superpowers/specs/2026-04-23-i18n-support-design.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:GITHUB_RELEASE_INSTRUCTIONS.md",
+      "target": "document:release_notes.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:GITHUB_RELEASE_INSTRUCTIONS.md",
+      "target": "document:REDDIT_POST.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:memory/MEMORY.md",
+      "target": "document:memory/project_autosortplus_overview.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:OLLAMA_403_DEBUG.md",
+      "target": "document:OLLAMA_POPUP_FIX.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:OLLAMA_403_DEBUG.md",
+      "target": "document:OLLAMA_SETUP.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:OLLAMA_POPUP_FIX.md",
+      "target": "document:OLLAMA_SETUP.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:RELEASE_NOTES_OLLAMA_TEST.md",
+      "target": "document:CHANGELOG_OLLAMA.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:RELEASE_NOTES_OLLAMA_TEST.md",
+      "target": "document:REDDIT_POST.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:RELEASE_NOTES_OLLAMA_TEST.md",
+      "target": "document:release_notes.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "document:docs/index.md",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "document:OLLAMA_SETUP.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "document:release_notes.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:styles.css",
+      "target": "file:options.html",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:api_ollama/index.html",
+      "target": "document:OLLAMA_SETUP.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:docs/superpowers/specs/2026-04-23-i18n-support-design.md",
+      "target": "file:options.html",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:core-extension",
+      "name": "Core Extension",
+      "description": "Browser extension entry points and manifest -- background service worker, content script, and extension metadata that orchestrate all extension behavior",
+      "nodeIds": [
+        "file:background.js",
+        "file:content.js",
+        "config:manifest.json"
+      ]
+    },
+    {
+      "id": "layer:ui",
+      "name": "User Interface",
+      "description": "User-facing interfaces including the options page (settings UI), Ollama popup panel, and shared styles for the extension's visual presentation",
+      "nodeIds": [
+        "file:options.js",
+        "file:options.html",
+        "file:styles.css",
+        "file:api_ollama/index.html",
+        "file:api_ollama/ollama-popup.js"
+      ]
+    },
+    {
+      "id": "layer:services",
+      "name": "Services and Utilities",
+      "description": "Shared JavaScript modules providing AI provider integration (Ollama client and worker), i18n, logging, configuration, and tab content fetching utilities",
+      "nodeIds": [
+        "file:js/ollama.js",
+        "file:js/workers/ollama-worker.js",
+        "file:js/i18n.js",
+        "file:js/logger.js",
+        "file:js/providers-config.js",
+        "file:js/tab-fetch-utils.js"
+      ]
+    },
+    {
+      "id": "layer:i18n",
+      "name": "Internationalization",
+      "description": "Localized message bundles for English and Chinese that power the extension's multi-language UI support",
+      "nodeIds": [
+        "config:_locales/en/messages.json",
+        "config:_locales/zh_CN/messages.json"
+      ]
+    },
+    {
+      "id": "layer:test",
+      "name": "Tests",
+      "description": "Unit tests validating the auto-sort functionality of the extension",
+      "nodeIds": [
+        "file:test-auto-sort.test.js"
+      ]
+    },
+    {
+      "id": "layer:documentation",
+      "name": "Documentation",
+      "description": "Project documentation including README, release notes, changelogs, setup guides, Ollama debug notes, memory files, GitHub Pages docs, and i18n design spec",
+      "nodeIds": [
+        "document:README.md",
+        "document:release_notes.md",
+        "document:CHANGELOG_OLLAMA.md",
+        "document:GITHUB_RELEASE_INSTRUCTIONS.md",
+        "document:REDDIT_POST.md",
+        "document:RELEASE_NOTES_OLLAMA_TEST.md",
+        "document:OLLAMA_SETUP.md",
+        "document:OLLAMA_POPUP_FIX.md",
+        "document:OLLAMA_403_DEBUG.md",
+        "document:memory/MEMORY.md",
+        "document:memory/project_autosortplus_overview.md",
+        "document:docs/index.md",
+        "document:docs/superpowers/specs/2026-04-23-i18n-support-design.md"
+      ]
+    },
+    {
+      "id": "layer:infrastructure",
+      "name": "Infrastructure and CI/CD",
+      "description": "GitHub project infrastructure including funding configuration, issue templates, PR template, and git ignore rules",
+      "nodeIds": [
+        "config:.github/FUNDING.yml",
+        "config:.github/ISSUE_TEMPLATE/config.yml",
+        "document:.github/pull_request_template.md",
+        "document:.github/ISSUE_TEMPLATE/bug_report.md",
+        "document:.github/ISSUE_TEMPLATE/feature_request.md",
+        "document:.github/ISSUE_TEMPLATE/question.md",
+        "document:.github/ISSUE_TEMPLATE/bug_ollama.md",
+        "document:.github/ISSUE_TEMPLATE/feature_ollama.md",
+        "document:.github/ISSUE_TEMPLATE/README.md"
+      ]
+    },
+    {
+      "id": "layer:config",
+      "name": "Configuration",
+      "description": "Project-level configuration files including git ignore rules and Jekyll config for GitHub Pages",
+      "nodeIds": [
+        "config:docs/_config.yml"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Project Overview",
+      "description": "Start with README.md to understand AutoSort+'s purpose: a Thunderbird browser extension that automatically categorizes and sorts emails using AI. The README covers features (multi-provider AI support, batch processing, i18n), installation, quick start, and the system architecture overview. This gives you the vocabulary and context for every component explored next.",
+      "nodeIds": [
+        "document:README.md"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "Extension Manifest",
+      "description": "The manifest.json declares this as a WebExtension (manifest v2) targeting Thunderbird 78+. It defines the permissions needed (messagesRead, messagesModify, messagesMove, storage, menus, tabs), registers the background scripts (logger.js then background.js), the options page (options.html), and internationalization via default_locale. This file is the blueprint of the entire extension -- every other file is wired in here.",
+      "nodeIds": [
+        "config:manifest.json"
+      ]
+    },
+    {
+      "order": 3,
+      "title": "Core Email Sorting Engine",
+      "description": "background.js is the extension's service worker and the most connected file in the project (fanOut=35). It implements the core email analysis, classification, and auto-sort engine. It depends on three js/ modules (providers-config, tab-fetch-utils, ollama) to perform LLM API calls. Key functions include analyzeEmailContent for AI-powered email classification, batchAnalyzeEmails for processing multiple emails with concurrency control, and classifyAndMove for applying the sort decision. This is the heart of the extension.",
+      "nodeIds": [
+        "file:background.js"
+      ]
+    },
+    {
+      "order": 4,
+      "title": "LLM Provider Configuration",
+      "description": "providers-config.js defines the supported LLM providers (Gemini, Ollama, OpenAI-compatible) with their batch sizes, context windows, and metadata. It provides validation and lookup helpers that background.js uses to determine how to call each provider's API. Understanding this module explains how the extension switches between cloud (Gemini) and local (Ollama) AI backends.",
+      "nodeIds": [
+        "file:js/providers-config.js"
+      ]
+    },
+    {
+      "order": 5,
+      "title": "CORS-Workaround Tab Fetching",
+      "description": "tab-fetch-utils.js implements a clever pattern: creating hidden browser tabs to bypass CORS restrictions when calling LLM APIs from the extension's background script. It provides generic fetchViaTab plus provider-specific wrappers (ollamaChatViaTabUtil, openaiCompatChatViaTabUtil). This is why the extension needs the 'tabs' permission from Step 2's manifest and how it communicates with external AI services without a server proxy.",
+      "nodeIds": [
+        "file:js/tab-fetch-utils.js"
+      ],
+      "languageLesson": "Browser extensions run in a restricted environment. Using hidden tabs to make fetch calls bypasses CORS because the tab loads a regular web page context, not the extension's privileged context. The background script controls these tabs programmatically via the WebExtension tabs API."
+    },
+    {
+      "order": 6,
+      "title": "Ollama Client and Worker",
+      "description": "The ollama.js module provides the Ollama client class that normalizes the host URL and exposes the base configuration for local LLM API communication. The ollama-worker.js wraps this client in a Web Worker to offload API calls to a background thread, preventing UI blocking during analysis. Together they enable the local AI sorting mode as an alternative to cloud-based Gemini.",
+      "nodeIds": [
+        "file:js/ollama.js",
+        "file:js/workers/ollama-worker.js"
+      ]
+    },
+    {
+      "order": 7,
+      "title": "Key Background Functions",
+      "description": "Building on the modules from Steps 4-6, these core functions in background.js implement the email sorting pipeline: extractEmailContext pulls email content and uses extractTextFromParts to handle MIME multipart emails; analyzeEmailContent sends the content to the configured LLM provider and checks Gemini rate limits via checkAndTrackGeminiRateLimit; applyLabelsToMessages moves emails to the classified folders; and storeMoveHistory tracks the last 100 moves for the user to review.",
+      "nodeIds": [
+        "function:background.js:extractEmailContext",
+        "function:background.js:analyzeEmailContent",
+        "function:background.js:applyLabelsToMessages",
+        "function:background.js:checkAndTrackGeminiRateLimit",
+        "function:background.js:storeMoveHistory"
+      ]
+    },
+    {
+      "order": 8,
+      "title": "Settings UI and Translations",
+      "description": "options.js powers the settings page (options.html) where users configure their AI provider, API keys, folder mappings, and other preferences. It depends on i18n.js for internationalized labels, providers-config.js for provider metadata, and tab-fetch-utils.js for testing API key connectivity. The escapeHtml helper prevents XSS in user-entered configuration values. This is where users spend most of their setup time.",
+      "nodeIds": [
+        "file:options.js",
+        "file:options.html"
+      ]
+    },
+    {
+      "order": 9,
+      "title": "Internationalization System",
+      "description": "The i18n module (js/i18n.js) provides applyTranslations, which scans the DOM for data-i18n attributes and replaces them with localized strings from the browser's i18n API. The actual message strings live in the locale config files (_locales/en/messages.json for English and _locales/zh_CN/messages.json for Chinese). This system powers the multi-language support mentioned in Step 1's README.",
+      "nodeIds": [
+        "file:js/i18n.js",
+        "config:_locales/en/messages.json",
+        "config:_locales/zh_CN/messages.json"
+      ],
+      "languageLesson": "Browser extensions use the chrome.i18n.getMessage() API with __MSG_key__ placeholders in HTML/manifest. The i18n.js module extends this by processing data-i18n attributes at runtime, allowing dynamic translation of the options page without reloading."
+    },
+    {
+      "order": 10,
+      "title": "Debug Logger",
+      "description": "logger.js provides the DebugLogger class with tagged, color-coded console logging and a queue-based buffer. When debug mode is off, log messages are queued; when enabled, the buffer flushes. The content.js script initializes this logger and listens for storage changes to toggle logging at runtime. This utility is loaded first in the manifest's background scripts array, making it available to all other background code.",
+      "nodeIds": [
+        "file:js/logger.js",
+        "file:content.js"
+      ]
+    },
+    {
+      "order": 11,
+      "title": "Ollama Integration Setup",
+      "description": "OLLAMA_SETUP.md documents how to configure the local Ollama AI provider as an alternative to cloud-based Gemini. This complements the ollama.js client (Step 6) and the ollama-popup.js UI. Understanding this file explains the extension's offline-capable architecture -- users can run their own LLM locally without sending email content to any external service.",
+      "nodeIds": [
+        "document:OLLAMA_SETUP.md"
+      ]
+    },
+    {
+      "order": 12,
+      "title": "Auto-Sort Test Validation",
+      "description": "test-auto-sort.test.js validates the auto-sort storage migration fix, comparing before/after behavior of handleNewMailCheck and getAutoSortValue. This test file serves as a concrete example of how the extension's settings persistence works and provides a regression safety net for the auto-sort feature that drives the core functionality from Step 3.",
+      "nodeIds": [
+        "file:test-auto-sort.test.js"
+      ]
+    }
+  ],
+  "version": "1.0.0",
+  "project": {
+    "name": "autosort-plus",
+    "languages": [
+      "css",
+      "html",
+      "javascript",
+      "json",
+      "markdown",
+      "yaml"
+    ],
+    "frameworks": [],
+    "description": "Intelligent Email AutoSort & Management Browser Extension",
+    "analyzedAt": "2026-05-09T19:49:26.491Z",
+    "gitCommitHash": "5b0019e61567933e2fa68acd99fb62fd05021980"
+  }
+}
