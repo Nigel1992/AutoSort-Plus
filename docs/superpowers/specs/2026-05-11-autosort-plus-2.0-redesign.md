@@ -67,8 +67,8 @@ src/
     email-extractor.js           ← 邮件内容提取（subject/author/body/attachments）
 
   utils/
-    tab-fetch.js                 ← Tab 注入 fetch（统一实现，消除重复）
-    injected-fetch.js            ← 注入到 tab 中执行 fetch 的脚本（MV3 scripting 使用）
+    tab-fetch.js                 ← Tab 注入 fetch（func+args 模式 + files 模式，统一封装）
+    injected-stream-fetch.js     ← 注入到 tab 中执行流式请求的脚本（Ollama pull 用）
     concurrency.js               ← 并发控制（processWithConcurrency）
     logger.js                    ← DebugLogger（从现有迁移）
     toast.js                     ← Toast 通知组件（替代 showMessage/alert）
@@ -225,7 +225,7 @@ options 页面初始化顺序：
 | API | MV2 (当前) | MV3 (目标) | 影响文件 |
 |-----|-----------|-----------|---------|
 | `browser.browserAction` | `browser.browserAction.onClicked` | `messenger.action.onClicked` | background.js |
-| `browser.tabs.executeScript` | `browser.tabs.executeScript(tabId, {code})` | `messenger.scripting.executeScript({target: {tabId}, files: [...]})` | tab-fetch.js, ollama.js |
+| `browser.tabs.executeScript` | `browser.tabs.executeScript(tabId, {code})` | `messenger.scripting.executeScript({target: {tabId}, func, args})` 或 `{target: {tabId}, files: [...]}` | tab-fetch.js, ollama.js |
 | `browser.messages.move` | `browser.messages.move([id], folder.id)` | `messenger.messages.move([id], folder.id)`（参数顺序不变，但只接受 ID） | engine.js |
 | `browser.accounts.list` | 默认返回完整文件夹树 | **必须显式传 `true`**: `messenger.accounts.list(true)` | folder-manager.js |
 | `account.folders` | `account.folders` | `account.rootFolder` | folder-manager.js |
@@ -237,49 +237,86 @@ options 页面初始化顺序：
 | `folder.type` | `folder.type` 属性 | `folder.specialUse` | — |
 | `browser.*` | 全局前缀 `browser` | 统一改为 `messenger` | 全项目 |
 
-### 3.3 Tab Injection 重构
+### 3.3 Tab Injection 重构（MV3 关键变更）
 
 这是最关键的架构变更。当前 Ollama/OpenAI-compatible 使用 `tabs.executeScript(tabId, {code: "..."})` 注入 JS 字符串，MV3 已不支持。
 
-**方案：`scripting.executeScript` + 预置文件 + 函数序列化**
+**Context7 验证后采用双模式方案：**
+
+**模式 A：`func` + `args`（简单请求，首选）**
+
+适用于 chat completions 等非流式请求。优势：返回值直接通过 Promise resolve 获得，无需 polling。
 
 ```javascript
 // src/utils/tab-fetch.js (MV3)
+// 这个函数会被序列化到目标 tab 中执行
+async function doTabFetch(endpoint, headers, body) {
+    const response = await fetch(window.location.origin + endpoint, {
+        method: 'POST', headers, body: JSON.stringify(body)
+    });
+    const data = await response.json();
+    return { ok: response.ok, data, status: response.status };
+}
+
 async function fetchViaTab(baseUrl, options) {
     const tab = await messenger.tabs.create({ url: baseUrl, active: false });
     try {
         await new Promise(r => setTimeout(r, 500));
-        const result = await messenger.scripting.executeScript({
+        const results = await messenger.scripting.executeScript({
             target: { tabId: tab.id },
-            files: ["src/utils/injected-fetch.js"]  // 预置文件，不是字符串
+            func: doTabFetch,
+            args: [options.endpoint, options.headers, options.body]
         });
-        return result[0].result;
+        return results[0].result;  // 直接拿到返回值
     } finally {
         try { await messenger.tabs.remove(tab.id); } catch {}
     }
 }
-
-// src/utils/injected-fetch.js (注入到 tab 中执行)
-// 这是一个独立的脚本，通过 window.__autosort_fetch_result 回传结果
-(async () => {
-    try {
-        const config = window.__autosort_fetch_config;  // 由 executeScript 的 args 注入
-        const response = await fetch(window.location.origin + config.endpoint, {
-            method: 'POST',
-            headers: config.headers,
-            body: JSON.stringify(config.body)
-        });
-        const data = await response.json();
-        window.__autosort_fetch_result = { ok: true, data };
-    } catch (e) {
-        window.__autosort_fetch_result = { ok: false, error: e.message };
-    }
-})();
 ```
 
-**数据传递：** 使用 `window.__autosort_fetch_config` 注入配置，`window.__autosort_fetch_result` 读取结果。polling 间隔 250ms，超时 30 秒。
+**注意：** `func` 序列化会丢失闭包上下文，函数体内不能使用外部变量，所有参数必须通过 `args` 传入。
 
-### 3.4 不需要变更的部分
+**模式 B：`files` + `runtime.sendMessage`（流式请求）**
+
+适用于 Ollama pull 等需要流式读取 response body 的场景（`ReadableStream` 不可序列化，无法通过 `func` 返回值传递）。
+
+```javascript
+// src/utils/tab-fetch.js
+async function fetchStreamViaTab(baseUrl, options) {
+    const tab = await messenger.tabs.create({ url: baseUrl, active: false });
+    return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+            messenger.tabs.remove(tab.id).catch(() => {});
+            reject(new Error('Stream fetch timeout (30s)'));
+        }, 30000);
+
+        const listener = (msg) => {
+            if (msg.action === options.resultKey) {
+                messenger.runtime.onMessage.removeListener(listener);
+                clearTimeout(timeout);
+                messenger.tabs.remove(tab.id).catch(() => {});
+                resolve(msg.result);
+            }
+        };
+        messenger.runtime.onMessage.addListener(listener);
+
+        messenger.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: [options.injectFile]  // e.g., "src/utils/injected-stream-fetch.js"
+        }).catch(reject);
+    });
+}
+```
+
+### 3.4 mailTabs.query 变更确认
+
+当前代码 `background.js L1933`:
+```javascript
+const mailTabs = await browser.mailTabs.query({ active: true, currentWindow: true });
+```
+MV3 下 **不需要变更**，`active` 和 `currentWindow` 参数仍然可用。`mailTab` 属性已移除，但当前代码未使用它。
+
+### 3.5 不需要变更的部分
 
 - `messages.move([ids], folderId)` — 参数顺序不变
 - `messenger.runtime.onMessage` — 消息机制不变
