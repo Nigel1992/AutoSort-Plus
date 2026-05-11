@@ -1,0 +1,1270 @@
+{
+  "extensionName": {
+    "message": "AutoSort+",
+    "description": "Extension name"
+  },
+  "extensionDescription": {
+    "message": "Automatically sort and label your emails with custom rules using AI",
+    "description": "Extension description"
+  },
+  "extensionDefaultTitle": {
+    "message": "AutoSort+ Settings",
+    "description": "Default title shown in browser action"
+  },
+  "pageTitle": {
+    "message": "AutoSort+ Settings",
+    "description": "HTML page title"
+  },
+  "pageHeading": {
+    "message": "AutoSort+ Settings",
+    "description": "Main page heading"
+  },
+  "batchProcessingTitle": {
+    "message": "Batch Processing In Progress",
+    "description": "Batch processing status panel title"
+  },
+  "batchPreparing": {
+    "message": "Preparing…",
+    "description": "Batch processing preparing text"
+  },
+  "batchPause": {
+    "message": "⏸ Pause",
+    "description": "Batch pause button text"
+  },
+  "batchResume": {
+    "message": "▶ Resume",
+    "description": "Batch resume button text"
+  },
+  "batchCancel": {
+    "message": "⏹ Cancel",
+    "description": "Batch cancel button text"
+  },
+  "aiSettingsTitle": {
+    "message": "🤖 AI Settings",
+    "description": "AI settings section header"
+  },
+  "providerSelectionTitle": {
+    "message": "Provider Selection",
+    "description": "Provider selection subsection header"
+  },
+  "aiProviderLabel": {
+    "message": "AI Provider:",
+    "description": "AI provider select label"
+  },
+  "providerGemini": {
+    "message": "Google Gemini (Recommended)",
+    "description": "Gemini provider option"
+  },
+  "providerOpenAI": {
+    "message": "OpenAI (ChatGPT)",
+    "description": "OpenAI provider option"
+  },
+  "providerAnthropic": {
+    "message": "Anthropic Claude",
+    "description": "Anthropic provider option"
+  },
+  "providerGroq": {
+    "message": "Groq (Fast & Free)",
+    "description": "Groq provider option"
+  },
+  "providerMistral": {
+    "message": "Mistral AI",
+    "description": "Mistral provider option"
+  },
+  "providerOllama": {
+    "message": "Ollama (Local LLM)",
+    "description": "Ollama provider option"
+  },
+  "providerOpenAICompatible": {
+    "message": "OpenAI-Compatible (Custom Endpoint)",
+    "description": "OpenAI-Compatible provider option"
+  },
+  "rateLimitWarningTitle": {
+    "message": "⚠️ Rate Limit Warning:",
+    "description": "Rate limit warning header"
+  },
+  "rateLimitWarningText": {
+    "message": "Free API tiers are severely limited when processing emails. You may only process 5-20 emails before hitting rate limits. Paid plans ($5-20/month) are recommended for daily email processing.",
+    "description": "Rate limit warning text"
+  },
+  "ollamaConfigTitle": {
+    "message": "🏠 Local Ollama Configuration",
+    "description": "Ollama configuration subsection header"
+  },
+  "ollamaUrlLabel": {
+    "message": "Ollama Server URL:",
+    "description": "Ollama URL label"
+  },
+  "ollamaUrlPlaceholder": {
+    "message": "http://localhost:11434",
+    "description": "Ollama URL placeholder"
+  },
+  "ollamaCpuOnly": {
+    "message": "Force CPU-only mode (disable GPU acceleration)",
+    "description": "Ollama CPU-only checkbox"
+  },
+  "ollamaModelLabel": {
+    "message": "Ollama Model:",
+    "description": "Ollama model select label"
+  },
+  "ollamaAuthTokenLabel": {
+    "message": "Ollama Auth Token (optional):",
+    "description": "Ollama auth token label"
+  },
+  "ollamaAuthTokenPlaceholder": {
+    "message": "If your Ollama server requires a token, enter it here",
+    "description": "Ollama auth token placeholder"
+  },
+  "ollamaAuthTokenHelp": {
+    "message": "Used for /api/chat and /api/pull requests when required.",
+    "description": "Ollama auth token help text"
+  },
+  "ollamaCustomModelPlaceholder": {
+    "message": "Enter custom model name",
+    "description": "Ollama custom model placeholder"
+  },
+  "ollamaDownloadModelLabel": {
+    "message": "Download Model:",
+    "description": "Ollama download model label"
+  },
+  "ollamaDownloadModelPlaceholder": {
+    "message": "e.g., llama3.2, mistral, qwen2.5:7b",
+    "description": "Ollama download model placeholder"
+  },
+  "ollamaDownloadButton": {
+    "message": "Download",
+    "description": "Download model button"
+  },
+  "ollamaListModelsButton": {
+    "message": "List Installed Models",
+    "description": "List installed models button"
+  },
+  "ollamaTestButton": {
+    "message": "Test Connection",
+    "description": "Test Ollama connection button"
+  },
+  "ollamaDiagnoseButton": {
+    "message": "Run Diagnostics",
+    "description": "Run Ollama diagnostics button"
+  },
+  "ollamaModelLlama2": {
+    "message": "Llama 2",
+    "description": "Ollama Llama 2 model option"
+  },
+  "ollamaModelLlama32": {
+    "message": "Llama 3.2",
+    "description": "Ollama Llama 3.2 model option"
+  },
+  "ollamaModelMistral": {
+    "message": "Mistral",
+    "description": "Ollama Mistral model option"
+  },
+  "ollamaModelPhi": {
+    "message": "Phi",
+    "description": "Ollama Phi model option"
+  },
+  "ollamaModelGemma": {
+    "message": "Gemma",
+    "description": "Ollama Gemma model option"
+  },
+  "ollamaModelQwen25": {
+    "message": "Qwen 2.5",
+    "description": "Ollama Qwen 2.5 model option"
+  },
+  "ollamaModelCustom": {
+    "message": "Custom (enter below)",
+    "description": "Ollama custom model option"
+  },
+  "openaiCompatibleTitle": {
+    "message": "🔗 OpenAI-Compatible Endpoint",
+    "description": "OpenAI-Compatible subsection header"
+  },
+  "openaiCompatibleBaseUrlLabel": {
+    "message": "Base URL:",
+    "description": "OpenAI-Compatible base URL label"
+  },
+  "openaiCompatibleBaseUrlPlaceholder": {
+    "message": "http://localhost:1234/v1 or https://api.provider.com/v1",
+    "description": "OpenAI-Compatible base URL placeholder"
+  },
+  "openaiCompatibleBaseUrlHelp": {
+    "message": "Enter base URL including /v1. Endpoint must use OpenAI format: /v1/chat/completions. Examples: LM Studio, LocalAI, vLLM, Together AI",
+    "description": "OpenAI-Compatible base URL help text"
+  },
+  "openaiCompatibleModelLabel": {
+    "message": "Model:",
+    "description": "OpenAI-Compatible model select label"
+  },
+  "openaiCompatibleModelSelect": {
+    "message": "-- Select model --",
+    "description": "OpenAI-Compatible model select default option"
+  },
+  "openaiCompatibleModelCustom": {
+    "message": "Custom (enter below)",
+    "description": "OpenAI-Compatible custom model option"
+  },
+  "openaiCompatibleModelCustomPlaceholder": {
+    "message": "Enter model name manually",
+    "description": "OpenAI-Compatible custom model placeholder"
+  },
+  "openaiCompatibleApiKeyLabel": {
+    "message": "API Key (optional):",
+    "description": "OpenAI-Compatible API key label"
+  },
+  "openaiCompatibleApiKeyPlaceholder": {
+    "message": "Leave empty for local endpoints without auth",
+    "description": "OpenAI-Compatible API key placeholder"
+  },
+  "openaiCompatibleApiKeyHelp": {
+    "message": "Required for cloud providers, optional for local servers",
+    "description": "OpenAI-Compatible API key help text"
+  },
+  "openaiCompatibleFetchModelsButton": {
+    "message": "Fetch Models",
+    "description": "Fetch models button"
+  },
+  "openaiCompatibleTestButton": {
+    "message": "Test Connection",
+    "description": "Test OpenAI-Compatible connection button"
+  },
+  "apiKeyTitle": {
+    "message": "🔑 API Key Configuration",
+    "description": "API key configuration subsection header"
+  },
+  "apiKeyLabel": {
+    "message": "API Key:",
+    "description": "API key input label"
+  },
+  "apiKeyPlaceholder": {
+    "message": "Enter your API key",
+    "description": "API key input placeholder"
+  },
+  "testApiButton": {
+    "message": "Test API Connection",
+    "description": "Test API connection button"
+  },
+  "getApiKeyButton": {
+    "message": "Get API Key",
+    "description": "Get API key button"
+  },
+  "geminiMultiKeysTitle": {
+    "message": "🔄 Multiple Gemini API Keys",
+    "description": "Multiple Gemini keys subsection header"
+  },
+  "geminiMultiKeysInfo": {
+    "message": "Add multiple API keys from different Google Cloud projects. The extension will automatically rotate between them when rate limits are reached.",
+    "description": "Multiple Gemini keys info text"
+  },
+  "addGeminiKeyButton": {
+    "message": "+ Add Another Gemini Key",
+    "description": "Add Gemini key button"
+  },
+  "testButton": {
+    "message": "Test",
+    "description": "Test individual Gemini API key button"
+  },
+  "geminiPaidPlan": {
+    "message": "I have a Gemini paid plan (removes rate limits)",
+    "description": "Gemini paid plan checkbox"
+  },
+  "generalSettingsTitle": {
+    "message": "⚙️ General Settings",
+    "description": "General settings subsection header"
+  },
+  "enableAiLabel": {
+    "message": "Enable AI-powered sorting",
+    "description": "Enable AI checkbox"
+  },
+  "enableDebugLabel": {
+    "message": "Enable debug mode (console logging)",
+    "description": "Enable debug mode checkbox"
+  },
+  "enableDebugHelp": {
+    "message": "Open Thunderbird Developer Tools (Ctrl+Shift+I) to view logs",
+    "description": "Debug mode help text"
+  },
+  "batchChunkSizeLabel": {
+    "message": "Batch chunk size:",
+    "description": "Batch chunk size label"
+  },
+  "batchChunkSizeHelp": {
+    "message": "Process N emails at once, wait for all responses, then continue (1-20)",
+    "description": "Batch chunk size help text"
+  },
+  "enableAutoSortLabel": {
+    "message": "Auto-sort new emails in Inbox",
+    "description": "Auto-sort checkbox label"
+  },
+  "enableAutoSortHelp": {
+    "message": "Automatically classify and move new Inbox emails using AI",
+    "description": "Auto-sort help text"
+  },
+  "geminiUsageTitle": {
+    "message": "📊 Gemini API Usage",
+    "description": "Gemini API usage subsection header"
+  },
+  "geminiDailyCount": {
+    "message": "Today's Usage: {count}/20 requests",
+    "description": "Gemini daily usage count",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "geminiLastRequest": {
+    "message": "Last Request:",
+    "description": "Gemini last request label"
+  },
+  "geminiNever": {
+    "message": "Never",
+    "description": "Never used text"
+  },
+  "geminiResetTime": {
+    "message": "Daily Limit Resets:",
+    "description": "Gemini daily limit reset time label"
+  },
+  "geminiStatus": {
+    "message": "Status:",
+    "description": "Gemini status label"
+  },
+  "geminiStatusReady": {
+    "message": "Ready",
+    "description": "Gemini ready status"
+  },
+  "geminiStatusNearlyFull": {
+    "message": "Nearly Full",
+    "description": "Gemini nearly full usage"
+  },
+  "geminiStatusLimitReached": {
+    "message": "Limit Reached",
+    "description": "Gemini limit reached status"
+  },
+  "geminiLimitMessage": {
+    "message": "Daily limit reached. Switch to another key or wait for reset.",
+    "description": "Gemini daily limit warning"
+  },
+  "geminiRemainingMessage": {
+    "message": "requests remaining today. Consider switching keys.",
+    "description": "Gemini remaining usage warning"
+  },
+  "geminiKeyInputPlaceholder": {
+    "message": "Enter Gemini API key",
+    "description": "Gemini API key input placeholder"
+  },
+  "geminiResetExpired": {
+    "message": "Token expired or invalid. Generate a new one from AI Studio.",
+    "description": "Gemini reset token expired message"
+  },
+  "requestsRemainingToday": {
+    "message": "requests remaining today. Consider switching keys.",
+    "description": "Requests remaining today text"
+  },
+  "resetGeminiCounterButton": {
+    "message": "Reset Counter (New API Key)",
+    "description": "Reset Gemini counter button"
+  },
+  "refreshUsageButton": {
+    "message": "Refresh Usage",
+    "description": "Refresh usage button"
+  },
+  "refreshAllUsageButton": {
+    "message": "Refresh All Usage",
+    "description": "Refresh all usage button"
+  },
+  "howAiSortingTitle": {
+    "message": "ℹ️ How AI Sorting Works",
+    "description": "How AI sorting works subsection header"
+  },
+  "howAiSortingDesc": {
+    "message": "AutoSort+ uses AI to analyze your emails and automatically sort them into categories/folders based on their content. The AI will:",
+    "description": "AI sorting description"
+  },
+  "howAiSortingPoint1": {
+    "message": "Read and understand email content",
+    "description": "AI sorting capability 1"
+  },
+  "howAiSortingPoint2": {
+    "message": "Identify key topics and themes",
+    "description": "AI sorting capability 2"
+  },
+  "howAiSortingPoint3": {
+    "message": "Match emails to appropriate categories/folders",
+    "description": "AI sorting capability 3"
+  },
+  "howAiSortingPoint4": {
+    "message": "Learn from your manual corrections to improve accuracy",
+    "description": "AI sorting capability 4"
+  },
+  "customPromptTitle": {
+    "message": "📝 Custom Prompt",
+    "description": "Custom prompt section header"
+  },
+  "customPromptInfo": {
+    "message": "Customize the prompt sent to AI for email classification.",
+    "description": "Custom prompt info text"
+  },
+  "customPromptPlaceholders": {
+    "message": "Available placeholders:",
+    "description": "Custom prompt placeholders label"
+  },
+  "customPromptPlaceholderLabel": {
+    "message": "Your folder/label list",
+    "description": "Labels placeholder description"
+  },
+  "customPromptSubjectLabel": {
+    "message": "Email subject line",
+    "description": "Subject placeholder description"
+  },
+  "customPromptAuthorLabel": {
+    "message": "Sender email address/name",
+    "description": "Author placeholder description"
+  },
+  "customPromptAttachmentsLabel": {
+    "message": "Attachment filenames (comma-separated)",
+    "description": "Attachments placeholder description"
+  },
+  "customPromptBodyLabel": {
+    "message": "Email body content (recommended)",
+    "description": "Body placeholder description"
+  },
+  "customPromptEmailLabel": {
+    "message": "Email content (legacy, same as {body})",
+    "description": "Email placeholder description",
+    "placeholders": {
+      "body": {
+        "content": "$1"
+      }
+    }
+  },
+  "customPromptTip": {
+    "message": "Tip: Use {subject} and {attachments} for better classification accuracy.",
+    "description": "Custom prompt tip",
+    "placeholders": {
+      "subject": {
+        "content": "$1"
+      },
+      "attachments": {
+        "content": "$2"
+      }
+    }
+  },
+  "customPromptTextareaPlaceholder": {
+    "message": "Enter your custom prompt...",
+    "description": "Custom prompt textarea placeholder"
+  },
+  "resetPromptButton": {
+    "message": "Reset to Default",
+    "description": "Reset prompt button"
+  },
+  "customFoldersTitle": {
+    "message": "📁 Custom Categories/Folders",
+    "description": "Custom categories/folders section header"
+  },
+  "folderSourceTitle": {
+    "message": "Folder Source",
+    "description": "Folder source subsection header"
+  },
+  "loadImapFoldersButton": {
+    "message": "Load Folders from Mail Account",
+    "description": "Load IMAP folders button"
+  },
+  "folderLoadingText": {
+    "message": "Loading folders...",
+    "description": "Folder loading indicator text"
+  },
+  "folderFoundText": {
+    "message": "Found {count} folders in your mail account. Would you like to use these?",
+    "description": "Folder found text",
+    "placeholders": {
+      "count": {
+        "content": "$1"
+      }
+    }
+  },
+  "useImapFoldersButton": {
+    "message": "Use These Folders",
+    "description": "Use IMAP folders button"
+  },
+  "useCustomFoldersButton": {
+    "message": "Use Custom Folders Instead",
+    "description": "Use custom folders button"
+  },
+  "bulkImportLabel": {
+    "message": "Import Categories/Folders (one per line):",
+    "description": "Bulk import textarea label"
+  },
+  "bulkImportPlaceholder": {
+    "message": "Enter categories/folders, one per line",
+    "description": "Bulk import textarea placeholder"
+  },
+  "importButton": {
+    "message": "Import",
+    "description": "Import button"
+  },
+  "addButton": {
+    "message": "Add",
+    "description": "Add button"
+  },
+  "labelInputPlaceholder": {
+    "message": "Enter category/folder name",
+    "description": "Label input placeholder"
+  },
+  "moveHistoryTitle": {
+    "message": "📜 Move History",
+    "description": "Move history section header"
+  },
+  "clearHistoryButton": {
+    "message": "Clear History",
+    "description": "Clear history button"
+  },
+  "refreshHistoryButton": {
+    "message": "Refresh",
+    "description": "Refresh history button"
+  },
+  "historyHeaderTimestamp": {
+    "message": "Timestamp",
+    "description": "History table timestamp header"
+  },
+  "historyHeaderSubject": {
+    "message": "Subject",
+    "description": "History table subject header"
+  },
+  "historyHeaderStatus": {
+    "message": "Status",
+    "description": "History table status header"
+  },
+  "historyHeaderDestination": {
+    "message": "Destination",
+    "description": "History table destination header"
+  },
+  "saveSettingsButton": {
+    "message": "Save Settings",
+    "description": "Save settings button"
+  },
+  "providerInfoGemini": {
+    "message": "✓ Free tier: 5 requests/minute, 20/day per API key (enforced by addon)<br>✓ Tip: Create multiple API keys in different projects, switch keys when limit reached<br>✓ Check usage: <a href=\"https://aistudio.google.com/usage\" target=\"_blank\">AI Studio Usage</a><br>✓ Best for: General use, multilingual support<br>✓ Models: Gemini 2.5 Flash<br>✓ Check \"paid plan\" option to remove limits",
+    "description": "Gemini provider info HTML"
+  },
+  "providerInfoOpenai": {
+    "message": "✓ Free trial: $5 credit<br>✓ Best for: High accuracy, English content<br>✓ Models: GPT-4o-mini ($0.15/1M tokens)",
+    "description": "OpenAI provider info HTML"
+  },
+  "providerInfoAnthropic": {
+    "message": "✓ Free tier: Limited requests<br>✓ Best for: Long emails, detailed analysis<br>✓ Models: Claude 3 Haiku",
+    "description": "Anthropic provider info HTML"
+  },
+  "providerInfoGroq": {
+    "message": "✓ Free tier: 30 requests/minute<br>✓ Best for: Speed (fastest)<br>✓ Models: Llama 3.3 (Mixtral deprecated)",
+    "description": "Groq provider info HTML"
+  },
+  "providerInfoMistral": {
+    "message": "✓ Free tier: Limited requests<br>✓ Best for: European users, GDPR compliance<br>✓ Models: Mistral Small",
+    "description": "Mistral provider info HTML"
+  },
+  "providerInfoOllama": {
+    "message": "✓ 100% Free: Runs locally on your machine<br>✓ Privacy: No data sent to external servers<br>✓ No rate limits: Process unlimited emails<br>✓ Models: Llama 2/3, Mistral, Phi, Gemma, Qwen, and more<br>✓ Requires: <a href=\"https://ollama.ai/download\" target=\"_blank\">Ollama installed</a> and running locally<br>✓ Setup: Install Ollama, run \"ollama pull llama3.2\" to download a model",
+    "description": "Ollama provider info HTML"
+  },
+  "providerInfoOpenaiCompatible": {
+    "message": "✓ Compatible with: LocalAI, LM Studio, vLLM, Together AI, OpenRouter, DeepSeek, Fireworks, etc.<br>✓ Enter your endpoint base URL and model name<br>✓ API key optional for local servers<br>✓ Uses standard /v1/chat/completions format",
+    "description": "OpenAI-Compatible provider info HTML"
+  },
+  "freeBadge": {
+    "message": "FREE",
+    "description": "Free provider badge text"
+  },
+  "paidBadge": {
+    "message": "PAID",
+    "description": "Paid provider badge text"
+  },
+  "justNow": {
+    "message": "Just now",
+    "description": "Relative time — request was just made"
+  },
+  "minutesAgo": {
+    "message": "{count} minute{plural} ago",
+    "description": "Relative time — minutes ago",
+    "placeholders": {
+      "count": { "content": "$1" },
+      "plural": { "content": "$2" }
+    }
+  },
+  "hoursAgo": {
+    "message": "{count} hour{plural} ago",
+    "description": "Relative time — hours ago",
+    "placeholders": {
+      "count": { "content": "$1" },
+      "plural": { "content": "$2" }
+    }
+  },
+  "inHours": {
+    "message": "In {count} hour{plural}",
+    "description": "Reset countdown text",
+    "placeholders": {
+      "count": { "content": "$1" },
+      "plural": { "content": "$2" }
+    }
+  },
+  "inHoursShort": {
+    "message": "{count}h",
+    "description": "Reset countdown short form",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "minutesAgoShort": {
+    "message": "{count}m ago",
+    "description": "Minutes ago short form",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "hoursAgoShort": {
+    "message": "{count}h ago",
+    "description": "Hours ago short form",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "keyActive": {
+    "message": "🔵 ACTIVE",
+    "description": "Key usage card active status"
+  },
+  "keyLimit": {
+    "message": "🔴 LIMIT",
+    "description": "Key usage card limit reached"
+  },
+  "keyNearLimit": {
+    "message": "🟡 NEAR LIMIT",
+    "description": "Key usage card near limit"
+  },
+  "keyReady": {
+    "message": "🟢 READY",
+    "description": "Key usage card ready status"
+  },
+  "keyLabel": {
+    "message": "Key {number}:",
+    "description": "Key usage card label",
+    "placeholders": {
+      "number": { "content": "$1" }
+    }
+  },
+  "statUsage": {
+    "message": "Usage:",
+    "description": "Stat label for usage count"
+  },
+  "statLast": {
+    "message": "Last:",
+    "description": "Stat label for last request"
+  },
+  "statResets": {
+    "message": "Resets:",
+    "description": "Stat label for reset time"
+  },
+  "statAvailable": {
+    "message": "Available:",
+    "description": "Stat label for available requests"
+  },
+  "keyNotSet": {
+    "message": "Not set",
+    "description": "Key not configured text"
+  },
+  "keyAlreadyAddedTitle": {
+    "message": "⚠️ This key is already added!",
+    "description": "Tooltip when duplicate Gemini key detected"
+  },
+  "enterKeyFirst": {
+    "message": "⚠️ Enter key first",
+    "description": "Error when testing empty Gemini key"
+  },
+  "duplicateKey": {
+    "message": "⚠️ Duplicate key",
+    "description": "Error for duplicate Gemini key"
+  },
+  "duplicateKeyTitle": {
+    "message": "This key is already added in the list",
+    "description": "Tooltip for duplicate key error"
+  },
+  "mustHaveOneKey": {
+    "message": "You must have at least one API key configured.",
+    "description": "Alert when trying to remove last Gemini key"
+  },
+  "removeApiKeyConfirm": {
+    "message": "Remove API key #{number}?",
+    "description": "Confirm dialog for removing Gemini key",
+    "placeholders": {
+      "number": { "content": "$1" }
+    }
+  },
+  "testingStatus": {
+    "message": "Testing...",
+    "description": "Generic testing status"
+  },
+  "validKey": {
+    "message": "✓ Valid",
+    "description": "Key test success"
+  },
+  "limitReachedGemini": {
+    "message": "⚠️ Limit reached",
+    "description": "Gemini key rate limited"
+  },
+  "limitReachedGeminiTitle": {
+    "message": "This key has reached its daily rate limit (20/day). Will reset in ~24 hours.",
+    "description": "Tooltip for rate limited Gemini key"
+  },
+  "invalidKey": {
+    "message": "✗ Invalid key",
+    "description": "Key test invalid"
+  },
+  "invalidKeyTitle": {
+    "message": "API key is invalid or expired. Check your key in Google AI Studio.",
+    "description": "Tooltip for invalid key"
+  },
+  "testFailed": {
+    "message": "✗ Failed ({status})",
+    "description": "Key test failed with status",
+    "placeholders": {
+      "status": { "content": "$1" }
+    }
+  },
+  "errorStatus": {
+    "message": "✗ Error",
+    "description": "Generic error status"
+  },
+  "resetCounterConfirm": {
+    "message": "Reset usage counter? Do this only after switching to a new API key.",
+    "description": "Confirm for resetting Gemini counter"
+  },
+  "counterResetMsg": {
+    "message": "✓ Usage counter reset. You can now process up to 20 more emails today with your new API key.",
+    "description": "Success after counter reset"
+  },
+  "usageRefreshed": {
+    "message": "✓ Usage information refreshed.",
+    "description": "Info after usage refresh"
+  },
+  "allUsageRefreshed": {
+    "message": "✓ All usage information refreshed.",
+    "description": "Info after all usage refresh"
+  },
+  "noSignupUrl": {
+    "message": "This provider doesn't have a signup URL. Configure the endpoint directly in the settings above.",
+    "description": "Error when provider has no signup URL"
+  },
+  "urlCopied": {
+    "message": "URL copied to clipboard:\n{url}",
+    "description": "Info when URL copied to clipboard",
+    "placeholders": {
+      "url": { "content": "$1" }
+    }
+  },
+  "pleaseVisit": {
+    "message": "Please visit:\n{url}",
+    "description": "Alert when cannot copy URL",
+    "placeholders": {
+      "url": { "content": "$1" }
+    }
+  },
+  "pleaseConfigure": {
+    "message": "Please configure: {items}",
+    "description": "Save button tooltip when missing config",
+    "placeholders": {
+      "items": { "content": "$1" }
+    }
+  },
+  "noFoldersInstruction": {
+    "message": "No folders/labels configured. Click \"Load Folders from Mail Account\" above or add custom labels below.",
+    "description": "Instruction when no folders exist"
+  },
+  "noFoldersFound": {
+    "message": "No folders found. You can create custom folders instead.",
+    "description": "Info when no folders in mail account"
+  },
+  "andMore": {
+    "message": "...and {count} more",
+    "description": "Folder preview overflow",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "errorLoadingFolders": {
+    "message": "Error loading folders: {error}",
+    "description": "Error loading folders",
+    "placeholders": {
+      "error": { "content": "$1" }
+    }
+  },
+  "replaceFoldersConfirm": {
+    "message": "This will replace any existing folders/labels with {count} folders from your mail account. Continue?",
+    "description": "Confirm for replacing folders",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "loadedFoldersMsg": {
+    "message": "Loaded {count} folders from your mail account. Don't forget to save!",
+    "description": "Success after loading folders",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "addCustomFoldersMsg": {
+    "message": "You can now add custom folders below",
+    "description": "Info after choosing custom folders"
+  },
+  "importOneLabelRequired": {
+    "message": "Please add at least one folder/label before importing. Enter labels one per line.",
+    "description": "Error when importing empty text"
+  },
+  "replaceExistingConfirm": {
+    "message": "This will replace your {existing} existing folders/labels with {new} new ones. Continue?",
+    "description": "Confirm for replacing existing labels",
+    "placeholders": {
+      "existing": { "content": "$1" },
+      "new": { "content": "$2" }
+    }
+  },
+  "importedFoldersMsg": {
+    "message": "Imported {count} categories/folders. Don't forget to save!",
+    "description": "Success after import",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "useOllamaTestButton": {
+    "message": "Please use the \"Test Ollama Connection\" button below",
+    "description": "Redirect to Ollama-specific test"
+  },
+  "useCustomTestButton": {
+    "message": "Please use the \"Test Connection\" button in the OpenAI-Compatible section",
+    "description": "Redirect to custom endpoint test"
+  },
+  "enterApiKey": {
+    "message": "Please enter an API key",
+    "description": "Error when testing with empty API key"
+  },
+  "testingConnection": {
+    "message": "Testing connection...",
+    "description": "API testing status"
+  },
+  "apiConnectionSuccess": {
+    "message": "✓ API connection successful!",
+    "description": "API test success"
+  },
+  "apiError": {
+    "message": "API Error: {error}",
+    "description": "API error message",
+    "placeholders": {
+      "error": { "content": "$1" }
+    }
+  },
+  "connectionError": {
+    "message": "Connection Error: {error}",
+    "description": "Connection error message",
+    "placeholders": {
+      "error": { "content": "$1" }
+    }
+  },
+  "enterCustomModelFirst": {
+    "message": "⚠️ Please enter a custom model name first",
+    "description": "Error when testing Ollama without custom model"
+  },
+  "testingConnectionModels": {
+    "message": "Testing connection and checking model...",
+    "description": "Ollama test status"
+  },
+  "ollamaRunningNoModels": {
+    "message": "⚠️ Ollama is running but no models installed. Enter a model name in \"Download Model\" and click \"Download\" to get started.",
+    "description": "Ollama no models warning"
+  },
+  "connectedModelReady": {
+    "message": "✓ Connected! Model \"{model}\" is installed and ready. Available: {available}",
+    "description": "Ollama connected with model",
+    "placeholders": {
+      "model": { "content": "$1" },
+      "available": { "content": "$2" }
+    }
+  },
+  "modelNotInstalled": {
+    "message": "✗ Model \"{model}\" not installed. Available models: {available}. Use \"Download Model\" to install it.",
+    "description": "Ollama model not found",
+    "placeholders": {
+      "model": { "content": "$1" },
+      "available": { "content": "$2" }
+    }
+  },
+  "genericErrorLabel": {
+    "message": "✗ Error: {error}",
+    "description": "Generic error label",
+    "placeholders": {
+      "error": { "content": "$1" }
+    }
+  },
+  "ollamaErrorLabel": {
+    "message": "✗ Error: {error}",
+    "description": "Ollama error",
+    "placeholders": {
+      "error": { "content": "$1" }
+    }
+  },
+  "ollamaConnectionFailed": {
+    "message": "✗ Connection failed: {error}. Make sure Ollama is running (try: ollama serve)",
+    "description": "Ollama connection error",
+    "placeholders": {
+      "error": { "content": "$1" }
+    }
+  },
+  "enterBaseUrlFirst": {
+    "message": "⚠️ Please enter a base URL first",
+    "description": "Error when fetching models without URL"
+  },
+  "fetchingModels": {
+    "message": "Fetching models from endpoint...",
+    "description": "Fetch models status"
+  },
+  "noModelsEndpoint": {
+    "message": "⚠️ No models found at this endpoint",
+    "description": "No models at endpoint"
+  },
+  "foundModelsMsg": {
+    "message": "✓ Found {count} models. Select from dropdown or use \"Custom\" option.",
+    "description": "Found models success",
+    "placeholders": {
+      "count": { "content": "$1" }
+    }
+  },
+  "failedFetchModels": {
+    "message": "✗ Failed to fetch models: {error}",
+    "description": "Failed to fetch models",
+    "placeholders": {
+      "error": { "content": "$1" }
+    }
+  },
+  "enterBaseUrl": {
+    "message": "⚠️ Please enter a base URL",
+    "description": "Error for empty base URL"
+  },
+  "enterModelName": {
+    "message": "⚠️ Please enter a model name",
+    "description": "Error for empty model name"
+  },
+  "connectedSuccessfully": {
+    "message": "✓ Connected successfully! Model \"{model}\" is ready at {url}",
+    "description": "Custom endpoint success",
+    "placeholders": {
+      "model": { "content": "$1" },
+      "url": { "content": "$2" }
+    }
+  },
+  "customConnectionFailed": {
+    "message": "✗ Connection failed: {error}. Check the base URL and ensure the endpoint is running.",
+    "description": "Custom endpoint connection failed",
+    "placeholders": {
+      "error": { "content": "$1" }
+    }
+  },
+  "diagnosticsTitle": {
+    "message": "🔍 OLLAMA DIAGNOSTICS",
+    "description": "Ollama diagnostics header"
+  },
+  "diagnosticsRunning": {
+    "message": "Running tests...",
+    "description": "Diagnostics running status"
+  },
+  "testListModels": {
+    "message": "📋 Test 1: List Models Endpoint",
+    "description": "Diagnostics test 1 header"
+  },
+  "testVersion": {
+    "message": "🔢 Test 2: Version Endpoint",
+    "description": "Diagnostics test 2 header"
+  },
+  "testPullEndpoint": {
+    "message": "⬇️ Test 3: Pull Endpoint Check",
+    "description": "Diagnostics test 3 header"
+  },
+  "diagnosticsSummary": {
+    "message": "📊 SUMMARY:",
+    "description": "Diagnostics summary header"
+  },
+  "ollamaRunningOk": {
+    "message": "✓ Ollama is running and accessible",
+    "description": "Diagnostics success message"
+  },
+  "cannotConnectOllama": {
+    "message": "✗ Cannot connect to Ollama",
+    "description": "Diagnostics failure message"
+  },
+  "troubleshootingLabel": {
+    "message": "Troubleshooting:",
+    "description": "Diagnostics troubleshooting header"
+  },
+  "troubleshootRunning": {
+    "message": "1. Check if Ollama is running: ps aux | grep ollama",
+    "description": "Diagnostics tip 1"
+  },
+  "troubleshootStart": {
+    "message": "2. Start Ollama: ollama serve",
+    "description": "Diagnostics tip 2"
+  },
+  "troubleshootTest": {
+    "message": "3. Test manually: curl {url}/api/tags",
+    "description": "Diagnostics tip 3",
+    "placeholders": {
+      "url": { "content": "$1" }
+    }
+  },
+  "troubleshootPort": {
+    "message": "4. Check if port 11434 is in use: lsof -i :11434",
+    "description": "Diagnostics tip 4"
+  },
+  "criticalError": {
+    "message": "❌ CRITICAL ERROR:",
+    "description": "Diagnostics critical error"
+  },
+  "noInstalledModels": {
+    "message": "⚠️ No models installed",
+    "description": "Diagnostics no models text"
+  },
+  "versionNotAvailable": {
+    "message": "⚠️ Endpoint not available (older Ollama version)",
+    "description": "Diagnostics version unavailable"
+  },
+  "unknownVersion": {
+    "message": "unknown",
+    "description": "Diagnostics unknown version text"
+  },
+  "pullEndpointNote": {
+    "message": "Note: This endpoint is used for downloading models",
+    "description": "Diagnostics pull endpoint note"
+  },
+  "diagnosticsApiUrl": {
+    "message": "✓ API base URL: {url}",
+    "description": "Diagnostics API URL",
+    "placeholders": {
+      "url": { "content": "$1" }
+    }
+  },
+  "ollamaCurlTest": {
+    "message": "Test manually: curl {url}/api/tags",
+    "description": "Diagnostics curl tip",
+    "placeholders": {
+      "url": { "content": "$1" }
+    }
+  },
+  "fetchingModelsStatus": {
+    "message": "Fetching models...",
+    "description": "List Ollama models status"
+  },
+  "availableModels": {
+    "message": "✓ Available models: {models}",
+    "description": "Available Ollama models",
+    "placeholders": {
+      "models": { "content": "$1" }
+    }
+  },
+  "noModelsInstalledHint": {
+    "message": "⚠️ No models installed. Run \"ollama pull llama3.2\" to download one.",
+    "description": "No Ollama models hint"
+  },
+  "failedFetchModelsSimple": {
+    "message": "✗ Failed to fetch models",
+    "description": "Failed to fetch Ollama models"
+  },
+  "ollamaConnectionFailedSimple": {
+    "message": "✗ Connection failed: {error}. Is Ollama running?",
+    "description": "Ollama connection failed simple",
+    "placeholders": {
+      "error": { "content": "$1" }
+    }
+  },
+  "enterModelDownload": {
+    "message": "⚠️ Please enter a model name to download",
+    "description": "Error for empty download model"
+  },
+  "startingDownload": {
+    "message": "Starting download of {model}...",
+    "description": "Download started",
+    "placeholders": {
+      "model": { "content": "$1" }
+    }
+  },
+  "failedStart": {
+    "message": "✗ Failed to start: {error}",
+    "description": "Failed to start download",
+    "placeholders": {
+      "error": { "content": "$1" }
+    }
+  },
+  "downloadComplete": {
+    "message": "✓ Download complete",
+    "description": "Download complete"
+  },
+  "downloadFailed": {
+    "message": "✗ Download failed: {error}",
+    "description": "Download failed",
+    "placeholders": {
+      "error": { "content": "$1" }
+    }
+  },
+  "unknownError": {
+    "message": "unknown error",
+    "description": "Generic unknown error"
+  },
+  "addFolderBeforeSave": {
+    "message": "Please add at least one folder/label before saving. Use \"Load Folders from Mail Account\" or add custom labels.",
+    "description": "Error when saving without folders"
+  },
+  "addGeminiKeyBeforeSave": {
+    "message": "Please add at least one Gemini API key before saving.",
+    "description": "Error when saving without Gemini key"
+  },
+  "duplicateApiKeys": {
+    "message": "⚠️ Duplicate API keys detected! Each key must be unique. Please remove duplicates before saving.",
+    "description": "Error for duplicate Gemini keys"
+  },
+  "settingsSavedMultiKey": {
+    "message": "✓ Settings saved successfully! Multiple Gemini API keys configured for automatic rotation.",
+    "description": "Success for multi-key save"
+  },
+  "enterOllamaModel": {
+    "message": "Please enter a custom model name for Ollama.",
+    "description": "Error when saving without Ollama model"
+  },
+  "settingsSavedOllama": {
+    "message": "✓ Settings saved successfully! Ollama is configured for local email processing{cpuMode}.",
+    "description": "Success for Ollama save",
+    "placeholders": {
+      "cpuMode": { "content": "$1" }
+    }
+  },
+  "enterCustomBaseUrl": {
+    "message": "Please enter a base URL for the custom endpoint.",
+    "description": "Error when saving without base URL"
+  },
+  "enterCustomModel": {
+    "message": "Please select or enter a model name for the custom endpoint.",
+    "description": "Error when saving without model"
+  },
+  "settingsSavedCustomEndpoint": {
+    "message": "✓ Settings saved successfully! Custom OpenAI-compatible endpoint configured.",
+    "description": "Success for custom endpoint save"
+  },
+  "enterApiKeyBeforeSave": {
+    "message": "Please enter your API key before saving. Click \"Get API Key\" to obtain one.",
+    "description": "Error when saving without API key"
+  },
+  "settingsSavedSuccess": {
+    "message": "✓ Settings saved successfully! You can now use AutoSort+ to analyze emails.",
+    "description": "Success for generic save"
+  },
+  "errorSavingSettings": {
+    "message": "Error saving settings: {error}",
+    "description": "Error saving settings",
+    "placeholders": {
+      "error": { "content": "$1" }
+    }
+  },
+  "clearHistoryConfirm": {
+    "message": "Are you sure you want to clear the move history?",
+    "description": "Confirm for clearing history"
+  },
+  "batchPausedChunk": {
+    "message": "⏸ Paused — chunk {current}/{total} ({done}/{totalItems})",
+    "description": "Batch paused with chunks",
+    "placeholders": {
+      "current": { "content": "$1" },
+      "total": { "content": "$2" },
+      "done": { "content": "$3" },
+      "totalItems": { "content": "$4" }
+    }
+  },
+  "batchPausedSimple": {
+    "message": "⏸ Paused ({done}/{totalItems})",
+    "description": "Batch paused simple",
+    "placeholders": {
+      "done": { "content": "$1" },
+      "totalItems": { "content": "$2" }
+    }
+  },
+  "batchDone": {
+    "message": "✅ Done — sorted: {completed}, skipped: {skipped}, failed: {failed}",
+    "description": "Batch done",
+    "placeholders": {
+      "completed": { "content": "$1" },
+      "skipped": { "content": "$2" },
+      "failed": { "content": "$3" }
+    }
+  },
+  "batchCancelledChunk": {
+    "message": "⏹ Cancelled after chunk {current}/{total}",
+    "description": "Batch cancelled after chunk",
+    "placeholders": {
+      "current": { "content": "$1" },
+      "total": { "content": "$2" }
+    }
+  },
+  "batchCancelledSimple": {
+    "message": "⏹ Cancelled ({done}/{totalItems})",
+    "description": "Batch cancelled simple",
+    "placeholders": {
+      "done": { "content": "$1" },
+      "totalItems": { "content": "$2" }
+    }
+  },
+  "batchRunningChunk": {
+    "message": "Chunk {current}/{total} — {done}/{totalItems} (sorted: {completed}, failed: {failed})",
+    "description": "Batch running with chunks",
+    "placeholders": {
+      "current": { "content": "$1" },
+      "total": { "content": "$2" },
+      "done": { "content": "$3" },
+      "totalItems": { "content": "$4" },
+      "completed": { "content": "$5" },
+      "failed": { "content": "$6" }
+    }
+  },
+  "batchRunningSimple": {
+    "message": "{done}/{totalItems} (sorted: {completed}, failed: {failed})",
+    "description": "Batch running simple",
+    "placeholders": {
+      "done": { "content": "$1" },
+      "totalItems": { "content": "$2" },
+      "completed": { "content": "$3" },
+      "failed": { "content": "$4" }
+    }
+  },
+  "batchPausing": {
+    "message": "⏸ Pausing… current request will finish first.",
+    "description": "Batch pausing message"
+  },
+  "batchCancelConfirm": {
+    "message": "Cancel the current batch? Already-sorted emails will not be undone.",
+    "description": "Confirm for cancelling batch"
+  },
+  "batchCancelling": {
+    "message": "⏹ Cancelling… current request will finish first.",
+    "description": "Batch cancelling message"
+  },
+  "debugEnabled": {
+    "message": "✓ Debug mode enabled. Open Thunderbird Developer Tools (Ctrl+Shift+I) to view logs.",
+    "description": "Debug mode enabled"
+  },
+  "debugDisabled": {
+    "message": "✓ Debug mode disabled.",
+    "description": "Debug mode disabled"
+  },
+  "promptCleared": {
+    "message": "Custom prompt cleared. Default prompt will be used.",
+    "description": "Prompt cleared"
+  },
+  "accuracyTitle": { "message": "📈 Classification Accuracy", "description": "Accuracy stats panel title" },
+  "overallAccuracy": { "message": "Overall Accuracy:", "description": "Overall accuracy label" },
+  "totalProcessed": { "message": "Total Processed:", "description": "Total processed count" },
+  "corrections": { "message": "Corrections:", "description": "Corrections count" },
+  "refreshAccuracy": { "message": "Refresh", "description": "Refresh accuracy button" },
+  "etaMinutes": { "message": "~{minutes} min remaining", "description": "ETA in minutes", "placeholders": { "minutes": { "content": "$1" } } },
+  "etaSeconds": { "message": "~{seconds} sec remaining", "description": "ETA in seconds", "placeholders": { "seconds": { "content": "$1" } } },
+  "etaAlmostDone": { "message": "Almost done...", "description": "ETA when nearly complete" }
+}

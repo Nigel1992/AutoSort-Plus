@@ -128,7 +128,7 @@ Choose from **5 leading cloud AI providers** or run a **local Ollama** model:
 ```bash
 git clone https://github.com/Nigel1992/AutoSort-Plus.git
 cd AutoSort-Plus
-zip -r autosortplus.xpi manifest.json background.js options.js options.html styles.css content.js icons/
+zip -r autosortplus.xpi manifest.json background.js options.js options.html styles.css content.js icons/ js/ _locales/
 ```
 
 <div align="center">
@@ -562,9 +562,9 @@ You can also manually label emails without AI analysis:
 <th>Status</th>
 </tr>
 <tr>
-<td>🔴 High</td>
+<td>🟢 Done</td>
 <td><strong>Detailed Logging</strong> - Debug mode with console output</td>
-<td>📋 Planned</td>
+<td>✅ Completed</td>
 </tr>
 <tr>
 <td>🔴 High</td>

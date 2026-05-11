@@ -1,54 +1,57 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "AutoSort+",
-  "version": "1.2.3.3",
-  "description": "Automatically sort and label your emails with custom rules using AI",
+  "version": "1.3.0",
+  "description": "__MSG_extensionDescription__",
   "author": "Nigel Hagen",
+  "default_locale": "en",
   "applications": {
     "gecko": {
       "id": "autosortplus@nigelhagen.com",
-      "strict_min_version": "78.0"
+      "strict_min_version": "128.0"
     }
   },
   "permissions": [
-    "messagesRead",
-    "messagesModify",
-    "accountsRead",
-    "storage",
-    "menus",
-    "tabs",
-    "messagesMove",
-    "messagesRead",
-    "activeTab",
+    "messagesRead", "messagesModify", "accountsRead",
+    "storage", "menus", "tabs", "messagesMove",
+    "activeTab", "scripting", "notifications"
+  ],
+  "host_permissions": [
     "https://generativelanguage.googleapis.com/*",
-    "http://localhost/*",
-    "http://127.0.0.1/*"
+    "http://localhost/*", "http://127.0.0.1/*"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": [
+      "src/utils/logger.js", "src/utils/i18n.js",
+      "src/utils/toast.js", "src/utils/tab-fetch.js",
+      "src/utils/concurrency.js",
+      "src/providers/base.js", "src/providers/gemini.js",
+      "src/providers/openai.js", "src/providers/anthropic.js",
+      "src/providers/groq.js", "src/providers/mistral.js",
+      "src/providers/ollama.js", "src/providers/openai-compat.js",
+      "src/providers/index.js",
+      "src/features/email-extractor.js",
+      "src/features/label-match.js", "src/features/prompt-builder.js",
+      "src/features/learning.js",
+      "src/core/storage.js", "src/core/notification.js",
+      "src/core/auto-sort.js", "src/core/engine.js",
+      "background.js"
+    ]
   },
-  "content_scripts": [
-    {
-      "matches": ["*://*/*"],
-      "js": ["content.js"]
-    }
-  ],
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
   },
-  "browser_action": {
+  "action": {
     "default_icon": "icons/icon-48.png",
-    "default_title": "AutoSort+ Settings"
+    "default_title": "__MSG_extensionDefaultTitle__"
   },
   "icons": {
     "48": "icons/icon-48.png",
     "96": "icons/icon-96.png"
   },
-  "web_accessible_resources": [
-    "api_ollama/index.html",
-    "api_ollama/ollama-popup.js",
-    "js/ollama.js",
-    "js/workers/ollama-worker.js"
-  ]
-} 
+  "web_accessible_resources": [{
+    "resources": ["src/utils/injected-fetch.js"],
+    "matches": ["*://localhost/*", "*://127.0.0.1/*"]
+  }]
+}
