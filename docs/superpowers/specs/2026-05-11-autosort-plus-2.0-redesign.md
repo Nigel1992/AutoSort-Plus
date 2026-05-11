@@ -67,8 +67,8 @@ src/
     email-extractor.js           ← 邮件内容提取（subject/author/body/attachments）
 
   utils/
-    tab-fetch.js                 ← Tab 注入 fetch（func+args 模式 + files 模式，统一封装）
-    injected-stream-fetch.js     ← 注入到 tab 中执行流式请求的脚本（Ollama pull 用）
+    tab-fetch.js                 ← Tab 注入 fetch（files + runtime.sendMessage 统一封装）
+    injected-fetch.js            ← 注入到 tab 中执行的 fetch 脚本（非流式 + 流式统一处理）
     concurrency.js               ← 并发控制（processWithConcurrency）
     logger.js                    ← DebugLogger（从现有迁移）
     toast.js                     ← Toast 通知组件（替代 showMessage/alert）
@@ -241,57 +241,24 @@ options 页面初始化顺序：
 
 这是最关键的架构变更。当前 Ollama/OpenAI-compatible 使用 `tabs.executeScript(tabId, {code: "..."})` 注入 JS 字符串，MV3 已不支持。
 
-**Context7 验证后采用双模式方案：**
+**统一方案：`scripting.executeScript({files: [...]})` + `runtime.sendMessage` 回传**
 
-**模式 A：`func` + `args`（简单请求，首选）**
-
-适用于 chat completions 等非流式请求。优势：返回值直接通过 Promise resolve 获得，无需 polling。
+所有场景（非流式请求 + 流式请求）均使用同一模式，无需区分。
 
 ```javascript
 // src/utils/tab-fetch.js (MV3)
-// 这个函数会被序列化到目标 tab 中执行
-async function doTabFetch(endpoint, headers, body) {
-    const response = await fetch(window.location.origin + endpoint, {
-        method: 'POST', headers, body: JSON.stringify(body)
-    });
-    const data = await response.json();
-    return { ok: response.ok, data, status: response.status };
-}
-
 async function fetchViaTab(baseUrl, options) {
     const tab = await messenger.tabs.create({ url: baseUrl, active: false });
-    try {
-        await new Promise(r => setTimeout(r, 500));
-        const results = await messenger.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: doTabFetch,
-            args: [options.endpoint, options.headers, options.body]
-        });
-        return results[0].result;  // 直接拿到返回值
-    } finally {
-        try { await messenger.tabs.remove(tab.id); } catch {}
-    }
-}
-```
+    const resultKey = `autosort_fetch_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
-**注意：** `func` 序列化会丢失闭包上下文，函数体内不能使用外部变量，所有参数必须通过 `args` 传入。
-
-**模式 B：`files` + `runtime.sendMessage`（流式请求）**
-
-适用于 Ollama pull 等需要流式读取 response body 的场景（`ReadableStream` 不可序列化，无法通过 `func` 返回值传递）。
-
-```javascript
-// src/utils/tab-fetch.js
-async function fetchStreamViaTab(baseUrl, options) {
-    const tab = await messenger.tabs.create({ url: baseUrl, active: false });
     return new Promise((resolve, reject) => {
         const timeout = setTimeout(() => {
             messenger.tabs.remove(tab.id).catch(() => {});
-            reject(new Error('Stream fetch timeout (30s)'));
+            reject(new Error('Tab fetch timeout (30s)'));
         }, 30000);
 
-        const listener = (msg) => {
-            if (msg.action === options.resultKey) {
+        const listener = (msg, sender) => {
+            if (msg.action === resultKey) {
                 messenger.runtime.onMessage.removeListener(listener);
                 clearTimeout(timeout);
                 messenger.tabs.remove(tab.id).catch(() => {});
@@ -300,13 +267,101 @@ async function fetchStreamViaTab(baseUrl, options) {
         };
         messenger.runtime.onMessage.addListener(listener);
 
+        // 注入预置脚本，脚本内部通过 resultKey 回传结果
         messenger.scripting.executeScript({
             target: { tabId: tab.id },
-            files: [options.injectFile]  // e.g., "src/utils/injected-stream-fetch.js"
+            files: ["src/utils/injected-fetch.js"],
+            // 通过 args 注入配置（func 模式不适用，因为是 files 模式）
+            // 配置通过 window.__autosort_config 预先设置
+        }).catch(reject);
+
+        // files 模式无法直接传参数，需要先在 tab 中设置配置
+        // 使用 executeScript + func 先设置配置，再注入文件
+        messenger.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (cfg) => { window.__autosort_config = cfg; },
+            args: [{
+                baseUrl,
+                endpoint: options.endpoint,
+                headers: options.headers,
+                body: options.body,
+                resultKey,
+                stream: options.stream || false
+            }]
+        }).then(() => {
+            // 配置设置完成后，注入执行脚本
+            messenger.scripting.executeScript({
+                target: { tabId: tab.id },
+                files: ["src/utils/injected-fetch.js"]
+            }).catch(reject);
         }).catch(reject);
     });
 }
+
+// src/utils/injected-fetch.js (注入到 tab 中执行)
+// 读取 window.__autosort_config，执行 fetch，通过 runtime.sendMessage 回传
+(async () => {
+    const cfg = window.__autosort_config;
+    if (!cfg) {
+        messenger.runtime.sendMessage({
+            action: cfg?.resultKey,
+            result: { ok: false, error: 'No config found' }
+        });
+        return;
+    }
+
+    try {
+        const response = await fetch(cfg.baseUrl + cfg.endpoint, {
+            method: 'POST',
+            headers: cfg.headers,
+            body: JSON.stringify(cfg.body)
+        });
+
+        if (cfg.stream) {
+            // 流式：逐行读取，通过 sendMessage 推送
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = '';
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop();
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    messenger.runtime.sendMessage({
+                        action: cfg.resultKey,
+                        result: { ok: true, streamLine: line }
+                    });
+                }
+            }
+            messenger.runtime.sendMessage({
+                action: cfg.resultKey,
+                result: { ok: true, streamDone: true }
+            });
+        } else {
+            // 非流式：直接返回
+            const data = await response.json();
+            messenger.runtime.sendMessage({
+                action: cfg.resultKey,
+                result: { ok: response.ok, data, status: response.status }
+            });
+        }
+    } catch (e) {
+        messenger.runtime.sendMessage({
+            action: cfg.resultKey,
+            result: { ok: false, error: e.message }
+        });
+    }
+})();
 ```
+
+**关键设计：**
+1. 先通过 `func` + `args` 设置配置到 `window.__autosort_config`
+2. 再通过 `files` 注入执行脚本
+3. 执行脚本读取配置，执行 fetch，通过 `runtime.sendMessage` 回传
+4. 流式和非流式由同一个注入脚本处理（通过 `cfg.stream` 区分）
 
 ### 3.4 mailTabs.query 变更确认
 
