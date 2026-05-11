@@ -41,8 +41,8 @@ function extractBodyText(parts) {
     if (part.contentType === 'text/plain') {
       text += part.body + '\n';
     } else if (part.contentType === 'text/html' && !text) {
-      // Strip HTML tags (simplified — in prod, Thunderbird uses convertToPlainText)
-      text += part.body.replace(/<[^>]*>/g, '') + '\n';
+      // Replace, not append — matches production background.js L113
+      text = part.body.replace(/<[^>]*>/g, '') + '\n';
     } else if (part.contentType === 'message/rfc822' && part.body) {
       text += part.body + '\n';
     }
@@ -110,6 +110,29 @@ describe('body extraction', () => {
     const msg = createNestedPartsMessage();
     const body = extractBodyText(msg.parts);
     assert.ok(body.includes('Plain text body'));
+  });
+
+  it('returns empty string when parts is null', () => {
+    const msg = { headers: { Subject: ['Test'], From: ['a@b.com'] }, body: 'Direct body fallback', parts: null };
+    const body = extractBodyText(msg.parts);
+    // When parts is null, extractBodyText returns '', and the caller
+    // (background.js L120) falls back to fullMessage.body.
+    // The test covers the extractBodyText null guard only.
+    assert.strictEqual(body, '');
+  });
+
+  it('handles message/rfc822 parts', () => {
+    const msg = createFullMessage({
+      parts: [
+        {
+          partID: 0,
+          contentType: 'message/rfc822',
+          body: 'Forwarded email content'
+        }
+      ]
+    });
+    const body = extractBodyText(msg.parts);
+    assert.ok(body.includes('Forwarded email content'));
   });
 });
 
