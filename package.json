@@ -1,0 +1,11 @@
+{
+  "name": "autosort-plus",
+  "version": "1.2.3",
+  "description": "Thunderbird extension for AI-powered email sorting",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/unit/**/*.test.js",
+    "test:integration": "node --test test/integration/**/*.test.js",
+    "test:all": "node --test test/unit/**/*.test.js test/integration/**/*.test.js"
+  }
+}
