@@ -175,6 +175,25 @@
                 </div>
             </div>
 
+            <!-- Accuracy Panel -->
+            <div class="subsection ai-info-subsection" id="accuracy-subsection">
+                <h3 data-i18n="accuracyTitle">📈 Classification Accuracy</h3>
+                <div id="accuracy-stats">
+                    <div class="accuracy-overview">
+                        <span class="accuracy-label" data-i18n="overallAccuracy">Overall Accuracy:</span>
+                        <span class="accuracy-value" id="accuracy-value">--%</span>
+                    </div>
+                    <div class="accuracy-details">
+                        <span data-i18n="totalProcessed">Total Processed:</span> <span id="accuracy-total">0</span>
+                        <span data-i18n="corrections">Corrections:</span> <span id="accuracy-corrections">0</span>
+                    </div>
+                    <div id="accuracy-by-label" class="accuracy-by-label"></div>
+                </div>
+                <div class="button-group">
+                    <button id="refresh-accuracy" class="button" data-i18n="refreshAccuracy">Refresh</button>
+                </div>
+            </div>
+
             <!-- Gemini API Usage -->
             <div class="subsection" id="gemini-usage-subsection" style="display: none;">
                 <h3 data-i18n="geminiUsageTitle">📊 Gemini API Usage</h3>
@@ -331,6 +350,7 @@
 <script src="options/modules/folder-manager.js"></script>
 <script src="options/modules/history-panel.js"></script>
 <script src="options/modules/batch-panel.js"></script>
+<script src="options/modules/accuracy-panel.js"></script>
 <script src="options/modules/save-handler.js"></script>
 <script src="options/options.js"></script>
 </body>

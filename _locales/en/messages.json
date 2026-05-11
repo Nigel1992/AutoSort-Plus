@@ -1258,5 +1258,10 @@
   "promptCleared": {
     "message": "Custom prompt cleared. Default prompt will be used.",
     "description": "Prompt cleared"
-  }
+  },
+  "accuracyTitle": { "message": "📈 Classification Accuracy", "description": "Accuracy stats panel title" },
+  "overallAccuracy": { "message": "Overall Accuracy:", "description": "Overall accuracy label" },
+  "totalProcessed": { "message": "Total Processed:", "description": "Total processed count" },
+  "corrections": { "message": "Corrections:", "description": "Corrections count" },
+  "refreshAccuracy": { "message": "Refresh", "description": "Refresh accuracy button" }
 }

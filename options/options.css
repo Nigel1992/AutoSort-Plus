@@ -932,3 +932,12 @@ input[type="checkbox"] {
     resize: vertical;
     margin-bottom: 10px;
 }
+
+/* ── Accuracy Stats Panel ──────────────────────────────────────────────── */
+
+.accuracy-overview { font-size: 1.2em; margin-bottom: 10px; }
+.accuracy-value { font-weight: bold; font-size: 1.3em; }
+.accuracy-details { color: #666; margin-bottom: 10px; }
+.label-stat-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; }
+.label-stat-name { font-weight: 500; }
+.label-stat-accuracy { color: #666; }

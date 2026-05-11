@@ -124,6 +124,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   modules.folderManager = new FolderManager();
   modules.historyPanel = new HistoryPanel();
   modules.batchPanel = new BatchPanel();
+  modules.accuracyPanel = new AccuracyPanel();
   modules.saveHandler = new SaveHandler(modules);
   modules.saveHandler.bindSaveButton();
 

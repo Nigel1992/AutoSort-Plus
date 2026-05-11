@@ -1258,5 +1258,10 @@
   "promptCleared": {
     "message": "自定义提示词已清除。将使用默认提示词。",
     "description": "提示词已清除"
-  }
+  },
+  "accuracyTitle": { "message": "📈 分类准确率", "description": "准确率面板标题" },
+  "overallAccuracy": { "message": "总体准确率：", "description": "总体准确率标签" },
+  "totalProcessed": { "message": "总处理：", "description": "总处理数" },
+  "corrections": { "message": "修正：", "description": "修正数" },
+  "refreshAccuracy": { "message": "刷新", "description": "刷新准确率按钮" }
 }
