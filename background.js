@@ -68,6 +68,55 @@ browser.browserAction.onClicked.addListener(() => {
 registerAutoSortListener();
 
 // ─────────────────────────────────────────────────────────────────────────────
+// LEVENSHTEIN FUZZY MATCHING
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Calculate Levenshtein edit distance between two strings.
+ */
+function levenshteinDistance(a, b) {
+    const m = a.length, n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+
+    const dp = Array.from({ length: m + 1 }, () => new Uint16Array(n + 1));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+
+    for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+            dp[i][j] = a[i - 1] === b[j - 1]
+                ? dp[i - 1][j - 1]
+                : 1 + Math.min(dp[i - 1][j - 1], dp[i][j - 1], dp[i - 1][j]);
+        }
+    }
+    return dp[m][n];
+}
+
+/**
+ * Find the best fuzzy-matching label using Levenshtein distance.
+ * Returns the matched label if edit distance ratio <= threshold, else null.
+ */
+function findBestFuzzyMatch(input, candidates, threshold = 0.3) {
+    const lower = input.toLowerCase();
+    let bestMatch = null;
+    let bestRatio = Infinity;
+
+    for (const candidate of candidates) {
+        const candidateLower = candidate.toLowerCase();
+        const dist = levenshteinDistance(lower, candidateLower);
+        const maxLen = Math.max(lower.length, candidateLower.length);
+        const ratio = maxLen === 0 ? 0 : dist / maxLen;
+
+        if (ratio <= threshold && ratio < bestRatio) {
+            bestRatio = ratio;
+            bestMatch = candidate;
+        }
+    }
+    return bestMatch;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // EMAIL CONTEXT EXTRACTION
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1480,6 +1529,14 @@ async function analyzeEmailContent(emailContent, emailContext = null) {
         let matched = settings.labels.find(l => l.toLowerCase() === lower);
         if (!matched) {
             matched = settings.labels.find(l => lower.includes(l.toLowerCase()) || l.toLowerCase().includes(lower));
+        }
+
+        // Fallback: fuzzy match using Levenshtein distance
+        if (!matched) {
+            matched = findBestFuzzyMatch(label, settings.labels);
+            if (matched && window.debugLogger) {
+                window.debugLogger.info('[AutoSort+]', `Fuzzy matched "${label}" to "${matched}" via Levenshtein`);
+            }
         }
 
         if (matched) {
