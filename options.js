@@ -624,7 +624,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
-    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'customBaseUrl', 'customModel', 'debugMode', 'batchChunkSize', 'autoSortEnabled', 'customPrompt']).then(result => {
+    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'customBaseUrl', 'customModel', 'debugMode', 'batchChunkSize', 'autoSortEnabled', 'autoSortNotifyOnComplete', 'customPrompt']).then(result => {
         // Migration: default autoSortEnabled to true for users upgrading from older versions
         if (result.autoSortEnabled === undefined) {
             browser.storage.local.set({ autoSortEnabled: true }).catch(() => {});
@@ -710,6 +710,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         const autoSortCheckbox = document.getElementById('enable-auto-sort');
         if (autoSortCheckbox) {
             autoSortCheckbox.checked = result.autoSortEnabled === true;
+        }
+
+        const autoSortNotifyCheckbox = document.getElementById('auto-sort-notify');
+        if (autoSortNotifyCheckbox) {
+            autoSortNotifyCheckbox.checked = result.autoSortNotifyOnComplete === true;
         }
 
         const customPromptTextarea = document.getElementById('custom-prompt-text');
@@ -1422,6 +1427,9 @@ document.addEventListener('DOMContentLoaded', async function() {
         const autoSortCheckbox = document.getElementById('enable-auto-sort');
         const autoSortEnabled = autoSortCheckbox ? autoSortCheckbox.checked : false;
 
+        const autoSortNotifyCheckbox = document.getElementById('auto-sort-notify');
+        const autoSortNotifyOnComplete = autoSortNotifyCheckbox ? autoSortNotifyCheckbox.checked : false;
+
         const customPromptTextarea = document.getElementById('custom-prompt-text');
         const customPrompt = customPromptTextarea ? customPromptTextarea.value.trim() : '';
 
@@ -1454,6 +1462,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false,
                 batchChunkSize: batchChunkSize,
                 autoSortEnabled: autoSortEnabled,
+                autoSortNotifyOnComplete: autoSortNotifyOnComplete,
                 customPrompt: customPrompt
             };
 
@@ -1496,6 +1505,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false,
                 batchChunkSize: batchChunkSize,
                 autoSortEnabled: autoSortEnabled,
+                autoSortNotifyOnComplete: autoSortNotifyOnComplete,
                 customPrompt: customPrompt
             };
 
@@ -1535,6 +1545,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false,
                 batchChunkSize: batchChunkSize,
                 autoSortEnabled: autoSortEnabled,
+                autoSortNotifyOnComplete: autoSortNotifyOnComplete,
                 customPrompt: customPrompt
             };
 
@@ -1559,6 +1570,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 debugMode: enableDebugCheckbox ? enableDebugCheckbox.checked : false,
                 batchChunkSize: batchChunkSize,
                 autoSortEnabled: autoSortEnabled,
+                autoSortNotifyOnComplete: autoSortNotifyOnComplete,
                 customPrompt: customPrompt
             };
 

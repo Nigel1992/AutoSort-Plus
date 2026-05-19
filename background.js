@@ -151,22 +151,54 @@ async function extractEmailContext(fullMessage, messageHeader) {
     }
     if (fullMessage.parts) await collectAttachments(fullMessage.parts);
 
+    async function decodeBody(body, encoding) {
+        if (!body) return '';
+        try {
+            if (encoding === 'base64') return atob(body);
+            if (encoding === 'quoted-printable') return browser.messengerUtilities.decodeQP(body);
+        } catch (e) {
+            console.warn('[MIME] decodeBody failed:', e.message);
+        }
+        return body;
+    }
+
+    function stripHtmlTags(html) {
+        let text = html.replace(/<(style|script)[^>]*>[\s\S]*?<\/\1>/gi, '');
+        text = text.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<\/div>/gi, '\n');
+        text = text.replace(/<[^>]+>/g, '');
+        text = text.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+        const signatureMarkers = ['-- \n', 'Sent from my iPhone', 'Get Outlook for', '________________________________', 'Sent from my Samsung device', 'Envoyé depuis mon appareil'];
+        for (const marker of signatureMarkers) {
+            const idx = text.indexOf(marker);
+            if (idx > 50 && idx < Math.floor(text.length * 0.6)) text = text.substring(0, idx);
+        }
+        return text.trim().substring(0, 1500);
+    }
+
     async function extractBodyText(parts) {
         if (!parts) return '';
-        let text = '';
+        let plainText = '';
+        let htmlText = '';
         for (const part of parts) {
-            if (part.parts) text += await extractBodyText(part.parts);
-            if (part.contentType === 'text/plain') {
-                text += part.body + '\n';
-            } else if (part.contentType === 'text/html' && !text) {
-                text = await browser.messengerUtilities.convertToPlainText(part.body);
+            if (part.parts) {
+                const subResult = await extractBodyText(part.parts);
+                if (subResult.isPlain) plainText += subResult.text;
+                else if (subResult.isHtml) htmlText += subResult.text;
+                else plainText += subResult.text;
+            } else if (part.contentType === 'text/plain' && part.body) {
+                plainText += decodeBody(part.body, part.encoding) + '\n';
+            } else if (part.contentType === 'text/html' && part.body && !plainText) {
+                htmlText = stripHtmlTags(decodeBody(part.body, part.encoding));
             } else if (part.contentType === 'message/rfc822' && part.body) {
-                text += part.body + '\n';
+                plainText += part.body + '\n';
             }
         }
-        return text;
+        const text = plainText || htmlText;
+        return { text: text.substring(0, 1500), isPlain: !!plainText, isHtml: !!htmlText && !plainText };
     }
-    const body = fullMessage.parts ? await extractBodyText(fullMessage.parts) : (fullMessage.body || '');
+
+    const bodyResult = fullMessage.parts ? await extractBodyText(fullMessage.parts) : { text: fullMessage.body || '', isPlain: true, isHtml: false };
+    const body = typeof bodyResult === 'string' ? bodyResult : bodyResult.text;
 
     return {
         subject,
@@ -195,30 +227,111 @@ const DEFAULT_PROMPT = `You are an email classification assistant. Analyze this 
 
 Consider the subject line, sender context, attachment filenames, and body content to determine the most appropriate category. Respond with only the exact label name, or "null" if no label fits well.`;
 
-// Ollama handling using tab injection (runs fetch in browser context)
+/** Select the appropriate API key for the given provider. */
+function resolveApiKey(settings, provider, keyIndex) {
+    if (provider === 'gemini') {
+        if (settings.geminiApiKeys?.length > 0) {
+            const idx = keyIndex ?? settings.currentGeminiKeyIndex ?? 0;
+            if (window.debugLogger) window.debugLogger.info('[Gemini]', `Using API Key #${idx + 1} of ${settings.geminiApiKeys.length}`);
+            return settings.geminiApiKeys[idx];
+        }
+        return settings.apiKey; // legacy fallback
+    }
+    if (provider === 'ollama' || provider === 'openai-compatible') return null;
+    return settings.apiKey;
+}
+
+/** Build a prompt from template with placeholder injection. */
+function buildPrompt(template, settings, emailContent, emailContext) {
+    let prompt = template;
+    const labelsStr = settings.labels.join(', ');
+    const subject = emailContext?.subject || '';
+    const author = emailContext?.author || '';
+    const attachmentsStr = emailContext?.attachments?.length > 0 ? emailContext.attachments.map(a => a.name).join(', ') : '(none)';
+    const body = emailContent;
+
+    function injectPlaceholder(placeholder, value, fallbackPrefix, fallbackPosition = 'start') {
+        if (!prompt.includes(placeholder)) {
+            if (window.debugLogger) window.debugLogger.warn('[AutoSort]', `Custom prompt missing ${placeholder} placeholder - injecting`);
+            prompt = fallbackPosition === 'start'
+                ? `${fallbackPrefix}${value}\n\n${prompt}`
+                : `${prompt}\n\n${fallbackPrefix}${value}`;
+        } else {
+            prompt = prompt.replace(placeholder, value);
+        }
+    }
+
+    injectPlaceholder('{labels}', labelsStr, 'Labels: ', 'start');
+    injectPlaceholder('{subject}', subject, 'Subject: ', 'start');
+    injectPlaceholder('{author}', author, 'From: ', 'start');
+    injectPlaceholder('{attachments}', attachmentsStr, 'Attachments: ', 'start');
+
+    if (prompt.includes('{body}')) {
+        prompt = prompt.replace('{body}', body);
+    } else if (prompt.includes('{email}')) {
+        prompt = prompt.replace('{email}', body);
+    } else {
+        if (window.debugLogger) window.debugLogger.warn('[AutoSort]', 'Custom prompt missing {body} placeholder - appending');
+        prompt = `${prompt}\n\nEmail content:\n${body}`;
+    }
+    return prompt;
+}
+
+/** Extract text from provider response. Maps provider name → parser function. */
+const PROVIDER_PARSERS = {
+    gemini: data => data.candidates?.[0]?.content?.parts?.[0]?.text,
+    openai: data => data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? data.choices?.[0]?.delta?.content,
+    groq: data => data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? data.choices?.[0]?.delta?.content,
+    mistral: data => data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text ?? data.choices?.[0]?.delta?.content,
+    anthropic: data => data.content?.[0]?.text,
+    ollama: null, // handled separately
+    'openai-compatible': data => data.choices?.[0]?.message?.content ?? data.choices?.[0]?.text
+};
+
+const PROVIDER_NAMES = { GEMINI: 'gemini', OPENAI: 'openai', ANTHROPIC: 'anthropic', GROQ: 'groq', MISTRAL: 'mistral', OLLAMA: 'ollama', OPENAI_COMPATIBLE: 'openai-compatible' };
+
+/** Generic tab-based fetch: injects script, polls for result, closes tab. */
+async function fetchViaTab(tabUrl, scriptCode, resultVar, timeoutMs = 10000) {
+    const tab = await browser.tabs.create({ url: tabUrl, active: false });
+    try {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await browser.tabs.executeScript(tab.id, { code: scriptCode });
+
+        let result = null;
+        const pollInterval = 250;
+        const maxPolls = Math.ceil(timeoutMs / pollInterval);
+        for (let i = 0; i < maxPolls; i++) {
+            await new Promise(resolve => setTimeout(resolve, pollInterval));
+            try {
+                const results = await browser.tabs.executeScript(tab.id, {
+                    code: `window.${resultVar} || null`
+                });
+                if (results && results[0]) { result = results[0]; break; }
+            } catch (e) {
+                break; // tab closing
+            }
+        }
+
+        if (!result) throw new Error(`Request timed out (${timeoutMs}ms) - no response from API`);
+        if (!result.ok) throw new Error(result.error || 'API error');
+        return result.data;
+    } finally {
+        try { await browser.tabs.remove(tab.id); } catch (e) {
+            console.warn('[AutoSort+] Failed to close tab after fetch:', e.message);
+        }
+    }
+}
 
 async function ollamaChatViaTab(ollamaUrl, model, prompt, authToken, numCtx = 0) {
-    // Open a hidden tab at localhost to make the fetch (browser context, not restricted)
-    const tab = await browser.tabs.create({ url: ollamaUrl, active: false });
-
-    try {
-        // Wait for tab to load
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // Build the request headers
-        const headers = { 'Content-Type': 'application/json' };
-        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
-
-        // Build options object if numCtx is set
-        const optionsObj = numCtx > 0 ? { options: { num_ctx: parseInt(numCtx) } } : {};
-
-        // Inject code to make the fetch and store result
-        const scriptCode = `
+    const headers = { 'Content-Type': 'application/json' };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+    const optionsObj = numCtx > 0 ? { options: { num_ctx: parseInt(numCtx) } } : {};
+    const scriptCode = `
         (async () => {
             try {
-                const headers = ${JSON.stringify(headers)};
                 const response = await fetch(window.location.origin + '/api/chat', {
                     method: 'POST',
-                    headers,
+                    headers: ${JSON.stringify(headers)},
                     body: JSON.stringify({
                         model: ${JSON.stringify(model)},
                         messages: [{ role: 'user', content: ${JSON.stringify(prompt)} }],
@@ -226,132 +339,37 @@ async function ollamaChatViaTab(ollamaUrl, model, prompt, authToken, numCtx = 0)
                         ...${JSON.stringify(optionsObj)}
                     })
                 });
-                
-                if (!response.ok) {
-                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-                }
-                
-                const data = await response.json();
-                window.__ollama_result = { ok: true, data };
+                if (!response.ok) throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                window.__ollama_result = { ok: true, data: await response.json() };
             } catch (error) {
                 window.__ollama_result = { ok: false, error: error.message };
             }
-        })();
-        `;
-        
-        await browser.tabs.executeScript(tab.id, { code: scriptCode });
-        
-        // Wait for result (with polling to be safe)
-        let result = null;
-        for (let i = 0; i < 40; i++) { // 10 seconds max (250ms intervals)
-            await new Promise(resolve => setTimeout(resolve, 250));
-            
-            try {
-                const results = await browser.tabs.executeScript(tab.id, { 
-                    code: 'window.__ollama_result || null' 
-                });
-                if (results && results[0]) {
-                    result = results[0];
-                    break;
-                }
-            } catch (e) {
-                // Tab might be closing
-                break;
-            }
-        }
-        
-        if (!result) {
-            throw new Error('Ollama request timed out (30s) - no response from API');
-        }
-        
-        if (!result.ok) {
-            throw new Error(result.error || 'Ollama API error');
-        }
-        
-        return result.data;
-
-    } finally {
-        // Close the tab
-        try { await browser.tabs.remove(tab.id); } catch (e) { console.warn('[AutoSort+] Failed to close tab after Ollama fetch:', e.message); }
-    }
+        })();`;
+    return fetchViaTab(ollamaUrl, scriptCode, '__ollama_result');
 }
 
 async function openaiCompatibleChatViaTab(baseUrl, model, prompt, apiKey) {
-    // Open a hidden tab at the endpoint URL to make the fetch (browser context, not restricted)
-    const tab = await browser.tabs.create({ url: baseUrl, active: false });
-
-    try {
-        // Wait for tab to load
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // Build the request headers
-        const headers = { 'Content-Type': 'application/json' };
-        if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-
-        // Inject code to make the fetch using OpenAI-compatible format and store result
-        const scriptCode = `
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+    const scriptCode = `
         (async () => {
             try {
-                const headers = ${JSON.stringify(headers)};
                 const response = await fetch(window.location.origin + '/v1/chat/completions', {
                     method: 'POST',
-                    headers,
+                    headers: ${JSON.stringify(headers)},
                     body: JSON.stringify({
                         model: ${JSON.stringify(model)},
                         messages: [{ role: 'user', content: ${JSON.stringify(prompt)} }],
-                        max_tokens: 8192,
-                        temperature: 0.6,
-                        top_p: 0.95,
-                        stream: false
+                        max_tokens: 8192, temperature: 0.6, top_p: 0.95, stream: false
                     })
                 });
-
-                if (!response.ok) {
-                    throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-                }
-
-                const data = await response.json();
-                window.__openai_compat_result = { ok: true, data };
+                if (!response.ok) throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                window.__openai_compat_result = { ok: true, data: await response.json() };
             } catch (error) {
                 window.__openai_compat_result = { ok: false, error: error.message };
             }
-        })();
-        `;
-
-        await browser.tabs.executeScript(tab.id, { code: scriptCode });
-
-        // Wait for result (with polling to be safe)
-        let result = null;
-        for (let i = 0; i < 40; i++) { // 10 seconds max (250ms intervals)
-            await new Promise(resolve => setTimeout(resolve, 250));
-
-            try {
-                const results = await browser.tabs.executeScript(tab.id, {
-                    code: 'window.__openai_compat_result || null'
-                });
-                if (results && results[0]) {
-                    result = results[0];
-                    break;
-                }
-            } catch (e) {
-                // Tab might be closing
-                break;
-            }
-        }
-
-        if (!result) {
-            throw new Error('OpenAI-compatible request timed out (30s) - no response from API');
-        }
-
-        if (!result.ok) {
-            throw new Error(result.error || 'OpenAI-compatible API error');
-        }
-
-        return result.data;
-
-    } finally {
-        // Close the tab
-        try { await browser.tabs.remove(tab.id); } catch (e) { console.warn('[AutoSort+] Failed to close tab after OpenAI-compat fetch:', e.message); }
-    }
+        })();`;
+    return fetchViaTab(baseUrl, scriptCode, '__openai_compat_result');
 }
 
 async function callOllamaViaTab(ollamaUrl, payload) {
@@ -444,8 +462,12 @@ let _batchState = {
     totalChunks: 0
 };
 
+// Auto-sort pending queue: messages that failed due to rate limiting, awaiting retry
+let _autoSortPending = [];
+
 /** Reset batch state to defaults. */
 function _resetBatchState(total, provider) {
+    _lastBroadcast = null;
     _batchState = {
         running:   true,
         cancelled: false,
@@ -480,6 +502,7 @@ function _nextUtcMidnight() {
 }
 
 /** Broadcast current batch progress to any open options pages. */
+let _lastBroadcast = null;
 async function _broadcastBatchProgress(status = 'running') {
     const payload = {
         action:    'batchProgress',
@@ -492,14 +515,13 @@ async function _broadcastBatchProgress(status = 'running') {
         chunkIndex: _batchState.chunkIndex,
         totalChunks: _batchState.totalChunks
     };
-    try {
-        // Persist to storage so options page can pick it up on open
+    const stateKey = `${payload.completed}:${payload.failed}:${payload.skipped}:${payload.status}`;
+    // Skip redundant storage writes if state hasn't changed
+    if (stateKey !== _lastBroadcast) {
+        _lastBroadcast = stateKey;
         await browser.storage.local.set({ currentBatch: { ...payload, startTime: Date.now() } });
-        // Also send a live runtime message (options page may be open)
-        await browser.runtime.sendMessage(payload).catch(() => {});
-    } catch (e) {
-        // Ignore – options page may not be open
     }
+    await browser.runtime.sendMessage(payload).catch(() => {});
 }
 
 /**
@@ -531,7 +553,28 @@ async function batchAnalyzeEmails(messages) {
         window.debugLogger.info('[Batch]', `Starting batch: ${messages.length} emails, provider=${provider}, chunkSize=${chunkSize}`);
     }
 
-    // Process a single message with one retry on failure
+    // Process a single message with exponential-backoff retry on failure
+    async function executeWithRetry(fn, maxRetries = 3, baseDelay = 2000) {
+        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                return await fn();
+            } catch (error) {
+                const isRateLimit = error.message.includes('429') ||
+                    error.message.includes('RATE_LIMIT') ||
+                    error.message.includes('quota');
+                if (!isRateLimit) throw error; // non-429 errors fail fast
+
+                if (attempt === maxRetries) throw error; // exhausted retries
+
+                const delay = baseDelay * Math.pow(2, attempt) + Math.random() * 1000;
+                if (window.debugLogger) {
+                    window.debugLogger.warn('[Batch]', `Rate limited. Retry in ${Math.round(delay)}ms (attempt ${attempt + 1}/${maxRetries})`);
+                }
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    }
+
     async function processOne(message) {
         // Respect pause / cancel before starting
         if (_batchState.cancelled) return;
@@ -540,8 +583,8 @@ async function batchAnalyzeEmails(messages) {
             if (!resumed) return;
         }
 
-        for (let attempt = 1; attempt <= 2; attempt++) {
-            try {
+        try {
+            await executeWithRetry(async () => {
                 const fullMessage = await browser.messages.getFull(message.id);
                 if (!fullMessage) {
                     _batchState.skipped++;
@@ -564,20 +607,11 @@ async function batchAnalyzeEmails(messages) {
 
                 await applyLabelsToMessages([message], label);
                 _batchState.completed++;
-                return; // success
-
-            } catch (err) {
-                if (window.debugLogger) {
-                    window.debugLogger.warn('[Batch]', `Attempt ${attempt} failed for msg ${message.id}: ${err.message}`);
-                }
-                if (attempt === 2) {
-                    // Both attempts failed
-                    _batchState.failed++;
-                    console.error(`[Batch] Message ${message.id} failed after retry:`, err.message);
-                } else {
-                    // Brief pause before retry
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                }
+            });
+        } catch (err) {
+            _batchState.failed++;
+            if (window.debugLogger) {
+                window.debugLogger.warn('[Batch]', `Message ${message.id} failed: ${err.message}`);
             }
         }
     }
@@ -650,6 +684,16 @@ async function batchAnalyzeEmails(messages) {
 // Mutex for atomic rate limit operations
 let geminiRateLimitMutex = Promise.resolve();
 
+/** Record a Gemini request in rate-limit tracking and persist to storage. */
+async function _trackGeminiRequest(storageObj, rateLimit, waitTime, keyIndex) {
+    await browser.storage.local.set(storageObj);
+    if (window.debugLogger) {
+        const label = keyIndex !== null ? `Key #${keyIndex + 1}` : 'Single';
+        window.debugLogger.info('[RateLimit]', `Gemini ${label}: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
+    }
+    return { allowed: true, waitTime, keyIndex };
+}
+
 async function checkAndTrackGeminiRateLimit(keyIndex = null) {
     // Chain onto mutex for atomic operation; .catch() prevents permanent lockup
     return geminiRateLimitMutex = geminiRateLimitMutex.then(async () => {
@@ -677,64 +721,31 @@ async function checkAndTrackGeminiRateLimit(keyIndex = null) {
         }));
         let currentIndex = keyIndex ?? (data.currentGeminiKeyIndex || 0);
 
-        const startIndex = currentIndex;
         let attempts = 0;
 
         while (attempts < keys.length) {
-            const rateLimit = rateLimits[currentIndex];
+            const rl = rateLimits[currentIndex];
 
-            // Reset daily if expired — uses UTC midnight for consistent daily boundaries
-            if (now > rateLimit.dailyResetTime) {
-                rateLimit.dailyCount = 0;
-                rateLimit.dailyResetTime = _nextUtcMidnight();
-                rateLimit.requests = [];
+            if (now > rl.dailyResetTime) {
+                rl.dailyCount = 0;
+                rl.dailyResetTime = _nextUtcMidnight();
+                rl.requests = [];
             }
 
-            // Clean old requests
             const oneMinuteAgo = now - 60000;
-            rateLimit.requests = rateLimit.requests.filter(t => t > oneMinuteAgo);
+            rl.requests = rl.requests.filter(t => t > oneMinuteAgo);
 
-            // Check availability
-            if (rateLimit.dailyCount < 20) {
-                // Check if we need to wait
-                if (rateLimit.requests.length > 0) {
-                    const lastRequest = Math.max(...rateLimit.requests);
-                    const timeSinceLastRequest = now - lastRequest;
-                    const minInterval = 12000; // 12 seconds
-
-                    if (timeSinceLastRequest < minInterval) {
-                        const waitTime = Math.ceil((minInterval - timeSinceLastRequest) / 1000);
-                        // Track request now (with wait)
-                        rateLimit.requests.push(now);
-                        rateLimit.dailyCount += 1;
-
-                        await browser.storage.local.set({
-                            currentGeminiKeyIndex: currentIndex,
-                            geminiRateLimits: rateLimits
-                        });
-
-                        if (window.debugLogger) {
-                            window.debugLogger.info('[RateLimit]', `Gemini Key #${currentIndex + 1}: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
-                        }
-
-                        return { allowed: true, waitTime, keyIndex: currentIndex };
-                    }
+            if (rl.dailyCount < 20) {
+                let waitTime = 0;
+                if (rl.requests.length > 0) {
+                    const lastRequest = Math.max(...rl.requests);
+                    const gap = now - lastRequest;
+                    if (gap < 12000) waitTime = Math.ceil((12000 - gap) / 1000);
                 }
 
-                // Track request immediately
-                rateLimit.requests.push(now);
-                rateLimit.dailyCount += 1;
-
-                await browser.storage.local.set({
-                    currentGeminiKeyIndex: currentIndex,
-                    geminiRateLimits: rateLimits
-                });
-
-                if (window.debugLogger) {
-                    window.debugLogger.info('[RateLimit]', `Gemini Key #${currentIndex + 1}: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
-                }
-
-                return { allowed: true, waitTime: 0, keyIndex: currentIndex };
+                rl.requests.push(now);
+                rl.dailyCount += 1;
+                return _trackGeminiRequest({ currentGeminiKeyIndex: currentIndex, geminiRateLimits: rateLimits }, rateLimits[currentIndex], waitTime, currentIndex);
             }
 
             currentIndex = (currentIndex + 1) % keys.length;
@@ -749,63 +760,33 @@ async function checkAndTrackGeminiRateLimit(keyIndex = null) {
 
     // Legacy single-key mode
     const utcReset = _nextUtcMidnight();
-    const rateLimit = data.geminiRateLimit || {
-        requests: [],
-        dailyCount: 0,
-        dailyResetTime: utcReset
-    };
+    const rl = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: utcReset };
 
-    // Reset daily if expired — uses UTC midnight for consistent daily boundaries
-    if (now > rateLimit.dailyResetTime) {
-        rateLimit.dailyCount = 0;
-        rateLimit.dailyResetTime = utcReset;
-        rateLimit.requests = [];
+    if (now > rl.dailyResetTime) {
+        rl.dailyCount = 0;
+        rl.dailyResetTime = utcReset;
+        rl.requests = [];
     }
 
-    // Check daily limit
-    if (rateLimit.dailyCount >= 20) {
-        const hoursUntilReset = Math.ceil((rateLimit.dailyResetTime - now) / (1000 * 60 * 60));
+    if (rl.dailyCount >= 20) {
+        const hoursUntilReset = Math.ceil((rl.dailyResetTime - now) / (1000 * 60 * 60));
         return {
             allowed: false,
             message: `Gemini free tier daily limit reached (20/day). Resets in ${hoursUntilReset} hours. Upgrade to paid plan or add multiple API keys in settings to remove limits.`
         };
     }
 
-    // Clean old requests
     const oneMinuteAgo = now - 60000;
-    rateLimit.requests = rateLimit.requests.filter(t => t > oneMinuteAgo);
+    rl.requests = rl.requests.filter(t => t > oneMinuteAgo);
 
-    // Check if need to wait
-    if (rateLimit.requests.length > 0) {
-        const lastRequest = Math.max(...rateLimit.requests);
-        const timeSinceLastRequest = now - lastRequest;
-        const minInterval = 12000;
-
-        if (timeSinceLastRequest < minInterval) {
-            const waitTime = Math.ceil((minInterval - timeSinceLastRequest) / 1000);
-            // Track now (with wait)
-            rateLimit.requests.push(now);
-            rateLimit.dailyCount += 1;
-            await browser.storage.local.set({ geminiRateLimit: rateLimit });
-
-            if (window.debugLogger) {
-                window.debugLogger.info('[RateLimit]', `Gemini requests: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
-            }
-
-            return { allowed: true, waitTime, keyIndex: null };
-        }
+    let waitTime = 0;
+    if (rl.requests.length > 0 && (now - Math.max(...rl.requests)) < 12000) {
+        waitTime = Math.ceil((12000 - (now - Math.max(...rl.requests))) / 1000);
     }
 
-    // Track request
-    rateLimit.requests.push(now);
-    rateLimit.dailyCount += 1;
-    await browser.storage.local.set({ geminiRateLimit: rateLimit });
-
-    if (window.debugLogger) {
-        window.debugLogger.info('[RateLimit]', `Gemini requests: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
-    }
-
-    return { allowed: true, waitTime: 0, keyIndex: null };
+    rl.requests.push(now);
+    rl.dailyCount += 1;
+    return _trackGeminiRequest({ geminiRateLimit: rl }, rl, waitTime, null);
     }).catch(err => {
         console.error('[RateLimit] Mutex error, resetting lock:', err.message);
         geminiRateLimitMutex = Promise.resolve();
@@ -1429,80 +1410,39 @@ async function analyzeEmailContent(emailContent, emailContext = null) {
         // Parse the response based on provider
         let label = null;
 
-        const tryTrim = v => {
-            try {
-                return (v || '').toString().trim();
-            } catch (e) {
-                return null;
-            }
-        };
+        const tryTrim = v => { try { return (v || '').toString().trim() || null; } catch (e) { return null; } };
 
-        if (provider === 'gemini') {
-            if (data.candidates && data.candidates.length > 0) {
-                const candidate = data.candidates[0];
-                if (candidate.finishReason === "MAX_TOKENS") {
-                    console.error("Response truncated");
-                    await updateNotification(notificationId, "AutoSort+ Error", "AI response was cut off");
-                    return null;
-                }
-                if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
-                    label = tryTrim(candidate.content.parts[0].text);
-                }
+        // Gemini: check for MAX_TOKENS truncation
+        if (provider === 'gemini' && data.candidates?.[0]?.finishReason === "MAX_TOKENS") {
+            console.error("Response truncated");
+            await updateNotification(notificationId, "AutoSort+ Error", "AI response was cut off");
+            return null;
+        }
+
+        // Use provider parser mapping (ollama handled separately)
+        const parser = PROVIDER_PARSERS[provider];
+        if (parser) {
+            label = tryTrim(parser(data));
+            // Some OpenAI-compatible models return reasoning in separate field
+            if (!label && (provider === 'openai' || provider === 'groq' || provider === 'mistral' || provider === 'openai-compatible')) {
+                label = tryTrim(data.choices?.[0]?.message?.reasoning_content);
             }
-        } else if (provider === 'openai' || provider === 'groq' || provider === 'mistral' || provider === 'openai-compatible') {
-            if (data.choices && data.choices.length > 0) {
-                const choice = data.choices[0];
-                if (window.debugLogger) {
-                    window.debugLogger.info('[API]', 'Choice structure:', choice);
-                }
-                // Try multiple possible content locations
-                label = tryTrim(choice.message?.content || choice.text || choice.delta?.content);
-                // Some models return reasoning in separate field
-                if (!label && choice.message?.reasoning_content) {
-                    // Extract from reasoning if no content
-                    label = tryTrim(choice.message.reasoning_content);
-                }
-            }
-        } else if (provider === 'anthropic') {
-            if (data.content && data.content.length > 0) {
-                label = tryTrim(data.content[0].text);
+            if (window.debugLogger) {
+                window.debugLogger.info('[API]', 'Choice structure:', data.choices?.[0]);
             }
         } else if (provider === 'ollama') {
-            // Ollama responses may vary in shape: string, object, array of parts, etc.
-            try {
-                const msg = data.message;
-                if (!msg) {
-                    // Some older/local versions may return data as string or have different keys
-                    label = tryTrim(data.result || data.text || data.response);
-                } else {
-                    const content = msg.content;
-                    if (typeof content === 'string') {
-                        label = tryTrim(content);
-                    } else if (Array.isArray(content)) {
-                        // Find first element that's a string or has text fields
-                        const first = content.find(c => typeof c === 'string' || (c && (c.text || c.content)));
-                        if (typeof first === 'string') label = tryTrim(first);
-                        else if (first && first.text) label = tryTrim(first.text);
-                        else if (first && first.content) {
-                            if (typeof first.content === 'string') label = tryTrim(first.content);
-                            else if (Array.isArray(first.content)) label = tryTrim(first.content.map(x => x.text || x).join(' '));
-                        }
-                    } else if (content && typeof content === 'object') {
-                        // Content might be an object with text or parts
-                        label = tryTrim(content.text || content.content || content[0]);
-                        if (!label && content.parts && content.parts.length > 0) {
-                            label = tryTrim(content.parts[0].text || content.parts[0]);
-                        }
-                    } else if (typeof msg === 'string') {
-                        label = tryTrim(msg);
-                    } else if (msg && !content) {
-                        label = tryTrim(msg.text || msg.response || msg.result);
-                    }
+            // Recursively extract text from arbitrary Ollama response structures
+            function extractText(obj) {
+                if (obj == null) return null;
+                if (typeof obj === 'string') return obj.trim() || null;
+                if (Array.isArray(obj)) {
+                    for (const item of obj) { const found = extractText(item); if (found) return found; }
+                    return null;
                 }
-            } catch (e) {
-                console.warn('Failed to parse Ollama response shape:', e.message);
-                label = null;
+                if (typeof obj !== 'object') return null;
+                return extractText(obj.text) || extractText(obj.content) || extractText(obj.response) || extractText(obj.result) || extractText(obj.parts);
             }
+            label = extractText(data.message) || extractText(data);
         }
 
         if (!label) {
@@ -1850,32 +1790,86 @@ async function processWithConcurrency(items, processor, limit = 3) {
     return Promise.allSettled(results);
 }
 
+/** Check if an error is a rate limit / quota error. */
+function isRateLimitError(err) {
+    if (!err) return false;
+    const msg = String(err.message || '');
+    return msg.includes('429') || msg.includes('quota') || msg.includes('RATE_LIMIT') || msg.includes('rate limit');
+}
+
+/** Core classification logic for a single message (no retry, no rate-limit handling). */
+async function classifyAndMoveOnce(message) {
+    const fullMessage = await browser.messages.getFull(message.id);
+    if (!fullMessage) return { status: 'failed', reason: 'no_full_message' };
+
+    const emailContext = await extractEmailContext(fullMessage, message);
+    const emailContent = emailContext.body;
+    if (!emailContent?.trim()) return { status: 'failed', reason: 'empty_body' };
+
+    const label = await analyzeEmailContent(emailContent, emailContext);
+    if (!label || String(label).trim().toLowerCase() === 'null') return { status: 'failed', reason: 'no_label' };
+
+    await applyLabelsToMessages([message], label);
+
+    if (window.debugLogger) {
+        window.debugLogger.info('[AutoSort]', `Auto-sorted message ${message.id} to ${label}`);
+    }
+    return { status: 'success' };
+}
+
 /**
  * Classify a single message and move it to the appropriate folder.
- * Silent failure mode: errors logged, email stays in Inbox.
+ * Retries up to 2 times for non-rate-limit errors with exponential backoff (2s → 4s).
+ * Rate limit errors queue the message for later retry.
+ * Returns { status: 'success' | 'failed' | 'pending', reason? }
  */
 async function classifyAndMove(message) {
     try {
-        const fullMessage = await browser.messages.getFull(message.id);
-        if (!fullMessage) return;
+        let lastError = null;
 
-        const emailContext = await extractEmailContext(fullMessage, message);
-        const emailContent = emailContext.body;
-        if (!emailContent?.trim()) return;
+        // Try up to 3 times total (1 original + 2 retries)
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                return await classifyAndMoveOnce(message);
+            } catch (err) {
+                lastError = err;
 
-        const label = await analyzeEmailContent(emailContent, emailContext);
-        if (!label || String(label).trim().toLowerCase() === 'null') return;
+                // Rate limit: don't retry, queue instead
+                if (isRateLimitError(err)) {
+                    _autoSortPending.push(message);
+                    if (window.debugLogger) {
+                        window.debugLogger.warn('[AutoSort]', `Rate limited: message ${message.id} queued for retry`);
+                    }
+                    return { status: 'pending', reason: 'rate_limited' };
+                }
 
-        await applyLabelsToMessages([message], label);
-
-        if (window.debugLogger) {
-            window.debugLogger.info('[AutoSort]', `Auto-sorted message ${message.id} to ${label}`);
+                // Non-rate-limit error: retry with exponential backoff
+                if (attempt < 2) {
+                    const delay = 2000 * Math.pow(2, attempt); // 2s, 4s
+                    if (window.debugLogger) {
+                        window.debugLogger.warn('[AutoSort]', `Attempt ${attempt + 1} failed for message ${message.id}, retrying in ${delay}ms: ${err.message}`);
+                    }
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
         }
+
+        // All retries exhausted
+        if (window.debugLogger) {
+            window.debugLogger.warn('[AutoSort]', `Message ${message.id} failed after 3 attempts: ${lastError.message}`);
+        }
+        return { status: 'failed', reason: lastError.message };
+
     } catch (err) {
-        if (window.debugLogger) {
-            window.debugLogger.warn('[AutoSort]', `Failed to auto-sort message ${message.id}: ${err.message}`);
+        // Unexpected errors (not from classifyAndMoveOnce)
+        if (isRateLimitError(err)) {
+            _autoSortPending.push(message);
+            return { status: 'pending', reason: 'rate_limited' };
         }
-        // Email stays in Inbox on failure - silent failure mode
+        if (window.debugLogger) {
+            window.debugLogger.warn('[AutoSort]', `Unexpected error for message ${message.id}: ${err.message}`);
+        }
+        return { status: 'failed', reason: err.message };
     }
 }
 
@@ -1887,21 +1881,28 @@ async function handleNewMail(folder, messageList) {
     // Guard: don't auto-sort if a manual batch is already running
     if (_batchState.running) return;
 
-    const settings = await browser.storage.local.get(['autoSortEnabled', 'enableAi', 'aiProvider']);
+    const settings = await browser.storage.local.get(['autoSortEnabled', 'enableAi', 'aiProvider', 'autoSortNotifyOnComplete']);
 
-    // Check if auto-sort is enabled (defaults to true for backward compatibility)
     const autoSortEnabled = settings.autoSortEnabled !== false;
     if (!autoSortEnabled) return;
     if (settings.enableAi === false) return;
 
-    // Verify this is Inbox folder (specialUse array contains "inbox")
     if (!folder.specialUse?.includes("inbox")) return;
 
-    // Get provider setting for concurrency limit
     const provider = settings.aiProvider || 'gemini';
-
-    // Use provider batch config for concurrency limit
     const limit = PROVIDER_BATCH_CONFIG[provider]?.concurrency || 3;
+
+    // Statistics counters
+    let stats = { success: 0, failed: 0, pending: 0, total: 0 };
+
+    // Wrapper that updates stats for each message
+    async function classifyAndTrack(message) {
+        stats.total++;
+        const result = await classifyAndMove(message);
+        if (result.status === 'success') stats.success++;
+        else if (result.status === 'pending') stats.pending++;
+        else stats.failed++;
+    }
 
     if (window.debugLogger) {
         window.debugLogger.info('[AutoSort]', `Processing new mail with concurrency=${limit} for provider=${provider}`);
@@ -1910,10 +1911,40 @@ async function handleNewMail(folder, messageList) {
     // Process all pages of messages
     let page = messageList;
     while (true) {
-        // Process concurrently instead of sequentially
-        await processWithConcurrency(page.messages, classifyAndMove, limit);
+        await processWithConcurrency(page.messages, classifyAndTrack, limit);
         if (!page.id) break;
         page = await browser.messages.continueList(page.id);
+    }
+
+    // Process pending queue (from previous rate-limited batches)
+    if (_autoSortPending.length > 0) {
+        if (window.debugLogger) {
+            window.debugLogger.info('[AutoSort]', `Retrying ${_autoSortPending.length} pending messages`);
+        }
+        const pendingCopy = [..._autoSortPending];
+        _autoSortPending = [];
+        for (const msg of pendingCopy) {
+            const result = await classifyAndMove(msg);
+            if (result.status !== 'pending') {
+                if (result.status === 'success') stats.success++;
+                else stats.failed++;
+            } else {
+                stats.pending++;
+                _autoSortPending.push(msg);
+            }
+        }
+    }
+
+    // Optional notification on completion
+    if (settings.autoSortNotifyOnComplete && stats.total > 0) {
+        const parts = [`Auto-sorted: ${stats.success} successful`];
+        if (stats.failed > 0) parts.push(`${stats.failed} failed`);
+        if (stats.pending > 0) parts.push(`${stats.pending} pending (rate limited)`);
+        await showNotification('AutoSort+ Auto-Classification', parts.join(', '));
+    }
+
+    if (window.debugLogger) {
+        window.debugLogger.info('[AutoSort]', `Auto-sort complete: ${stats.success} success, ${stats.failed} failed, ${stats.pending} pending out of ${stats.total}`);
     }
 }
 
@@ -1924,33 +1955,45 @@ function registerAutoSortListener() {
     browser.messages.onNewMailReceived.addListener(handleNewMail, false);
 }
 
-// Create context menu items
-browser.menus.create({
-    id: "autosort-label",
-    title: "AutoSort+ Label",
-    contexts: ["message_list"]
-});
-
-// Helper to rebuild label submenu
-async function rebuildLabelSubmenu(labels) {
-    // Remove existing label menu items
+/** Build the full context menu with dynamic labels. */
+async function buildContextMenu() {
+    // Remove only our own menu items to avoid affecting other extensions
     try {
         const existingItems = await browser.menus.getAll();
         for (const item of existingItems) {
-            if (item.parentId === "autosort-label") {
+            if (item.id && (item.id.startsWith('autosort-') || item.id.startsWith('label-'))) {
                 browser.menus.remove(item.id);
             }
         }
     } catch (e) {
-        // Ignore errors
+        console.warn('[Menu] Failed to remove existing items:', e.message);
     }
 
-    // Create new label menu items
+    browser.menus.create({
+        id: "autosort-parent",
+        title: "AutoSort+",
+        contexts: ["message_list"]
+    });
+
+    browser.menus.create({
+        id: "autosort-analyze",
+        parentId: "autosort-parent",
+        title: "AutoSort+ Analyze with AI",
+        contexts: ["message_list"]
+    });
+
+    const { labels } = await browser.storage.local.get(['labels']);
     if (labels && labels.length > 0) {
+        browser.menus.create({
+            id: "autosort-label-separator",
+            parentId: "autosort-parent",
+            type: "separator",
+            contexts: ["message_list"]
+        });
         for (const label of labels) {
             browser.menus.create({
                 id: `label-${label}`,
-                parentId: "autosort-label",
+                parentId: "autosort-parent",
                 title: label,
                 contexts: ["message_list"]
             });
@@ -1958,28 +2001,88 @@ async function rebuildLabelSubmenu(labels) {
     }
 }
 
-// Initial label menu setup
-browser.storage.local.get(['labels']).then(result => {
-    rebuildLabelSubmenu(result.labels);
-});
-
-// Update menu when labels change
-browser.storage.onChanged.addListener((changes) => {
-    if (changes.labels) {
-        rebuildLabelSubmenu(changes.labels.newValue);
+/** Rebuild the menu when labels change — removes old items, then rebuilds from shared logic. */
+async function rebuildLabelSubmenu() {
+    try {
+        const existingItems = await browser.menus.getAll();
+        for (const item of existingItems) {
+            if (item.id && (item.id.startsWith('autosort-') || item.id.startsWith('label-'))) {
+                browser.menus.remove(item.id);
+            }
+        }
+    } catch (e) {
+        console.warn('[Menu] Failed to remove existing items:', e.message);
     }
-});
+    await buildContextMenu();
+}
 
-// Add AI analysis option
-browser.menus.create({
-    id: "autosort-analyze",
-    title: "AutoSort+ Analyze with AI",
-    contexts: ["message_list"]
+// Initialize menu on startup
+browser.runtime.onStartup.addListener(buildContextMenu);
+browser.runtime.onInstalled.addListener(buildContextMenu);
+
+// Live-rebuild menu when labels change
+browser.storage.onChanged.addListener(async (changes, area) => {
+    if (area === 'local' && changes.labels) {
+        await rebuildLabelSubmenu();
+    }
 });
 
 // Listen for menu clicks
 browser.menus.onClicked.addListener(async (info, tab) => {
-    if (info.parentMenuItemId === "autosort-label") {
+    if (info.parentMenuItemId === "autosort-parent") {
+        if (info.menuItemId === "autosort-analyze") {
+            if (window.debugLogger) {
+                window.debugLogger.info('[AutoSort+]', 'AI analysis selected - starting batch process');
+            }
+            try {
+                if (!_acquireBatchLock()) {
+                    await showNotification(
+                        'AutoSort+ Busy',
+                        'A batch is already in progress. Please wait or cancel it from the settings page.'
+                    );
+                    return;
+                }
+
+                const mailTabs = await browser.mailTabs.query({ active: true, currentWindow: true });
+                if (!mailTabs || mailTabs.length === 0) {
+                    console.error('No active mail tab found');
+                    await showNotification('AutoSort+ Error', 'No active mail tab found');
+                    _releaseBatchLock();
+                    return;
+                }
+
+                const selectedMessageList = await browser.mailTabs.getSelectedMessages(mailTabs[0].id);
+                if (!selectedMessageList || !selectedMessageList.messages || selectedMessageList.messages.length === 0) {
+                    console.error('No messages selected');
+                    await showNotification('AutoSort+ Error', 'No messages selected for analysis');
+                    _releaseBatchLock();
+                    return;
+                }
+
+                const messages = selectedMessageList.messages;
+                if (window.debugLogger) {
+                    window.debugLogger.info('[AutoSort+]', `Starting batch analysis of ${messages.length} selected messages`);
+                }
+
+                await showNotification(
+                    'AutoSort+ Batch',
+                    `Starting AI analysis of ${messages.length} email${messages.length > 1 ? 's' : ''}...`
+                );
+
+                batchAnalyzeEmails(messages).catch(err => {
+                    console.error('[AutoSort+] Batch analysis failed:', err);
+                    _releaseBatchLock();
+                });
+
+            } catch (error) {
+                _releaseBatchLock();
+                console.error('Error starting batch analysis:', error);
+                await showNotification('AutoSort+ Error', `Error: ${error.message}`);
+            }
+            return;
+        }
+
+        if (!info.menuItemId.startsWith('label-')) return;
         const label = info.menuItemId.replace("label-", "");
         if (window.debugLogger) {
             window.debugLogger.info('[AutoSort+]', `Manual label selected: ${label}`);
@@ -2002,60 +2105,6 @@ browser.menus.onClicked.addListener(async (info, tab) => {
         } catch (error) {
             console.error("Error applying manual label:", error);
             await showNotification("AutoSort+ Error", `Error applying label: ${error.message}`);
-        }
-    } else if (info.menuItemId === "autosort-analyze") {
-        if (window.debugLogger) {
-            window.debugLogger.info('[AutoSort+]', 'AI analysis selected - starting batch process');
-        }
-
-        try {
-            // Guard: refuse if a batch is already running (atomic check-and-set)
-            if (!_acquireBatchLock()) {
-                await showNotification(
-                    'AutoSort+ Busy',
-                    'A batch is already in progress. Please wait or cancel it from the settings page.'
-                );
-                return;
-            }
-
-            // Get the current mail tab
-            const mailTabs = await browser.mailTabs.query({ active: true, currentWindow: true });
-            if (!mailTabs || mailTabs.length === 0) {
-                console.error('No active mail tab found');
-                await showNotification('AutoSort+ Error', 'No active mail tab found');
-                _releaseBatchLock();
-                return;
-            }
-
-            // Get selected messages using mailTabs API
-            const selectedMessageList = await browser.mailTabs.getSelectedMessages(mailTabs[0].id);
-            if (!selectedMessageList || !selectedMessageList.messages || selectedMessageList.messages.length === 0) {
-                console.error('No messages selected');
-                await showNotification('AutoSort+ Error', 'No messages selected for analysis');
-                _releaseBatchLock();
-                return;
-            }
-
-            const messages = selectedMessageList.messages;
-            if (window.debugLogger) {
-                window.debugLogger.info('[AutoSort+]', `Starting batch analysis of ${messages.length} selected messages`);
-            }
-
-            await showNotification(
-                'AutoSort+ Batch',
-                `Starting AI analysis of ${messages.length} email${messages.length > 1 ? 's' : ''}...`
-            );
-
-            // Hand off to the batch engine (runs async, does not block the event listener)
-            batchAnalyzeEmails(messages).catch(err => {
-                console.error('[AutoSort+] Batch analysis failed:', err);
-                _releaseBatchLock();
-            });
-
-        } catch (error) {
-            _releaseBatchLock();
-            console.error('Error starting batch analysis:', error);
-            await showNotification('AutoSort+ Error', `Error: ${error.message}`);
         }
     }
 }); 

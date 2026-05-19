@@ -299,6 +299,14 @@
     "message": "Automatically classify and move new Inbox emails using AI",
     "description": "Auto-sort help text"
   },
+  "autoSortNotifyLabel": {
+    "message": "Notify when auto-sort completes",
+    "description": "Auto-sort notification checkbox label"
+  },
+  "autoSortNotifyHelp": {
+    "message": "Show a notification with success/fail/pending counts",
+    "description": "Auto-sort notification help text"
+  },
   "geminiUsageTitle": {
     "message": "📊 Gemini API Usage",
     "description": "Gemini API usage subsection header"

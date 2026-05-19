@@ -299,6 +299,14 @@
     "message": "使用 AI 自动分类和移动新收件箱邮件",
     "description": "自动分类帮助文本"
   },
+  "autoSortNotifyLabel": {
+    "message": "自动分类完成后通知",
+    "description": "自动分类通知复选框标签"
+  },
+  "autoSortNotifyHelp": {
+    "message": "显示包含成功/失败/待处理数量的通知",
+    "description": "自动分类通知帮助文本"
+  },
   "geminiUsageTitle": {
     "message": "📊 Gemini API 使用情况",
     "description": "Gemini API 使用情况子区段标题"
