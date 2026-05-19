@@ -462,8 +462,93 @@ let _batchState = {
     totalChunks: 0
 };
 
-// Auto-sort pending queue: messages that failed due to rate limiting, awaiting retry
-let _autoSortPending = [];
+// ─────────────────────────────────────────────────────────────────────────────
+// PERSISTENT PENDING QUEUE
+// Replaces in-memory _autoSortPending array with browser.storage.local
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MAX_PENDING_RETRIES = 3;
+
+/**
+ * Enqueue a message that failed due to rate limiting.
+ * @param {Object} message - Thunderbird message object
+ * @param {string} reason - Error reason for logging
+ */
+async function enqueuePending(message, reason) {
+    const data = await browser.storage.local.get(['pendingQueue']);
+    const queue = data.pendingQueue || [];
+    queue.push({
+        messageId: message.id,
+        accountId: message.folder?.accountId || '',
+        timestamp: Date.now(),
+        retryCount: 0,
+        lastError: reason || ''
+    });
+    await browser.storage.local.set({ pendingQueue: queue });
+    if (window.debugLogger) {
+        window.debugLogger.warn('[Queue]', `Message ${message.id} enqueued (reason: ${reason})`);
+    }
+}
+
+/**
+ * Dequeue all pending messages from storage. Returns array and clears storage.
+ * @returns {Promise<Array>} pending entries
+ */
+async function dequeuePending() {
+    const data = await browser.storage.local.get(['pendingQueue']);
+    const queue = data.pendingQueue || [];
+    await browser.storage.local.set({ pendingQueue: [] });
+    return queue;
+}
+
+/**
+ * Recover and retry pending messages from storage on extension startup.
+ * Messages exceeding MAX_PENDING_RETRIES are dropped.
+ */
+async function recoverPendingQueue() {
+    const data = await browser.storage.local.get(['pendingQueue']);
+    const queue = data.pendingQueue || [];
+    if (queue.length === 0) return;
+
+    if (window.debugLogger) {
+        window.debugLogger.info('[Queue]', `Recovering ${queue.length} pending messages from storage`);
+    }
+
+    await browser.storage.local.set({ pendingQueue: [] });
+
+    const recovered = [];
+    for (const entry of queue) {
+        if (entry.retryCount >= MAX_PENDING_RETRIES) {
+            if (window.debugLogger) {
+                window.debugLogger.warn('[Queue]', `Message ${entry.messageId} dropped (exceeded ${MAX_PENDING_RETRIES} retries)`);
+            }
+            continue;
+        }
+        recovered.push(entry);
+    }
+
+    if (recovered.length > 0 && window.debugLogger) {
+        window.debugLogger.info('[Queue]', `Retrying ${recovered.length} pending messages`);
+    }
+
+    for (const entry of recovered) {
+        const message = { id: entry.messageId, folder: { accountId: entry.accountId } };
+        const result = await classifyAndSortMessage(message);
+        if (result.status === 'pending') {
+            // Still rate-limited, re-enqueue with incremented retryCount
+            const data = await browser.storage.local.get(['pendingQueue']);
+            const q = data.pendingQueue || [];
+            q.push({
+                messageId: entry.messageId,
+                accountId: entry.accountId,
+                timestamp: Date.now(),
+                retryCount: entry.retryCount + 1,
+                lastError: result.reason || ''
+            });
+            await browser.storage.local.set({ pendingQueue: q });
+        }
+    }
+}
 
 /** Reset batch state to defaults. */
 function _resetBatchState(total, provider) {
@@ -1836,7 +1921,7 @@ async function classifyAndMove(message) {
 
                 // Rate limit: don't retry, queue instead
                 if (isRateLimitError(err)) {
-                    _autoSortPending.push(message);
+                    await enqueuePending(message, 'rate_limited');
                     if (window.debugLogger) {
                         window.debugLogger.warn('[AutoSort]', `Rate limited: message ${message.id} queued for retry`);
                     }
@@ -1863,7 +1948,7 @@ async function classifyAndMove(message) {
     } catch (err) {
         // Unexpected errors (not from classifyAndMoveOnce)
         if (isRateLimitError(err)) {
-            _autoSortPending.push(message);
+            await enqueuePending(message, 'rate_limited');
             return { status: 'pending', reason: 'rate_limited' };
         }
         if (window.debugLogger) {
@@ -1916,21 +2001,36 @@ async function handleNewMail(folder, messageList) {
         page = await browser.messages.continueList(page.id);
     }
 
-    // Process pending queue (from previous rate-limited batches)
-    if (_autoSortPending.length > 0) {
+    // Process pending queue from storage
+    const pending = await dequeuePending();
+    if (pending.length > 0) {
         if (window.debugLogger) {
-            window.debugLogger.info('[AutoSort]', `Retrying ${_autoSortPending.length} pending messages`);
+            window.debugLogger.info('[AutoSort]', `Retrying ${pending.length} pending messages`);
         }
-        const pendingCopy = [..._autoSortPending];
-        _autoSortPending = [];
-        for (const msg of pendingCopy) {
-            const result = await classifyAndMove(msg);
-            if (result.status !== 'pending') {
-                if (result.status === 'success') stats.success++;
-                else stats.failed++;
-            } else {
+        for (const entry of pending) {
+            if (entry.retryCount >= MAX_PENDING_RETRIES) {
+                stats.failed++;
+                continue;
+            }
+            const message = { id: entry.messageId, folder: { accountId: entry.accountId } };
+            const result = await classifyAndMove(message);
+            if (result.status === 'success') {
+                stats.success++;
+            } else if (result.status === 'pending') {
+                // Re-enqueue with incremented retryCount
+                const data = await browser.storage.local.get(['pendingQueue']);
+                const q = data.pendingQueue || [];
+                q.push({
+                    messageId: entry.messageId,
+                    accountId: entry.accountId,
+                    timestamp: Date.now(),
+                    retryCount: entry.retryCount + 1,
+                    lastError: result.reason || ''
+                });
+                await browser.storage.local.set({ pendingQueue: q });
                 stats.pending++;
-                _autoSortPending.push(msg);
+            } else {
+                stats.failed++;
             }
         }
     }
@@ -2014,10 +2114,22 @@ async function rebuildLabelSubmenu() {
         console.warn('[Menu] Failed to remove existing items:', e.message);
     }
     await buildContextMenu();
+
+    const { labels } = await browser.storage.local.get(['labels']);
+    if (window.debugLogger) {
+        window.debugLogger.info('[Menu]', `Menu rebuilt with ${labels ? labels.length : 0} labels`);
+    }
+    await showNotification(
+        "AutoSort+",
+        `Menu updated — ${labels && labels.length ? labels.length : '0'} label${labels && labels.length !== 1 ? 's' : ''} available`
+    );
 }
 
 // Initialize menu on startup
-browser.runtime.onStartup.addListener(buildContextMenu);
+browser.runtime.onStartup.addListener(async () => {
+    await buildContextMenu();
+    await recoverPendingQueue();
+});
 browser.runtime.onInstalled.addListener(buildContextMenu);
 
 // Live-rebuild menu when labels change
