@@ -120,7 +120,7 @@ Choose from **5 leading cloud AI providers** or run a **local Ollama** model:
 3. Thunderbird: Tools → Add-ons and Extensions
 4. Click: ⚙️ → Install Add-on From File
 5. Select: autosortplus.xpi
-6. Restart Thunderbird
+6. Menu auto-updates — no restart needed
 ```
 
 ### Option 2: Build from Source
@@ -160,7 +160,7 @@ Load folders from IMAP or add custom labels
 - Select emails → Right-click → **AutoSort+ → AutoSort Label → [Pick any label]**
 - The selected label/category will be applied instantly to all selected emails.
 
-> ⚠️ **Warning:** If you add or change labels in the settings menu, you must restart Thunderbird for the new labels to appear in the right-click menu.
+> Labels update automatically in the right-click menu — no restart needed.
 
 > 📌 **Note:** Currently requires manual selection and right-click. Automatic background sorting coming in future update!
 
@@ -293,7 +293,7 @@ You can also manually label emails without AI analysis:
 2. **Right-Click Menu** - Right-click → **AutoSort+ → AutoSort Label → [Pick any label]**
 3. **Label Applied** - The selected label/category will be applied to all selected emails instantly.
 
-> **Note:** If you add or change labels in the settings menu, you must restart Thunderbird for the new labels to appear in the right-click menu.
+> Labels update automatically in the right-click menu — no restart needed.
 
 ---
 
