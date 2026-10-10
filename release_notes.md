@@ -1,3 +1,12 @@
+## AutoSort+ v1.2.4
+
+### 🛠️ Groq Model Update & Reliability Fix
+- **Groq model updated:** The previous model (`llama-3.3-70b-versatile`) was shut down in August 2026 and returned a `model_not_found` error. Groq now uses the supported `openai/gpt-oss-120b` model.
+- **Reliable email classification:** `openai/gpt-oss-120b` is a reasoning model, so its reasoning tokens counted against the old 50-token limit and produced empty responses. We now set `reasoning_effort: 'low'` and increased the token budget so every email returns a valid label.
+- **Gemini note:** The Gemini API works correctly when a proper API key is configured. If you see a 404 on "Test", double-check the key was copied completely and that the Generative Language API is enabled — see the setup guide.
+
+---
+
 ## AutoSort+ v1.2.3.3 - January 28, 2026
 
 ### 🛠️ Bug Fix: Manual Label Application (Thunderbird Context Menu)

@@ -635,10 +635,11 @@ async function analyzeEmailContent(emailContent) {
                     'Authorization': `Bearer ${apiKeyToUse}`
                 },
                 body: JSON.stringify({
-                    model: 'llama-3.3-70b-versatile',
+                    model: 'openai/gpt-oss-120b',
                     messages: [{ role: 'user', content: prompt }],
-                    max_tokens: 50,
-                    temperature: 0.2
+                    max_tokens: 200,
+                    temperature: 0.2,
+                    reasoning_effort: 'low'
                 })
             });
 

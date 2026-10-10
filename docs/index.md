@@ -34,7 +34,7 @@ pre{background:#0b0d0f;padding:12px;border-radius:8px;color:#d7e9c7}
 <p class="lead">AI-powered email organization that adapts to your workflow. Choose from cloud providers (Gemini, OpenAI, Anthropic, Groq, Mistral) or run a <strong>local Ollama</strong> model and let AutoSort+ automatically move emails to the right folders.</p>
 
 <div class="badges">
-<a href="https://github.com/Nigel1992/AutoSort-Plus/releases"><img src="https://img.shields.io/badge/Version-1.2.3.3-blue?style=for-the-badge" alt="Version"></a>
+<a href="https://github.com/Nigel1992/AutoSort-Plus/releases"><img src="https://img.shields.io/badge/Version-1.2.4-blue?style=for-the-badge" alt="Version"></a>
 <a href="https://www.thunderbird.net/"><img src="https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=for-the-badge&logo=thunderbird&logoColor=white" alt="Thunderbird"></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"></a>
 </div>
@@ -70,16 +70,18 @@ AutoSort+ transforms your email workflow by automatically organizing messages in
 
 ---
 
-## 🎉 Latest Release: v1.2.3.3
+## 🎉 Latest Release: v1.2.4
 
 <div class="release-banner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 20px 0;" markdown="1">
 
-### 🚀 Release v1.2.3.3 — January 28, 2026
+### 🚀 Release v1.2.4
 
-**Summary:** Fixed manual label application from the context menu (Right-click → AutoSort+ → AutoSort Label → pick a label). The background script now handles selection and labeling reliably across Thunderbird views.
+**Summary:** Updated the Groq integration to a supported model and hardened email classification reliability.
 
-#### 🛠️ Notable Fix
-- ✅ **Manual Labeling Fix:** Replaced content-script dependency with `mailTabs` API handling in background script to avoid "Could not establish connection. Receiving end does not exist." errors.
+#### 🛠️ Notable Fixes
+- ✅ **Groq model updated:** The previous model (`llama-3.3-70b-versatile`) was shut down in August 2026. Groq now uses `openai/gpt-oss-120b`.
+- ✅ **Reliable classification:** Set `reasoning_effort: 'low'` and increased the token budget so the reasoning model always returns a label instead of an empty response.
+- ✅ **Gemini troubleshooting:** Confirmed the Gemini API works correctly with a valid API key — see the [setup guide](https://github.com/Nigel1992/AutoSort-Plus#-setup-guide).
 
 </div>
 
@@ -96,7 +98,7 @@ Choose the best AI provider for your needs:
 | **Gemini** | gemini-2.5-flash | 20/day/key | ⚡⚡⚡ | General use, fast processing |
 | **OpenAI** | gpt-4o-mini | - | ⚡⚡ | Premium quality |
 | **Claude** | claude-3-haiku | 1000/day | ⚡⚡⚡ | Long emails, nuanced content |
-| **Groq** | llama-3.3-70b | Generous | ⚡⚡⚡⚡ | Ultra-fast, free |
+| **Groq** | gpt-oss-120b | Generous | ⚡⚡⚡⚡ | Ultra-fast, free |
 | **Mistral** | mistral-small | Free tier | ⚡⚡⚡ | European privacy focus |
 | **Ollama** | local LLM (llama3.2, phi, tinyllama) | Local (no external usage) | ⚡⚡ - ⚡⚡⚡ | Run models locally for privacy and offline use; supports model download and CPU-only mode |
 
@@ -431,6 +433,6 @@ See [LICENSE](https://github.com/Nigel1992/AutoSort-Plus/blob/main/LICENSE) for 
 
 ![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=flat-square&logo=thunderbird&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![Version](https://img.shields.io/badge/Version-1.2.3.3-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.2.4-blue?style=flat-square)
 
 </div>
