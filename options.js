@@ -359,11 +359,13 @@ document.addEventListener('DOMContentLoaded', async function() {
             statusSpan.textContent = '🔴 Limit Reached';
             statusSpan.style.color = '#dc3545';
             usageMessage.className = 'usage-message warning';
+            usageMessage.style.display = '';
             usageMessage.textContent = '⚠️ Daily limit reached! Create a new API key in a different project and update it above to continue processing emails.';
         } else if (rateLimit.dailyCount >= 15) {
             statusSpan.textContent = '🟡 Nearly Full';
             statusSpan.style.color = '#ffc107';
             usageMessage.className = 'usage-message warning';
+            usageMessage.style.display = '';
             usageMessage.textContent = `⚠️ Only ${20 - rateLimit.dailyCount} requests remaining today. Consider switching to a new API key soon.`;
         } else {
             statusSpan.textContent = '🟢 Ready';
@@ -678,16 +680,33 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Reset Gemini counter button
     document.getElementById('reset-gemini-counter').addEventListener('click', async () => {
         if (confirm('Reset usage counter? Do this only after switching to a new API key.')) {
-            await browser.storage.local.set({ 
-                geminiRateLimit: { 
-                    requests: [], 
-                    dailyCount: 0, 
-                    dailyResetTime: Date.now() + (24 * 60 * 60 * 1000)
-                } 
-            });
+            const now = Date.now();
+            const makeFresh = () => ({ requests: [], dailyCount: 0, dailyResetTime: now + (24 * 60 * 60 * 1000) });
+
+            const data = await browser.storage.local.get(['geminiRateLimits', 'geminiApiKeys']);
+            const keys = data.geminiApiKeys || geminiKeys || [];
+            const updates = {};
+
+            // The live counter is stored per-key in geminiRateLimits (array).
+            if (keys.length > 0) {
+                const rateLimits = (data.geminiRateLimits && data.geminiRateLimits.length)
+                    ? data.geminiRateLimits.slice()
+                    : keys.map(() => makeFresh());
+                for (let i = 0; i < keys.length; i++) {
+                    rateLimits[i] = makeFresh();
+                }
+                updates.geminiRateLimits = rateLimits;
+            }
+
+            // Keep the legacy single-key field in sync for older installs
+            updates.geminiRateLimit = makeFresh();
+
+            await browser.storage.local.set(updates);
             await updateGeminiUsageDisplay();
+
             const usageMessage = document.getElementById('usage-message');
             usageMessage.className = 'usage-message info';
+            usageMessage.style.display = '';
             usageMessage.textContent = '✓ Usage counter reset. You can now process up to 20 more emails today with your new API key.';
         }
     });
@@ -697,6 +716,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         await updateGeminiUsageDisplay();
         const usageMessage = document.getElementById('usage-message');
         usageMessage.className = 'usage-message info';
+        usageMessage.style.display = '';
         usageMessage.textContent = '✓ Usage information refreshed.';
         setTimeout(() => {
             if (usageMessage.classList.contains('info')) {
