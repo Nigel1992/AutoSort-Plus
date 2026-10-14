@@ -420,17 +420,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         testButton.addEventListener('click', () => {
             const keyValue = input.value.trim();
             if (!keyValue) {
-                statusSpan.textContent = '⚠️ Enter key first';
-                statusSpan.className = 'key-test-result error';
+                setKeyTestStatus(statusSpan, '⚠️ Enter key first', 'key-test-result error', 'Enter an API key before testing.');
                 return;
             }
             
             // Check for duplicates before testing
             const isDuplicate = geminiKeys.some((key, i) => i !== index && key.trim() === keyValue);
             if (isDuplicate) {
-                statusSpan.textContent = '⚠️ Duplicate key';
-                statusSpan.className = 'key-test-result error';
-                statusSpan.title = 'This key is already added in the list';
+                setKeyTestStatus(statusSpan, '⚠️ Duplicate key', 'key-test-result error', 'This key is already added in the list');
                 return;
             }
             
@@ -475,19 +472,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
     
+    // Update a key test badge (text, color and hover tooltip) in one place so
+    // the tooltip always reflects the most recent test result.
+    function setKeyTestStatus(statusSpan, text, className, title = '') {
+        statusSpan.textContent = text;
+        statusSpan.className = className;
+        statusSpan.title = title;
+    }
+
     // Test individual Gemini key
     async function testGeminiKey(apiKey, index, keyItemElement) {
         const statusSpan = keyItemElement.querySelector('.key-test-result');
         
         if (!apiKey) {
-            statusSpan.textContent = '⚠️ Enter key first';
-            statusSpan.className = 'key-test-result error';
+            setKeyTestStatus(statusSpan, '⚠️ Enter key first', 'key-test-result error', 'Enter an API key before testing.');
             return;
         }
         
         try {
-            statusSpan.textContent = 'Testing...';
-            statusSpan.className = 'key-test-result testing';
+            setKeyTestStatus(statusSpan, 'Testing...', 'key-test-result testing');
             
             const model = getSelectedGeminiModel();
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
@@ -502,17 +505,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             });
             
             if (response.ok) {
-                statusSpan.textContent = '✓ Valid';
-                statusSpan.className = 'key-test-result success';
+                setKeyTestStatus(statusSpan, '✓ Valid', 'key-test-result success', `API key is valid for model "${model}".`);
             } else if (response.status === 429) {
-                statusSpan.textContent = '⚠️ Limit reached';
-                statusSpan.className = 'key-test-result error';
-                statusSpan.title = 'This key has reached its daily rate limit (20/day). Will reset in ~24 hours.';
+                setKeyTestStatus(statusSpan, '⚠️ Limit reached', 'key-test-result error', 'This key has reached its daily rate limit (20/day). Will reset in ~24 hours.');
                 console.error(`Key #${index + 1} has reached rate limit (429)`);
             } else if (response.status === 401 || response.status === 403) {
-                statusSpan.textContent = '✗ Invalid key';
-                statusSpan.className = 'key-test-result error';
-                statusSpan.title = 'API key is invalid or expired. Check your key in Google AI Studio.';
+                setKeyTestStatus(statusSpan, '✗ Invalid key', 'key-test-result error', 'API key is invalid or expired. Check your key in Google AI Studio.');
                 console.error(`Key #${index + 1} test failed: ${response.status}`);
             } else {
                 // Try to show the API's own error message (e.g. model not found)
@@ -522,14 +520,12 @@ document.addEventListener('DOMContentLoaded', async function() {
                     const apiMsg = errBody.error?.message;
                     if (apiMsg) detail = `✗ ${apiMsg}`;
                 } catch (e) { /* ignore parse errors */ }
-                statusSpan.textContent = detail;
-                statusSpan.className = 'key-test-result error';
-                statusSpan.title = detail;
+                setKeyTestStatus(statusSpan, detail, 'key-test-result error', detail);
                 console.error(`Key #${index + 1} test failed:`, response.status, detail);
             }
         } catch (error) {
-            statusSpan.textContent = `✗ Error`;
-            statusSpan.className = 'key-test-result error';
+            const detail = `Connection error: ${error.message}`;
+            setKeyTestStatus(statusSpan, '✗ Error', 'key-test-result error', detail);
             console.error(`Key #${index + 1} test error:`, error);
         }
     }
@@ -1420,6 +1416,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     function showApiTestResult(message, isSuccess) {
         apiTestResult.textContent = message;
         apiTestResult.className = `api-test-result ${isSuccess ? 'success' : 'error'}`;
+        apiTestResult.title = message;
     }
 
     // Show message to user

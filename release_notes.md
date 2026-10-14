@@ -5,6 +5,7 @@
 - **Choose your model:** A new **Gemini Model** field lets you pick any Gemini model, with a **Load Available Models** button that queries your API key and lists the models it can actually use. Other providers (OpenAI, Anthropic, Groq, Mistral) now accept an optional **Model** override as well.
 - **Gemini 3 support:** Requests to Gemini 3.x now use `thinkingConfig.thinkingLevel`; the legacy numeric `thinkingBudget` is only sent to 2.5.x models. Sending the wrong one returns a `400`.
 - **Clearer errors:** Model-not-found responses now include a hint to pick a different model in Settings.
+- **Refreshed test tooltips:** The hover text on the API key "Test" result and the "Test API Connection" result now updates on every run instead of keeping a stale previous message.
 
 ### 📦 Installation in Thunderbird
 
