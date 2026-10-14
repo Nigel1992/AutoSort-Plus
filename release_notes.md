@@ -1,3 +1,24 @@
+## AutoSort+ v1.2.5
+
+### 🧠 Configurable AI Models & Gemini 404 Fix
+- **Gemini 404 fixed:** Google now limits the legacy `gemini-2.5-*` models to accounts that have used them in the past. New API keys therefore returned `404 ... no longer available to new users`, even though `models?key=` still listed the model. The default Gemini model is now `gemini-3.5-flash-lite`, which is available to new projects.
+- **Choose your model:** A new **Gemini Model** field lets you pick any Gemini model, with a **Load Available Models** button that queries your API key and lists the models it can actually use. Other providers (OpenAI, Anthropic, Groq, Mistral) now accept an optional **Model** override as well.
+- **Gemini 3 support:** Requests to Gemini 3.x now use `thinkingConfig.thinkingLevel`; the legacy numeric `thinkingBudget` is only sent to 2.5.x models. Sending the wrong one returns a `400`.
+- **Clearer errors:** Model-not-found responses now include a hint to pick a different model in Settings.
+
+### 📦 Installation in Thunderbird
+
+1. Download the attached `autosortplus-v1.2.5.xpi` file
+2. Open Thunderbird → Menu (☰) → **Add-ons and Themes**
+3. Gear icon → **Install Add-on From File...**
+4. Select the downloaded `.xpi` file
+5. Click **Add** and restart Thunderbird when prompted
+
+### 🔗 Related
+- Addresses #11 (Gemini `404` on new API keys; configurable model)
+
+---
+
 ## AutoSort+ v1.2.4
 
 ### 🛠️ Groq Model Update & Reliability Fix

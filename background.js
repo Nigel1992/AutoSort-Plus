@@ -383,6 +383,31 @@ async function updateNotification(id, title, message) {
     return await showNotification(title, message);
 }
 
+// Build a Gemini generationConfig that matches the selected model family.
+// Gemini 3.x uses `thinkingLevel`; Gemini 2.5.x uses `thinkingBudget`.
+// Sending both (or the wrong one) causes a 400 error.
+function buildGeminiGenerationConfig(geminiModel) {
+    const config = {
+        maxOutputTokens: 50,
+        responseMimeType: "text/plain"
+    };
+
+    if (/^gemini-3/.test(geminiModel)) {
+        // Gemini 3.x: sampling params are deprecated; "low" thinking minimizes cost/latency.
+        config.thinkingConfig = { thinkingLevel: "low" };
+    } else {
+        config.temperature = 0.2;
+        config.topK = 1;
+        config.topP = 1;
+        if (geminiModel.includes("2.5")) {
+            // Gemini 2.5.x: 0 disables thinking (Flash/Lite only).
+            config.thinkingConfig = { thinkingBudget: 0 };
+        }
+    }
+
+    return config;
+}
+
 // Function to analyze email content using AI
 async function analyzeEmailContent(emailContent) {
     try {
@@ -400,7 +425,9 @@ async function analyzeEmailContent(emailContent) {
             'enableAi', 
             'geminiPaidPlan', 
             'geminiRateLimit',
-            'geminiRateLimits'
+            'geminiRateLimits',
+            'geminiModel',
+            'providerModel'
         ]);
         const provider = settings.aiProvider || 'gemini';
         
@@ -514,8 +541,10 @@ async function analyzeEmailContent(emailContent) {
         let data;
 
         if (provider === 'gemini') {
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKeyToUse}`;
-            console.log("Making API request to Gemini...");
+            // Gemini model is configurable (new API keys can no longer use 2.5 models)
+            const geminiModel = settings.geminiModel || 'gemini-3.5-flash-lite';
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${apiKeyToUse}`;
+            console.log(`Making API request to Gemini (${geminiModel})...`);
             
             // Track request for rate limiting (free tier only)
             if (!settings.geminiPaidPlan) {
@@ -535,16 +564,7 @@ async function analyzeEmailContent(emailContent) {
                         text: prompt
                     }]
                 }],
-                generationConfig: {
-                    temperature: 0.2,
-                    topK: 1,
-                    topP: 1,
-                    maxOutputTokens: 50,
-                    responseMimeType: "text/plain",
-                    thinkingConfig: {
-                        thinkingBudget: 0
-                    }
-                },
+                generationConfig: buildGeminiGenerationConfig(geminiModel),
                 safetySettings: [
                     {
                         category: "HARM_CATEGORY_HARASSMENT",
@@ -589,7 +609,7 @@ async function analyzeEmailContent(emailContent) {
                     'Authorization': `Bearer ${apiKeyToUse}`
                 },
                 body: JSON.stringify({
-                    model: 'gpt-4o-mini',
+                    model: settings.providerModel || 'gpt-4o-mini',
                     messages: [{ role: 'user', content: prompt }],
                     max_tokens: 50,
                     temperature: 0.2
@@ -613,7 +633,7 @@ async function analyzeEmailContent(emailContent) {
                     'anthropic-version': '2023-06-01'
                 },
                 body: JSON.stringify({
-                    model: 'claude-3-haiku-20240307',
+                    model: settings.providerModel || 'claude-3-haiku-20240307',
                     messages: [{ role: 'user', content: prompt }],
                     max_tokens: 50
                 })
@@ -635,7 +655,7 @@ async function analyzeEmailContent(emailContent) {
                     'Authorization': `Bearer ${apiKeyToUse}`
                 },
                 body: JSON.stringify({
-                    model: 'openai/gpt-oss-120b',
+                    model: settings.providerModel || 'openai/gpt-oss-120b',
                     messages: [{ role: 'user', content: prompt }],
                     max_tokens: 200,
                     temperature: 0.2,
@@ -659,7 +679,7 @@ async function analyzeEmailContent(emailContent) {
                     'Authorization': `Bearer ${apiKeyToUse}`
                 },
                 body: JSON.stringify({
-                    model: 'mistral-small-latest',
+                    model: settings.providerModel || 'mistral-small-latest',
                     messages: [{ role: 'user', content: prompt }],
                     max_tokens: 50,
                     temperature: 0.2
@@ -735,6 +755,14 @@ async function analyzeEmailContent(emailContent) {
                 // Handle quota errors specifically
                 if (response.status === 429 || errorMessage.includes('quota') || errorMessage.includes('rate limit')) {
                     errorMessage = "API quota exceeded. Please wait a while before trying again, or upgrade to a paid API key.";
+                }
+                
+                // Handle model-not-found errors (e.g. retired/restricted Gemini models)
+                if (response.status === 404 || /is not found|no longer available|does not exist/i.test(errorMessage)) {
+                    const modelHint = provider === 'gemini'
+                        ? ' Choose a different model under Settings → Gemini Model.'
+                        : ' Check the Model field in Settings.';
+                    errorMessage = `${errorMessage}${modelHint}`;
                 }
                 
                 // Handle Ollama auth errors

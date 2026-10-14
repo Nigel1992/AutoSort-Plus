@@ -49,6 +49,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     const geminiMultiKeysContainer = document.getElementById('gemini-multi-keys-container');
     const geminiKeysList = document.getElementById('gemini-keys-list');
     const addGeminiKeyButton = document.getElementById('add-gemini-key');
+    const geminiModelInput = document.getElementById('gemini-model');
+    const geminiModelStatus = document.getElementById('gemini-model-status');
+    const loadGeminiModelsButton = document.getElementById('load-gemini-models');
+    const providerModelInput = document.getElementById('provider-model');
+    const providerModelHelp = document.getElementById('provider-model-help');
     
     // Ollama-specific elements  
     const ollamaModelSelect = document.getElementById('ollama-model');
@@ -87,7 +92,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         gemini: {
             name: 'Google Gemini',
             signupUrl: 'https://aistudio.google.com/app/apikey',
-            info: '✓ Free tier: 5 requests/minute, 20/day per API key (enforced by addon)<br>✓ Tip: Create multiple API keys in different projects, switch keys when limit reached<br>✓ Check usage: <a href="https://aistudio.google.com/usage" target="_blank">AI Studio Usage</a><br>✓ Best for: General use, multilingual support<br>✓ Models: Gemini 2.5 Flash<br>✓ Check "paid plan" option to remove limits',
+            info: '✓ Free tier: 5 requests/minute, 20/day per API key (enforced by addon)<br>✓ Tip: Create multiple API keys in different projects, switch keys when limit reached<br>✓ Check usage: <a href="https://aistudio.google.com/usage" target="_blank">AI Studio Usage</a><br>✓ Best for: General use, multilingual support<br>✓ Model: configurable below (default: Gemini 3.5 Flash-Lite)<br>✓ Check "paid plan" option to remove limits',
             isFree: true
         },
         openai: {
@@ -122,6 +127,23 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     };
     
+    // Default model per provider (references may be overridden in settings)
+    // Note: Gemini 2.5 models are no longer available to NEW API keys (404),
+    // so new installs default to a current model.
+    const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+    const defaultProviderModels = {
+        openai: 'gpt-4o-mini',
+        anthropic: 'claude-3-haiku-20240307',
+        groq: 'openai/gpt-oss-120b',
+        mistral: 'mistral-small-latest'
+    };
+
+    // Resolve the Gemini model to use, falling back to the default
+    function getSelectedGeminiModel() {
+        const custom = (geminiModelInput && geminiModelInput.value.trim()) || '';
+        return custom || DEFAULT_GEMINI_MODEL;
+    }
+
     // Update provider info when selection changes
     function updateProviderInfo() {
         const provider = aiProviderSelect.value;
@@ -132,6 +154,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         const apiKeySubsection = document.getElementById('api-key-subsection');
         const geminiMultiKeysSubsection = document.getElementById('gemini-multi-keys-subsection');
         const geminiUsageSubsection = document.getElementById('gemini-usage-subsection');
+        const geminiModelSubsection = document.getElementById('gemini-model-subsection');
         const rateLimitWarning = document.getElementById('rate-limit-warning');
         
         // Show/hide rate limit warning (not for Ollama)
@@ -144,6 +167,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             geminiPaidContainer.style.display = 'block';
             if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'block';
             if (geminiUsageSubsection) geminiUsageSubsection.style.display = 'block';
+            if (geminiModelSubsection) geminiModelSubsection.style.display = 'block';
             if (apiKeySubsection) apiKeySubsection.style.display = 'none';
             if (ollamaSubsection) ollamaSubsection.style.display = 'none';
             updateGeminiUsageDisplay();
@@ -152,12 +176,14 @@ document.addEventListener('DOMContentLoaded', async function() {
             geminiPaidContainer.style.display = 'none';
             if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'none';
             if (geminiUsageSubsection) geminiUsageSubsection.style.display = 'none';
+            if (geminiModelSubsection) geminiModelSubsection.style.display = 'none';
             if (apiKeySubsection) apiKeySubsection.style.display = 'none';
             if (ollamaSubsection) ollamaSubsection.style.display = 'block';
         } else {
             geminiPaidContainer.style.display = 'none';
             if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'none';
             if (geminiUsageSubsection) geminiUsageSubsection.style.display = 'none';
+            if (geminiModelSubsection) geminiModelSubsection.style.display = 'none';
             if (apiKeySubsection) apiKeySubsection.style.display = 'block';
             if (ollamaSubsection) ollamaSubsection.style.display = 'none';
         }
@@ -171,6 +197,22 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         if (provider !== 'ollama') {
             apiKeyInput.placeholder = `Enter your ${config.name} API key`;
+        }
+        
+        // Show the default model / optional override for single-key providers
+        if (providerModelInput) {
+            const defaultModel = defaultProviderModels[provider];
+            if (defaultModel) {
+                providerModelInput.placeholder = `Default: ${defaultModel}`;
+                if (providerModelHelp) {
+                    providerModelHelp.textContent = `Leave blank to use the default model (${defaultModel}).`;
+                }
+            } else {
+                providerModelInput.placeholder = 'Leave blank to use the default model';
+                if (providerModelHelp) {
+                    providerModelHelp.textContent = '';
+                }
+            }
         }
     }
     
@@ -447,7 +489,8 @@ document.addEventListener('DOMContentLoaded', async function() {
             statusSpan.textContent = 'Testing...';
             statusSpan.className = 'key-test-result testing';
             
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            const model = getSelectedGeminiModel();
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -472,9 +515,17 @@ document.addEventListener('DOMContentLoaded', async function() {
                 statusSpan.title = 'API key is invalid or expired. Check your key in Google AI Studio.';
                 console.error(`Key #${index + 1} test failed: ${response.status}`);
             } else {
-                statusSpan.textContent = `✗ Failed (${response.status})`;
+                // Try to show the API's own error message (e.g. model not found)
+                let detail = `✗ Failed (${response.status})`;
+                try {
+                    const errBody = await response.json();
+                    const apiMsg = errBody.error?.message;
+                    if (apiMsg) detail = `✗ ${apiMsg}`;
+                } catch (e) { /* ignore parse errors */ }
+                statusSpan.textContent = detail;
                 statusSpan.className = 'key-test-result error';
-                console.error(`Key #${index + 1} test failed:`, response.status);
+                statusSpan.title = detail;
+                console.error(`Key #${index + 1} test failed:`, response.status, detail);
             }
         } catch (error) {
             statusSpan.textContent = `✗ Error`;
@@ -491,6 +542,67 @@ document.addEventListener('DOMContentLoaded', async function() {
     addGeminiKeyButton.addEventListener('click', () => {
         addGeminiKeyInput('');
     });
+
+    // Load available Gemini models for the entered API key
+    if (loadGeminiModelsButton) {
+        loadGeminiModelsButton.addEventListener('click', async () => {
+            const apiKey = (geminiKeys.find(key => key && key.trim() !== '') || '').trim();
+            if (!apiKey) {
+                geminiModelStatus.textContent = '⚠️ Add at least one Gemini API key first.';
+                geminiModelStatus.className = 'api-test-result error';
+                return;
+            }
+
+            geminiModelStatus.textContent = 'Loading models...';
+            geminiModelStatus.className = 'api-test-result';
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+                if (!response.ok) {
+                    let detail = `HTTP ${response.status}`;
+                    try {
+                        const errBody = await response.json();
+                        detail = errBody.error?.message || detail;
+                    } catch (e) { /* ignore */ }
+                    throw new Error(detail);
+                }
+
+                const data = await response.json();
+                const models = (data.models || [])
+                    .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+                    .map(m => m.name.replace(/^models\//, ''));
+
+                if (models.length === 0) {
+                    geminiModelStatus.textContent = 'No models supporting generateContent were returned for this key.';
+                    geminiModelStatus.className = 'api-test-result error';
+                    return;
+                }
+
+                const datalist = document.getElementById('gemini-model-options');
+                if (datalist) {
+                    datalist.innerHTML = models
+                        .map(name => `<option value="${name}"></option>`)
+                        .join('');
+                }
+
+                // If the current value isn't available for this key, offer a sensible default
+                const current = getSelectedGeminiModel();
+                if (!models.includes(current)) {
+                    const preferred = models.find(m => m === DEFAULT_GEMINI_MODEL)
+                        || models.find(m => m.includes('flash-lite'))
+                        || models.find(m => m.includes('flash'))
+                        || models[0];
+                    if (geminiModelInput) geminiModelInput.value = preferred;
+                }
+
+                geminiModelStatus.textContent = `✓ Found ${models.length} available model(s). Choose one above.`;
+                geminiModelStatus.className = 'api-test-result success';
+            } catch (error) {
+                geminiModelStatus.textContent = `✗ Could not load models: ${error.message}`;
+                geminiModelStatus.className = 'api-test-result error';
+            }
+        });
+    }
     
     // Reset Gemini counter button
     document.getElementById('reset-gemini-counter').addEventListener('click', async () => {
@@ -586,7 +698,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Load saved settings
-    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly']).then(result => {
+    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'geminiModel', 'providerModel', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly']).then(result => {
         if (result.labels && result.labels.length > 0) {
             result.labels.forEach(label => {
                 addLabelInput(label);
@@ -631,6 +743,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             ollamaCpuOnlyCheckbox.checked = result.ollamaCpuOnly === true;
         }
         
+        // Load Gemini model (default to a current model for new installs)
+        if (geminiModelInput) {
+            geminiModelInput.value = result.geminiModel || DEFAULT_GEMINI_MODEL;
+        }
+        
+        // Load optional per-provider model override
+        if (providerModelInput) {
+            providerModelInput.value = result.providerModel || '';
+        }
+        
         if (result.aiProvider) {
             aiProviderSelect.value = result.aiProvider;
             updateProviderInfo();
@@ -667,9 +789,14 @@ document.addEventListener('DOMContentLoaded', async function() {
         try {
             showApiTestResult('Testing connection...', false);
             
+            // Optional per-provider model override
+            const modelOverride = (providerModelInput && providerModelInput.value.trim()) || '';
+            const modelFor = (p) => modelOverride || defaultProviderModels[p];
+            
             let response;
             if (provider === 'gemini') {
-                response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+                const model = getSelectedGeminiModel();
+                response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -688,7 +815,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         'Authorization': `Bearer ${apiKey}`
                     },
                     body: JSON.stringify({
-                        model: 'gpt-4o-mini',
+                        model: modelFor('openai'),
                         messages: [{ role: 'user', content: 'Test' }],
                         max_tokens: 10
                     })
@@ -702,7 +829,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         'anthropic-version': '2023-06-01'
                     },
                     body: JSON.stringify({
-                        model: 'claude-3-haiku-20240307',
+                        model: modelFor('anthropic'),
                         messages: [{ role: 'user', content: 'Test' }],
                         max_tokens: 10
                     })
@@ -715,7 +842,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         'Authorization': `Bearer ${apiKey}`
                     },
                     body: JSON.stringify({
-                        model: 'openai/gpt-oss-120b',
+                        model: modelFor('groq'),
                         messages: [{ role: 'user', content: 'Test' }],
                         max_tokens: 10
                     })
@@ -728,7 +855,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                         'Authorization': `Bearer ${apiKey}`
                     },
                     body: JSON.stringify({
-                        model: 'mistral-small-latest',
+                        model: modelFor('mistral'),
                         messages: [{ role: 'user', content: 'Test' }],
                         max_tokens: 10
                     })
@@ -1183,7 +1310,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 currentGeminiKeyIndex: 0, // Start with first key
                 aiProvider: provider,
                 enableAi: document.getElementById('enable-ai').checked,
-                geminiPaidPlan: geminiPaidCheckbox.checked
+                geminiPaidPlan: geminiPaidCheckbox.checked,
+                geminiModel: getSelectedGeminiModel()
             };
             
             // Initialize rate limits array for all keys if not exists
@@ -1244,7 +1372,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 apiKey: apiKey,
                 aiProvider: provider,
                 enableAi: document.getElementById('enable-ai').checked,
-                geminiPaidPlan: geminiPaidCheckbox.checked
+                geminiPaidPlan: geminiPaidCheckbox.checked,
+                providerModel: (providerModelInput && providerModelInput.value.trim()) || ''
             };
 
             browser.storage.local.set(settings).then(() => {

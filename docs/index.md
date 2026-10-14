@@ -34,7 +34,7 @@ pre{background:#0b0d0f;padding:12px;border-radius:8px;color:#d7e9c7}
 <p class="lead">AI-powered email organization that adapts to your workflow. Choose from cloud providers (Gemini, OpenAI, Anthropic, Groq, Mistral) or run a <strong>local Ollama</strong> model and let AutoSort+ automatically move emails to the right folders.</p>
 
 <div class="badges">
-<a href="https://github.com/Nigel1992/AutoSort-Plus/releases"><img src="https://img.shields.io/badge/Version-1.2.4-blue?style=for-the-badge" alt="Version"></a>
+<a href="https://github.com/Nigel1992/AutoSort-Plus/releases"><img src="https://img.shields.io/badge/Version-1.2.5-blue?style=for-the-badge" alt="Version"></a>
 <a href="https://www.thunderbird.net/"><img src="https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=for-the-badge&logo=thunderbird&logoColor=white" alt="Thunderbird"></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"></a>
 </div>
@@ -70,18 +70,19 @@ AutoSort+ transforms your email workflow by automatically organizing messages in
 
 ---
 
-## 🎉 Latest Release: v1.2.4
+## 🎉 Latest Release: v1.2.5
 
 <div class="release-banner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 20px 0;" markdown="1">
 
-### 🚀 Release v1.2.4
+### 🚀 Release v1.2.5
 
-**Summary:** Updated the Groq integration to a supported model and hardened email classification reliability.
+**Summary:** Configurable AI models and a fix for the Gemini `404` on new API keys.
 
-#### 🛠️ Notable Fixes
-- ✅ **Groq model updated:** The previous model (`llama-3.3-70b-versatile`) was shut down in August 2026. Groq now uses `openai/gpt-oss-120b`.
-- ✅ **Reliable classification:** Set `reasoning_effort: 'low'` and increased the token budget so the reasoning model always returns a label instead of an empty response.
-- ✅ **Gemini troubleshooting:** Confirmed the Gemini API works correctly with a valid API key — see the [setup guide](https://github.com/Nigel1992/AutoSort-Plus#-setup-guide).
+#### 🛠️ Notable Changes
+- ✅ **Gemini 404 fixed:** Google now limits the legacy `gemini-2.5-*` models to accounts that used them in the past, so brand-new API keys returned a `404`. The default model is now `gemini-3.5-flash-lite`.
+- ✅ **Choose your model:** Pick the Gemini model in settings (with a **Load Available Models** button that lists the models your key can access). Other providers get an optional **Model** override too.
+- ✅ **Gemini 3 support:** Correct `thinkingLevel` handling for Gemini 3.x (the legacy `thinkingBudget` is no longer sent, which would cause a `400`).
+- ✅ **Clearer errors:** Model-not-found responses now include a hint to switch models.
 
 </div>
 
@@ -95,12 +96,14 @@ Choose the best AI provider for your needs:
 
 | Provider | Model | Free Tier | Speed | Best For |
 |----------|-------|-----------|-------|----------|
-| **Gemini** | gemini-2.5-flash | 20/day/key | ⚡⚡⚡ | General use, fast processing |
+| **Gemini** | gemini-3.5-flash-lite (configurable) | 20/day/key | ⚡⚡⚡ | General use, fast processing |
 | **OpenAI** | gpt-4o-mini | - | ⚡⚡ | Premium quality |
 | **Claude** | claude-3-haiku | 1000/day | ⚡⚡⚡ | Long emails, nuanced content |
 | **Groq** | gpt-oss-120b | Generous | ⚡⚡⚡⚡ | Ultra-fast, free |
 | **Mistral** | mistral-small | Free tier | ⚡⚡⚡ | European privacy focus |
 | **Ollama** | local LLM (llama3.2, phi, tinyllama) | Local (no external usage) | ⚡⚡ - ⚡⚡⚡ | Run models locally for privacy and offline use; supports model download and CPU-only mode |
+
+> **Gemini model selection:** The model is configurable in **Settings → AI Settings → Gemini Model**. New Google AI Studio API keys can no longer access the legacy `gemini-2.5-*` models (they return a 404 "no longer available to new users"), so the default is now `gemini-3.5-flash-lite`. Use **Load Available Models** to fetch the models your key can access. Other providers support an optional **Model** override too.
 
 ### 📊 Smart Rate Limit Management (Gemini)
 
@@ -433,6 +436,6 @@ See [LICENSE](https://github.com/Nigel1992/AutoSort-Plus/blob/main/LICENSE) for 
 
 ![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=flat-square&logo=thunderbird&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![Version](https://img.shields.io/badge/Version-1.2.4-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.2.5-blue?style=flat-square)
 
 </div>

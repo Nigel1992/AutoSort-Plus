@@ -20,7 +20,7 @@ jobs:
       - name: Moderate content or verify API connection
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.5-flash' }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.6-flash' }}
           GH_TOKEN: ${{ github.token }}
         shell: python
         run: |
@@ -43,7 +43,7 @@ jobs:
               key = os.environ.get('GEMINI_API_KEY', '')
               if not key:
                   raise RuntimeError('GEMINI_API_KEY is missing; configure this repository Actions secret')
-              model = os.environ.get('GEMINI_MODEL', 'gemini-3.5-flash')
+              model = os.environ.get('GEMINI_MODEL', 'gemini-3.6-flash')
               if not re.fullmatch(r'[a-zA-Z0-9._-]+', model):
                   raise RuntimeError('Invalid GEMINI_MODEL')
               policy = ('Classify GitHub content for personal abuse. Return exactly [FLAGGED] or [OK]. '
