@@ -326,6 +326,59 @@ h2 {
     cursor: pointer;
 }
 
+/* Prominent, obviously-clickable dropdown for choosing the Gemini model */
+.model-select-wrapper {
+    position: relative;
+    margin-bottom: 10px;
+}
+
+.model-select-wrapper::after {
+    content: "▾";
+    position: absolute;
+    top: 50%;
+    right: 16px;
+    transform: translateY(-50%);
+    font-size: 16px;
+    line-height: 1;
+    color: var(--primary-color);
+    pointer-events: none;
+}
+
+.model-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 100%;
+    margin: 0;
+    padding: 12px 44px 12px 14px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-color);
+    border: 2px solid var(--primary-color);
+    border-radius: 6px;
+    background-color: white;
+    background-image: linear-gradient(to bottom, #ffffff, #f2f6ff);
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 96, 223, 0.12);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+
+.model-select:hover {
+    border-color: var(--primary-hover);
+    box-shadow: 0 2px 6px rgba(0, 96, 223, 0.22);
+}
+
+.model-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 96, 223, 0.25);
+}
+
+.model-select option {
+    font-weight: normal;
+    color: var(--text-color);
+}
+
 .provider-info {
     margin: 15px 0;
     padding: 15px;

@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const geminiKeysList = document.getElementById('gemini-keys-list');
     const addGeminiKeyButton = document.getElementById('add-gemini-key');
     const geminiModelInput = document.getElementById('gemini-model');
+    const geminiModelCustomInput = document.getElementById('gemini-model-custom');
     const geminiModelStatus = document.getElementById('gemini-model-status');
     const loadGeminiModelsButton = document.getElementById('load-gemini-models');
     const providerModelInput = document.getElementById('provider-model');
@@ -131,6 +132,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Note: Gemini 2.5 models are no longer available to NEW API keys (404),
     // so new installs default to a current model.
     const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+    const CUSTOM_MODEL_VALUE = '__custom__';
+    const GEMINI_MODEL_LABELS = {
+        'gemini-3.5-flash-lite': 'Gemini 3.5 Flash-Lite — recommended (fast & cheap)',
+        'gemini-3.8-flash': 'Gemini 3.8 Flash — latest, most capable',
+        'gemini-3.7-flash': 'Gemini 3.7 Flash',
+        'gemini-3.6-flash': 'Gemini 3.6 Flash',
+        'gemini-3.1-flash-lite': 'Gemini 3.1 Flash-Lite',
+        'gemini-2.5-flash': 'Gemini 2.5 Flash — existing users only',
+        'gemini-2.5-flash-lite': 'Gemini 2.5 Flash-Lite — existing users only'
+    };
     const defaultProviderModels = {
         openai: 'gpt-4o-mini',
         anthropic: 'claude-3-haiku-20240307',
@@ -138,10 +149,76 @@ document.addEventListener('DOMContentLoaded', async function() {
         mistral: 'mistral-small-latest'
     };
 
+    // Human-friendly label for a Gemini model id
+    function geminiModelLabel(id) {
+        return GEMINI_MODEL_LABELS[id] || id;
+    }
+
+    // Escape text before injecting into option markup
+    function escapeOptionHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    // Rebuild the Gemini model dropdown and select the given value.
+    // When the value is not in the list (or is a known custom pick) the
+    // "Custom model..." option is selected and the text field is shown.
+    function setGeminiModelSelect(models, selected) {
+        if (!geminiModelInput) return;
+        const list = (models && models.length) ? models : Object.keys(GEMINI_MODEL_LABELS);
+        const customSelected = typeof selected === 'string' && selected !== '' && !list.includes(selected);
+
+        let html = list
+            .map(id => `<option value="${escapeOptionHtml(id)}">${escapeOptionHtml(geminiModelLabel(id))}</option>`)
+            .join('');
+        html += `<option value="${CUSTOM_MODEL_VALUE}">Custom model… (type your own)</option>`;
+        geminiModelInput.innerHTML = html;
+
+        if (customSelected) {
+            geminiModelInput.value = CUSTOM_MODEL_VALUE;
+            if (geminiModelCustomInput) {
+                geminiModelCustomInput.value = selected;
+                geminiModelCustomInput.style.display = 'block';
+            }
+        } else {
+            const fallback = list.includes(DEFAULT_GEMINI_MODEL) ? DEFAULT_GEMINI_MODEL : list[0];
+            geminiModelInput.value = selected || fallback;
+            if (geminiModelCustomInput) {
+                geminiModelCustomInput.value = '';
+                geminiModelCustomInput.style.display = 'none';
+            }
+        }
+    }
+
     // Resolve the Gemini model to use, falling back to the default
     function getSelectedGeminiModel() {
-        const custom = (geminiModelInput && geminiModelInput.value.trim()) || '';
-        return custom || DEFAULT_GEMINI_MODEL;
+        if (geminiModelInput && geminiModelInput.value === CUSTOM_MODEL_VALUE) {
+            const custom = (geminiModelCustomInput && geminiModelCustomInput.value.trim()) || '';
+            return custom || DEFAULT_GEMINI_MODEL;
+        }
+        const selected = (geminiModelInput && geminiModelInput.value) || '';
+        return selected || DEFAULT_GEMINI_MODEL;
+    }
+
+    // Toggle the custom model text field and track save-state changes
+    if (geminiModelInput) {
+        geminiModelInput.addEventListener('change', () => {
+            if (geminiModelInput.value === CUSTOM_MODEL_VALUE) {
+                if (geminiModelCustomInput) {
+                    geminiModelCustomInput.style.display = 'block';
+                    geminiModelCustomInput.focus();
+                }
+            } else if (geminiModelCustomInput) {
+                geminiModelCustomInput.style.display = 'none';
+            }
+            updateSaveButtonState();
+        });
+    }
+    if (geminiModelCustomInput) {
+        geminiModelCustomInput.addEventListener('input', updateSaveButtonState);
     }
 
     // Update provider info when selection changes
@@ -574,22 +651,20 @@ document.addEventListener('DOMContentLoaded', async function() {
                     return;
                 }
 
-                const datalist = document.getElementById('gemini-model-options');
-                if (datalist) {
-                    datalist.innerHTML = models
-                        .map(name => `<option value="${name}"></option>`)
-                        .join('');
-                }
+                const wasCustom = geminiModelInput && geminiModelInput.value === CUSTOM_MODEL_VALUE;
+                const current = getSelectedGeminiModel();
 
                 // If the current value isn't available for this key, offer a sensible default
-                const current = getSelectedGeminiModel();
-                if (!models.includes(current)) {
-                    const preferred = models.find(m => m === DEFAULT_GEMINI_MODEL)
+                // (but keep a user-typed custom model as-is).
+                let chosen = current;
+                if (!wasCustom && !models.includes(current)) {
+                    chosen = models.find(m => m === DEFAULT_GEMINI_MODEL)
                         || models.find(m => m.includes('flash-lite'))
                         || models.find(m => m.includes('flash'))
                         || models[0];
-                    if (geminiModelInput) geminiModelInput.value = preferred;
                 }
+
+                setGeminiModelSelect(models, chosen);
 
                 geminiModelStatus.textContent = `✓ Found ${models.length} available model(s). Choose one above.`;
                 geminiModelStatus.className = 'api-test-result success';
@@ -741,7 +816,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Load Gemini model (default to a current model for new installs)
         if (geminiModelInput) {
-            geminiModelInput.value = result.geminiModel || DEFAULT_GEMINI_MODEL;
+            setGeminiModelSelect(null, result.geminiModel || DEFAULT_GEMINI_MODEL);
         }
         
         // Load optional per-provider model override

@@ -109,20 +109,23 @@
                 <p class="info-text">Choose which Gemini model to use. <strong>New</strong> Google AI Studio API keys can no longer access the 2.5 models (they return a 404 "no longer available to new users"), so pick a current model such as <code>gemini-3.5-flash-lite</code>.</p>
                 <div class="input-group">
                     <label for="gemini-model">Model:</label>
-                    <input type="text" id="gemini-model" class="api-key-input" list="gemini-model-options" placeholder="gemini-3.5-flash-lite">
-                    <datalist id="gemini-model-options">
-                        <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite (recommended: fast &amp; cheap)</option>
-                        <option value="gemini-3.8-flash">Gemini 3.8 Flash (latest, most capable)</option>
-                        <option value="gemini-3.7-flash">Gemini 3.7 Flash</option>
-                        <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
-                        <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite</option>
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (existing users only)</option>
-                        <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite (existing users only)</option>
-                    </datalist>
+                    <div class="model-select-wrapper">
+                        <select id="gemini-model" class="provider-select model-select" aria-label="Gemini model">
+                            <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite — recommended (fast &amp; cheap)</option>
+                            <option value="gemini-3.8-flash">Gemini 3.8 Flash — latest, most capable</option>
+                            <option value="gemini-3.7-flash">Gemini 3.7 Flash</option>
+                            <option value="gemini-3.6-flash">Gemini 3.6 Flash</option>
+                            <option value="gemini-3.1-flash-lite">Gemini 3.1 Flash-Lite</option>
+                            <option value="gemini-2.5-flash">Gemini 2.5 Flash — existing users only</option>
+                            <option value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite — existing users only</option>
+                            <option value="__custom__">Custom model… (type your own)</option>
+                        </select>
+                    </div>
+                    <input type="text" id="gemini-model-custom" class="api-key-input" placeholder="e.g. gemini-3.8-pro" style="display: none;">
                     <div class="button-group">
                         <button id="load-gemini-models" class="button">Load Available Models</button>
                     </div>
-                    <small class="help-text">Tip: click "Load Available Models" to fetch the models your API key can actually use.</small>
+                    <small class="help-text">Pick a model from the dropdown. Or click "Load Available Models" to fetch the models your API key can actually use.</small>
                 </div>
                 <div id="gemini-model-status" class="api-test-result"></div>
             </div>
