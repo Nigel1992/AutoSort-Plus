@@ -109,6 +109,105 @@ async function ollamaChatViaTab(ollamaUrl, model, prompt, authToken) {
     }
 }
 
+// LM Studio native REST API chat (POST /api/v1/chat).
+// Tries a direct fetch first (host permission + LM Studio's default CORS),
+// then falls back to tab injection for setups where the background fetch is blocked.
+async function lmStudioChat(lmUrl, model, prompt, authToken) {
+    const base = (lmUrl || 'http://localhost:1234').trim().replace(/\/+$/, '');
+    const headers = { 'Content-Type': 'application/json' };
+    if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+    const body = {
+        model,
+        input: prompt,
+        system_prompt: 'You are an email classification assistant. Respond with only the label.',
+        max_output_tokens: 512,
+        temperature: 0.2,
+        stream: false
+    };
+
+    let response;
+    try {
+        response = await fetch(`${base}/api/v1/chat`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body)
+        });
+    } catch (netErr) {
+        console.warn('[LM Studio] Direct fetch failed, falling back to tab injection:', netErr.message);
+        return await localChatViaTab(base, '/api/v1/chat', body, authToken);
+    }
+
+    if (!response.ok) {
+        const text = await response.text().catch(() => '');
+        let detail = text;
+        try { detail = JSON.parse(text).error || text; } catch (e) { /* keep raw text */ }
+        throw new Error(`LM Studio HTTP ${response.status}: ${(detail || '').substring(0, 200)}`);
+    }
+
+    return await response.json();
+}
+
+// Generic helper: POST JSON from a hidden tab at the local server's origin
+// (browser context) to avoid background-script network restrictions.
+async function localChatViaTab(baseUrl, path, body, authToken) {
+    const tab = await browser.tabs.create({ url: baseUrl, active: false });
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    try {
+        const headers = { 'Content-Type': 'application/json' };
+        if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+        const scriptCode = `
+        (async () => {
+            try {
+                const response = await fetch(${JSON.stringify(baseUrl + path)}, {
+                    method: 'POST',
+                    headers: ${JSON.stringify(headers)},
+                    body: ${JSON.stringify(JSON.stringify(body))}
+                });
+                const text = await response.text();
+                window.__local_result = { ok: response.ok, status: response.status, text: text };
+            } catch (error) {
+                window.__local_result = { ok: false, error: error.message };
+            }
+        })();
+        `;
+
+        await browser.tabs.executeScript(tab.id, { code: scriptCode });
+
+        let result = null;
+        for (let i = 0; i < 60; i++) { // 30 seconds max
+            await new Promise(resolve => setTimeout(resolve, 500));
+            try {
+                const results = await browser.tabs.executeScript(tab.id, {
+                    code: 'window.__local_result || null'
+                });
+                if (results && results[0]) {
+                    result = results[0];
+                    break;
+                }
+            } catch (e) {
+                break;
+            }
+        }
+
+        if (!result) {
+            throw new Error('LM Studio request timed out (30s) - no response from API');
+        }
+        if (result.error) {
+            throw new Error(result.error);
+        }
+        if (!result.ok) {
+            throw new Error(`LM Studio HTTP ${result.status}: ${(result.text || '').substring(0, 200)}`);
+        }
+
+        return JSON.parse(result.text);
+    } finally {
+        try { await browser.tabs.remove(tab.id); } catch (e) {}
+    }
+}
+
 async function callOllamaViaTab(ollamaUrl, payload) {
     // Deprecated function kept for backward compatibility
     // Now routes to direct API call via fetch
@@ -494,12 +593,12 @@ async function analyzeEmailContent(emailContent) {
                 // Legacy single key
                 apiKeyToUse = settings.apiKey;
             }
-        } else if (provider !== 'ollama') {
-            // Ollama doesn't need an API key; other providers do
+        } else if (provider !== 'ollama' && provider !== 'lmstudio') {
+            // Local providers don't need an API key; other providers do
             apiKeyToUse = settings.apiKey;
         }
         
-        if (!apiKeyToUse && provider !== 'ollama') {
+        if (!apiKeyToUse && provider !== 'ollama' && provider !== 'lmstudio') {
             console.error("Missing API key");
             await updateNotification(
                 notificationId,
@@ -726,6 +825,36 @@ async function analyzeEmailContent(emailContent) {
                 throw ollamaError;
             }
 
+        } else if (provider === 'lmstudio') {
+            console.log("Making API request to LM Studio (local)...");
+
+            await updateNotification(
+                notificationId,
+                "AutoSort+ AI Analysis",
+                "Analyzing email content with local LM Studio..."
+            );
+
+            const lmSettings = await browser.storage.local.get([
+                'lmstudioUrl', 'lmstudioModel', 'lmstudioCustomModel', 'lmstudioAuthToken'
+            ]);
+            const lmUrl = lmSettings.lmstudioUrl || 'http://localhost:1234';
+            let lmModel = lmSettings.lmstudioModel || '';
+            const lmAuthToken = lmSettings.lmstudioAuthToken || '';
+
+            // Resolve the custom-model sentinel to the user's typed model name
+            if (!lmModel || lmModel === 'custom' || lmModel === '__custom__') {
+                lmModel = lmSettings.lmstudioCustomModel || '';
+            }
+
+            if (!lmModel) {
+                throw new Error('No LM Studio model configured. Open settings and select a model.');
+            }
+
+            console.log(`Using LM Studio at ${lmUrl} with model ${lmModel}`);
+
+            data = await lmStudioChat(lmUrl, lmModel, prompt, lmAuthToken);
+            response = null; // Mark as handled
+
         } else {
             throw new Error(`Unknown provider: ${provider}`);
         }
@@ -865,6 +994,26 @@ async function analyzeEmailContent(emailContent) {
                 }
             } catch (e) {
                 console.warn('Failed to parse Ollama response shape:', e.message);
+                label = null;
+            }
+        } else if (provider === 'lmstudio') {
+            // LM Studio native API: { output: [{ type: "message", content: "..." }, ...] }
+            try {
+                if (Array.isArray(data.output)) {
+                    const msg = data.output.find(o => o.type === 'message' && o.content)
+                        || data.output.find(o => o && o.content);
+                    if (msg) label = tryTrim(msg.content);
+                }
+                if (!label) {
+                    // OpenAI-compatible / other fallback shapes
+                    label = tryTrim(
+                        (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) ||
+                        data.response ||
+                        data.content
+                    );
+                }
+            } catch (e) {
+                console.warn('Failed to parse LM Studio response shape:', e.message);
                 label = null;
             }
         }

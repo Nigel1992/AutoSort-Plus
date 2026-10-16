@@ -27,6 +27,7 @@
                         <option value="groq">Groq (Fast & Free)</option>
                         <option value="mistral">Mistral AI</option>
                         <option value="ollama">Ollama (Local LLM)</option>
+                        <option value="lmstudio">LM Studio (Local LLM)</option>
                     </select>
                 </div>
                 
@@ -74,6 +75,32 @@
                 <div id="ollama-download-status" class="api-test-result" style="display: none;"></div>
                 <div id="ollama-test-result" class="api-test-result"></div>
                 <div id="ollama-diagnostics" class="diagnostics-result" style="display: none;"></div>
+            </div>
+            
+            <div class="subsection" id="lmstudio-settings-subsection" style="display: none;">
+                <h3>🖥️ Local LM Studio Configuration</h3>
+                <label for="lmstudio-url">LM Studio Server URL:</label>
+                <input type="text" id="lmstudio-url" class="api-key-input" placeholder="http://localhost:1234" value="http://localhost:1234">
+                <small class="help-text">Start LM Studio, open the <strong>Developer</strong> tab and turn on the local server (default port 1234).</small>
+                <div class="input-group">
+                    <label for="lmstudio-model">LM Studio Model:</label>
+                    <div class="model-select-wrapper">
+                        <select id="lmstudio-model" class="provider-select model-select" aria-label="LM Studio model">
+                            <option value="">Click "List Models" to load…</option>
+                        </select>
+                    </div>
+                    <input type="text" id="lmstudio-custom-model" class="api-key-input" placeholder="e.g. qwen2.5-7b-instruct" style="display: none; margin-top: 10px;">
+                </div>
+                <div class="input-group">
+                    <label for="lmstudio-auth-token">LM Studio API Token (optional):</label>
+                    <input type="password" id="lmstudio-auth-token" class="api-key-input" placeholder="Only if you enabled authentication in LM Studio">
+                    <small class="help-text">Used as a Bearer token for /api/v1/chat and /api/v1/models when required.</small>
+                </div>
+                <div class="button-group">
+                    <button id="list-lmstudio-models" class="button">List Models</button>
+                    <button id="test-lmstudio" class="button">Test Connection</button>
+                </div>
+                <div id="lmstudio-test-result" class="api-test-result"></div>
             </div>
             
             <div class="subsection" id="api-key-subsection">

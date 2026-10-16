@@ -70,6 +70,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     const ollamaTestResult = document.getElementById('ollama-test-result');
     const diagnoseOllamaButton = document.getElementById('diagnose-ollama');
     const ollamaDiagnostics = document.getElementById('ollama-diagnostics');
+
+    // LM Studio-specific elements
+    const lmStudioUrlInput = document.getElementById('lmstudio-url');
+    const lmStudioModelSelect = document.getElementById('lmstudio-model');
+    const lmStudioCustomModelInput = document.getElementById('lmstudio-custom-model');
+    const lmStudioAuthTokenInput = document.getElementById('lmstudio-auth-token');
+    const testLmStudioButton = document.getElementById('test-lmstudio');
+    const listLmStudioModelsButton = document.getElementById('list-lmstudio-models');
+    const lmStudioTestResult = document.getElementById('lmstudio-test-result');
+    const LMSTUDIO_CUSTOM_VALUE = '__custom__';
     
     // Update endpoint URLs when Ollama URL changes
     if (ollamaUrlInput) {
@@ -124,6 +134,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             name: 'Ollama (Local LLM)',
             signupUrl: 'https://ollama.ai/',
             info: '✓ 100% Free: Runs locally on your machine<br>✓ Privacy: No data sent to external servers<br>✓ No rate limits: Process unlimited emails<br>✓ Models: Llama 2/3, Mistral, Phi, Gemma, Qwen, and more<br>✓ Requires: <a href="https://ollama.ai/download" target="_blank">Ollama installed</a> and running locally<br>✓ Setup: Install Ollama, run "ollama pull llama3.2" to download a model',
+            isFree: true
+        },
+        lmstudio: {
+            name: 'LM Studio (Local LLM)',
+            signupUrl: 'https://lmstudio.ai/',
+            info: '✓ 100% Free: Runs locally on your machine<br>✓ Privacy: No data sent to external servers<br>✓ No rate limits: Process unlimited emails<br>✓ Uses LM Studio\'s native REST API (<code>/api/v1/chat</code>)<br>✓ Requires: <a href="https://lmstudio.ai/" target="_blank">LM Studio</a> installed with the local server enabled (default <code>http://localhost:1234</code>)<br>✓ Setup: In LM Studio open the Developer tab, start the server and load a chat model',
             isFree: true
         }
     };
@@ -228,18 +244,20 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         // Get subsection elements
         const ollamaSubsection = document.getElementById('ollama-settings-subsection');
+        const lmStudioSubsection = document.getElementById('lmstudio-settings-subsection');
         const apiKeySubsection = document.getElementById('api-key-subsection');
         const geminiMultiKeysSubsection = document.getElementById('gemini-multi-keys-subsection');
         const geminiUsageSubsection = document.getElementById('gemini-usage-subsection');
         const geminiModelSubsection = document.getElementById('gemini-model-subsection');
         const rateLimitWarning = document.getElementById('rate-limit-warning');
+        const isLocalProvider = provider === 'ollama' || provider === 'lmstudio';
         
-        // Show/hide rate limit warning (not for Ollama)
+        // Show/hide rate limit warning (not for local providers)
         if (rateLimitWarning) {
-            rateLimitWarning.style.display = provider === 'ollama' ? 'none' : 'block';
+            rateLimitWarning.style.display = isLocalProvider ? 'none' : 'block';
         }
         
-        // Show/hide Gemini-specific elements
+        // Show/hide provider-specific elements
         if (provider === 'gemini') {
             geminiPaidContainer.style.display = 'block';
             if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'block';
@@ -247,6 +265,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (geminiModelSubsection) geminiModelSubsection.style.display = 'block';
             if (apiKeySubsection) apiKeySubsection.style.display = 'none';
             if (ollamaSubsection) ollamaSubsection.style.display = 'none';
+            if (lmStudioSubsection) lmStudioSubsection.style.display = 'none';
             updateGeminiUsageDisplay();
         } else if (provider === 'ollama') {
             // Show Ollama settings, hide API key and Gemini sections
@@ -256,6 +275,16 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (geminiModelSubsection) geminiModelSubsection.style.display = 'none';
             if (apiKeySubsection) apiKeySubsection.style.display = 'none';
             if (ollamaSubsection) ollamaSubsection.style.display = 'block';
+            if (lmStudioSubsection) lmStudioSubsection.style.display = 'none';
+        } else if (provider === 'lmstudio') {
+            // Show LM Studio settings, hide API key and Gemini sections
+            geminiPaidContainer.style.display = 'none';
+            if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'none';
+            if (geminiUsageSubsection) geminiUsageSubsection.style.display = 'none';
+            if (geminiModelSubsection) geminiModelSubsection.style.display = 'none';
+            if (apiKeySubsection) apiKeySubsection.style.display = 'none';
+            if (ollamaSubsection) ollamaSubsection.style.display = 'none';
+            if (lmStudioSubsection) lmStudioSubsection.style.display = 'block';
         } else {
             geminiPaidContainer.style.display = 'none';
             if (geminiMultiKeysSubsection) geminiMultiKeysSubsection.style.display = 'none';
@@ -263,6 +292,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             if (geminiModelSubsection) geminiModelSubsection.style.display = 'none';
             if (apiKeySubsection) apiKeySubsection.style.display = 'block';
             if (ollamaSubsection) ollamaSubsection.style.display = 'none';
+            if (lmStudioSubsection) lmStudioSubsection.style.display = 'none';
         }
         
         providerInfo.innerHTML = `
@@ -272,7 +302,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             </div>
         `;
         
-        if (provider !== 'ollama') {
+        if (!isLocalProvider) {
             apiKeyInput.placeholder = `Enter your ${config.name} API key`;
         }
         
@@ -765,12 +795,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (provider === 'gemini') {
             const validGeminiKeys = geminiKeys.filter(key => key && key.trim() !== '');
             hasValidApiKey = validGeminiKeys.length > 0;
-        } else if (provider !== 'ollama') {
-            // Non-Ollama providers (OpenAI, Anthropic, Groq, Mistral) require API key
+        } else if (provider !== 'ollama' && provider !== 'lmstudio') {
+            // Cloud providers (OpenAI, Anthropic, Groq, Mistral) require an API key
             const apiKey = apiKeyInput.value.trim();
             hasValidApiKey = !!apiKey;
         }
-        // Ollama doesn't require an API key, so hasValidApiKey stays true
+        // Ollama and LM Studio are local providers and don't require an API key,
+        // so hasValidApiKey stays true
         
         if (labels.length === 0 || !hasValidApiKey) {
             saveButton.disabled = true;
@@ -789,7 +820,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Load saved settings
-    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'geminiModel', 'providerModel', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly']).then(result => {
+    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'geminiModel', 'providerModel', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'ollamaAuthToken', 'lmstudioUrl', 'lmstudioModel', 'lmstudioCustomModel', 'lmstudioAuthToken']).then(result => {
         if (result.labels && result.labels.length > 0) {
             result.labels.forEach(label => {
                 addLabelInput(label);
@@ -833,6 +864,17 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (ollamaCpuOnlyCheckbox) {
             ollamaCpuOnlyCheckbox.checked = result.ollamaCpuOnly === true;
         }
+
+        // Load LM Studio settings
+        if (result.lmstudioUrl && lmStudioUrlInput) {
+            lmStudioUrlInput.value = result.lmstudioUrl;
+        }
+        if (result.lmstudioAuthToken && lmStudioAuthTokenInput) {
+            lmStudioAuthTokenInput.value = result.lmstudioAuthToken;
+        }
+        if (lmStudioModelSelect && result.lmstudioModel) {
+            setLmStudioModelSelect(result.lmstudioModel, result.lmstudioCustomModel || '');
+        }
         
         // Load Gemini model (default to a current model for new installs)
         if (geminiModelInput) {
@@ -866,9 +908,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         const apiKey = apiKeyInput.value.trim();
         const provider = aiProviderSelect.value;
         
-        // Skip for Ollama as it has its own test button
+        // Skip local providers as they have their own test buttons
         if (provider === 'ollama') {
             showApiTestResult('Please use the "Test Ollama Connection" button below', false);
+            return;
+        }
+        if (provider === 'lmstudio') {
+            showApiTestResult('Please use the "Test Connection" button in the LM Studio section below', false);
             return;
         }
         
@@ -1352,6 +1398,187 @@ document.addEventListener('DOMContentLoaded', async function() {
             }
         });
     }
+
+    // ---- LM Studio (local, native REST API /api/v1/*) ----
+
+    // Rebuild the LM Studio model dropdown.
+    // `selected` may be a real model id or the "custom" sentinel.
+    function renderLmStudioModels(models, selected = '', customModel = '') {
+        if (!lmStudioModelSelect) return;
+        const list = (models || []).slice();
+        const selectedIsCustom = selected === 'custom' || selected === LMSTUDIO_CUSTOM_VALUE;
+
+        // Keep the currently saved model visible even if it isn't in the fetched list
+        if (selected && !selectedIsCustom && !list.includes(selected)) {
+            list.push(selected);
+        }
+
+        let html = '<option value="">Select a model…</option>';
+        html += list
+            .map(id => `<option value="${escapeOptionHtml(id)}">${escapeOptionHtml(id)}</option>`)
+            .join('');
+        html += `<option value="${LMSTUDIO_CUSTOM_VALUE}">Custom model… (type your own)</option>`;
+        lmStudioModelSelect.innerHTML = html;
+
+        if (selectedIsCustom) {
+            lmStudioModelSelect.value = LMSTUDIO_CUSTOM_VALUE;
+            if (lmStudioCustomModelInput) {
+                lmStudioCustomModelInput.value = customModel || '';
+                lmStudioCustomModelInput.style.display = 'block';
+            }
+        } else if (selected) {
+            lmStudioModelSelect.value = selected;
+            if (lmStudioCustomModelInput) lmStudioCustomModelInput.style.display = 'none';
+        }
+    }
+
+    function setLmStudioModelSelect(model, customModel = '') {
+        renderLmStudioModels([], model, customModel);
+    }
+
+    function getSelectedLmStudioModel() {
+        if (!lmStudioModelSelect) return '';
+        if (lmStudioModelSelect.value === LMSTUDIO_CUSTOM_VALUE) {
+            return (lmStudioCustomModelInput && lmStudioCustomModelInput.value.trim()) || '';
+        }
+        return lmStudioModelSelect.value || '';
+    }
+
+    function lmStudioHeaders() {
+        const headers = {};
+        const token = lmStudioAuthTokenInput && lmStudioAuthTokenInput.value.trim();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+        return headers;
+    }
+
+    function lmStudioBaseUrl() {
+        return (lmStudioUrlInput.value.trim() || 'http://localhost:1234').replace(/\/+$/, '');
+    }
+
+    // Fetch the list of chat-capable models from LM Studio.
+    async function loadLmStudioModels() {
+        const url = lmStudioBaseUrl();
+        let response;
+        try {
+            response = await fetch(`${url}/api/v1/models`, { headers: lmStudioHeaders() });
+        } catch (e) {
+            throw new Error(`Could not reach LM Studio at ${url}. Is the local server running? (${e.message})`);
+        }
+
+        if (!response.ok) {
+            const text = await response.text().catch(() => '');
+            throw new Error(`LM Studio returned HTTP ${response.status} ${response.statusText}${text ? ': ' + text.substring(0, 150) : ''}`);
+        }
+
+        const data = await response.json();
+        let models = [];
+        if (Array.isArray(data.models)) {
+            models = data.models
+                .filter(m => !m.type || m.type === 'llm')
+                .map(m => m.key || m.id)
+                .filter(Boolean);
+        } else if (Array.isArray(data.data)) {
+            // OpenAI-compatible fallback shape
+            models = data.data.map(m => m.id).filter(Boolean);
+        }
+        // Deduplicate while preserving order
+        return [...new Set(models)];
+    }
+
+    if (lmStudioModelSelect) {
+        lmStudioModelSelect.addEventListener('change', () => {
+            if (lmStudioCustomModelInput) {
+                lmStudioCustomModelInput.style.display =
+                    lmStudioModelSelect.value === LMSTUDIO_CUSTOM_VALUE ? 'block' : 'none';
+            }
+            updateSaveButtonState();
+        });
+    }
+    if (lmStudioCustomModelInput) {
+        lmStudioCustomModelInput.addEventListener('input', updateSaveButtonState);
+    }
+    if (lmStudioUrlInput) {
+        lmStudioUrlInput.addEventListener('input', updateSaveButtonState);
+    }
+
+    // List installed LM Studio models
+    if (listLmStudioModelsButton) {
+        listLmStudioModelsButton.addEventListener('click', async () => {
+            lmStudioTestResult.textContent = 'Fetching models…';
+            lmStudioTestResult.className = 'api-test-result';
+            try {
+                const models = await loadLmStudioModels();
+                const selected = getSelectedLmStudioModel();
+                renderLmStudioModels(models, selected, (lmStudioCustomModelInput && lmStudioCustomModelInput.value) || '');
+                if (models.length === 0) {
+                    lmStudioTestResult.textContent = '⚠️ Connected, but no chat (LLM) models found. Load a model in LM Studio.';
+                    lmStudioTestResult.className = 'api-test-result error';
+                } else {
+                    lmStudioTestResult.textContent = `✓ Found ${models.length} model(s): ${models.join(', ')}`;
+                    lmStudioTestResult.className = 'api-test-result success';
+                }
+            } catch (e) {
+                lmStudioTestResult.textContent = `✗ ${e.message}`;
+                lmStudioTestResult.className = 'api-test-result error';
+            }
+        });
+    }
+
+    // Test LM Studio connection + a minimal chat request
+    if (testLmStudioButton) {
+        testLmStudioButton.addEventListener('click', async () => {
+            const url = lmStudioBaseUrl();
+            let model = getSelectedLmStudioModel();
+
+            lmStudioTestResult.textContent = 'Testing connection…';
+            lmStudioTestResult.className = 'api-test-result';
+
+            try {
+                const models = await loadLmStudioModels();
+
+                if (!model) {
+                    model = models[0] || '';
+                }
+                if (!model) {
+                    lmStudioTestResult.textContent = '⚠️ Connected to LM Studio, but no chat model is available. Load a model first.';
+                    lmStudioTestResult.className = 'api-test-result error';
+                    return;
+                }
+                if (!models.includes(model)) {
+                    lmStudioTestResult.textContent = `⚠️ Model "${model}" is not available. Found: ${models.join(', ') || '(none)'}`;
+                    lmStudioTestResult.className = 'api-test-result error';
+                    return;
+                }
+
+                const headers = Object.assign({ 'Content-Type': 'application/json' }, lmStudioHeaders());
+                const response = await fetch(`${url}/api/v1/chat`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        model,
+                        input: 'Reply with the single word: ok',
+                        max_output_tokens: 10,
+                        temperature: 0
+                    })
+                });
+
+                if (!response.ok) {
+                    const text = await response.text().catch(() => '');
+                    throw new Error(`HTTP ${response.status} ${response.statusText}${text ? ': ' + text.substring(0, 150) : ''}`);
+                }
+
+                const data = await response.json();
+                const msg = Array.isArray(data.output)
+                    ? (data.output.find(o => o.type === 'message') || {}).content
+                    : '';
+                lmStudioTestResult.textContent = `✓ Connected! Model "${model}" responded${msg ? ': ' + msg.trim().substring(0, 60) : ''}`;
+                lmStudioTestResult.className = 'api-test-result success';
+            } catch (e) {
+                lmStudioTestResult.textContent = `✗ ${e.message}`;
+                lmStudioTestResult.className = 'api-test-result error';
+            }
+        });
+    }
     
     addLabelButton.addEventListener('click', () => {
         // Clear instruction message if present
@@ -1447,6 +1674,32 @@ document.addEventListener('DOMContentLoaded', async function() {
             browser.storage.local.set(settings).then(() => {
                 const cpuMode = ollamaCpuOnlyCheckbox.checked ? ' (CPU-only mode)' : '';
                 showMessage(`✓ Settings saved successfully! Ollama is configured for local email processing${cpuMode}.`, true);
+                updateSaveButtonState();
+            }).catch(error => {
+                showMessage('Error saving settings: ' + error, false);
+            });
+        } else if (provider === 'lmstudio') {
+            // LM Studio is local and doesn't need an API key, just URL and model
+            const lmModel = getSelectedLmStudioModel();
+            if (!lmModel) {
+                showMessage('Please select an LM Studio model (or enter a custom one) before saving.', false);
+                return;
+            }
+
+            const settings = {
+                labels: labels,
+                aiProvider: provider,
+                enableAi: document.getElementById('enable-ai').checked,
+                lmstudioUrl: lmStudioBaseUrl(),
+                lmstudioModel: (lmStudioModelSelect && lmStudioModelSelect.value === LMSTUDIO_CUSTOM_VALUE)
+                    ? 'custom'
+                    : (lmStudioModelSelect ? lmStudioModelSelect.value : lmModel),
+                lmstudioCustomModel: lmStudioCustomModelInput ? lmStudioCustomModelInput.value.trim() : '',
+                lmstudioAuthToken: lmStudioAuthTokenInput ? lmStudioAuthTokenInput.value.trim() : ''
+            };
+
+            browser.storage.local.set(settings).then(() => {
+                showMessage(`✓ Settings saved successfully! LM Studio is configured to use "${lmModel}" locally.`, true);
                 updateSaveButtonState();
             }).catch(error => {
                 showMessage('Error saving settings: ' + error, false);
