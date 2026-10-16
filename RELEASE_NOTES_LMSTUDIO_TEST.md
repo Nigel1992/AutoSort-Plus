@@ -29,7 +29,8 @@ This is a **test release** that adds **LM Studio** as a local LLM provider.
 - 🔒 Fully local & private - no data leaves your machine
 - 🆓 Free, no API keys, no rate limits
 - 🧩 Uses LM Studio's **native REST API**: `GET /api/v1/models`, `POST /api/v1/chat`
-- 🔑 Optional Bearer token (only if you enable authentication in LM Studio)
+- 🔑 Optional Bearer token — enable **Require Authentication** in LM Studio's **Server
+  Settings** and create a key under **Manage Tokens** (LM Studio 0.4.0+)
 - ⚙️ **List Models** and **Test Connection** buttons in Settings
 
 ## 🚀 Quick Start
@@ -50,7 +51,8 @@ This is a **test release** that adds **LM Studio** as a local LLM provider.
 2. Select **LM Studio (Local LLM)** as the provider.
 3. Confirm the **LM Studio Server URL** (`http://localhost:1234`).
 4. Click **List Models** and pick your model (or choose "Custom model…" and type the id).
-5. (Optional) Enter the API token if you enabled authentication in LM Studio.
+5. (Optional) Enter the API token if you turned on **Require Authentication** in LM Studio
+   (Server Settings → Manage Tokens; requires LM Studio 0.4.0+). Leave blank otherwise.
 6. Click **Test Connection** - you should see the model respond.
 7. Click **Save Settings**.
 

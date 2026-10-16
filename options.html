@@ -94,7 +94,7 @@
                 <div class="input-group">
                     <label for="lmstudio-auth-token">LM Studio API Token (optional):</label>
                     <input type="password" id="lmstudio-auth-token" class="api-key-input" placeholder="Only if you enabled authentication in LM Studio">
-                    <small class="help-text">Used as a Bearer token for /api/v1/chat and /api/v1/models when required.</small>
+                    <small class="help-text">Leave blank unless you turned on <strong>Require Authentication</strong> in LM Studio's <strong>Server Settings</strong> and created a token via <strong>Manage Tokens</strong> (LM Studio 0.4.0+). Sent as a Bearer token for /api/v1/chat and /api/v1/models.</small>
                 </div>
                 <div class="button-group">
                     <button id="list-lmstudio-models" class="button">List Models</button>
