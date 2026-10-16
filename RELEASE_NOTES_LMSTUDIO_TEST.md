@@ -18,6 +18,9 @@ This is a **test release** that adds **LM Studio** as a local LLM provider.
   - LM Studio answers unknown endpoints with **HTTP 200** plus a JSON `error` body. That
     body is now detected and shown as a real error (with a hint to use the server root)
     instead of being treated as success.
+- **Instructions corrected:** start the server via **Settings → Local Model API** (toggle
+  the top option). LM Studio displays the base URL as `http://localhost:1234/v1`; either
+  that or `http://localhost:1234` works in the Server URL field.
 
 ## ✨ What's New
 
