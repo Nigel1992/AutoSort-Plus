@@ -37,8 +37,9 @@ This is a **test release** that adds **LM Studio** as a local LLM provider.
 ### Prerequisites
 1. Install LM Studio: https://lmstudio.ai/
 2. Download and **load a chat (LLM) model** in LM Studio.
-3. Open the **Developer** tab (the `</>` icon) and click **Start Server**
-   (default: `http://localhost:1234`).
+3. Open **Settings → Local Model API** (top option) and toggle the server **on**
+   (default: `http://localhost:1234`; LM Studio shows the base as
+   `http://localhost:1234/v1` — paste either form into the extension).
 4. Verify the server is up:
    ```bash
    curl http://localhost:1234/api/v1/models

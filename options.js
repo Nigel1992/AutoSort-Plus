@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         lmstudio: {
             name: 'LM Studio (Local LLM)',
             signupUrl: 'https://lmstudio.ai/',
-            info: '✓ 100% Free: Runs locally on your machine<br>✓ Privacy: No data sent to external servers<br>✓ No rate limits: Process unlimited emails<br>✓ Uses LM Studio\'s native REST API (<code>/api/v1/chat</code>)<br>✓ Requires: <a href="https://lmstudio.ai/" target="_blank">LM Studio</a> installed with the local server enabled (default <code>http://localhost:1234</code>)<br>✓ Setup: In LM Studio open the Developer tab, start the server and load a chat model',
+            info: '✓ 100% Free: Runs locally on your machine<br>✓ Privacy: No data sent to external servers<br>✓ No rate limits: Process unlimited emails<br>✓ Uses LM Studio\'s native REST API (<code>/api/v1/chat</code>)<br>✓ Requires: <a href="https://lmstudio.ai/" target="_blank">LM Studio</a> installed with the local server enabled (default <code>http://localhost:1234</code>)<br>✓ Setup: In LM Studio open Settings → Local Model API, toggle the server on and load a chat model',
             isFree: true
         }
     };
