@@ -1451,8 +1451,27 @@ document.addEventListener('DOMContentLoaded', async function() {
         return headers;
     }
 
+    // Normalize the LM Studio server URL to its root.
+    // Users often paste the OpenAI-compatible base (http://host:1234/v1) or the
+    // native base (http://host:1234/api/v1). We always append /api/v1/* ourselves,
+    // so strip those suffixes to avoid paths like /v1/api/v1/models.
+    function normalizeLmStudioBaseUrl(rawUrl) {
+        let url = (rawUrl || 'http://localhost:1234').trim().replace(/\/+$/, '');
+        url = url.replace(/\/(?:api\/v[01]|v1)$/i, '');
+        return url.replace(/\/+$/, '') || 'http://localhost:1234';
+    }
+
     function lmStudioBaseUrl() {
-        return (lmStudioUrlInput.value.trim() || 'http://localhost:1234').replace(/\/+$/, '');
+        return normalizeLmStudioBaseUrl(lmStudioUrlInput.value);
+    }
+
+    // LM Studio answers unknown endpoints with HTTP 200 and a JSON error body,
+    // so an OK status is not enough - surface any `error` field explicitly.
+    function lmStudioErrorFromBody(data) {
+        if (!data || !data.error) return null;
+        const err = data.error;
+        if (typeof err === 'string') return err;
+        return err.message || JSON.stringify(err);
     }
 
     // Fetch the list of chat-capable models from LM Studio.
@@ -1471,6 +1490,16 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
 
         const data = await response.json();
+
+        // LM Studio returns HTTP 200 even for unknown endpoints; catch that here.
+        const errMsg = lmStudioErrorFromBody(data);
+        if (errMsg) {
+            const hint = /unexpected endpoint/i.test(errMsg)
+                ? ' Check the Server URL - use the server root (e.g. http://localhost:1234), not the /v1 OpenAI-compatible base.'
+                : '';
+            throw new Error(`LM Studio error: ${errMsg}.${hint}`);
+        }
+
         let models = [];
         if (Array.isArray(data.models)) {
             models = data.models
@@ -1568,6 +1597,10 @@ document.addEventListener('DOMContentLoaded', async function() {
                 }
 
                 const data = await response.json();
+                const errMsg = lmStudioErrorFromBody(data);
+                if (errMsg) {
+                    throw new Error(`LM Studio error: ${errMsg}`);
+                }
                 const msg = Array.isArray(data.output)
                     ? (data.output.find(o => o.type === 'message') || {}).content
                     : '';

@@ -109,11 +109,42 @@ async function ollamaChatViaTab(ollamaUrl, model, prompt, authToken) {
     }
 }
 
+// Normalize the LM Studio server URL to its root. Users often paste the
+// OpenAI-compatible base (http://host:1234/v1) or the native base
+// (http://host:1234/api/v1); we always append /api/v1/* ourselves, so strip
+// those suffixes to avoid paths like /v1/api/v1/models.
+function normalizeLmStudioBaseUrl(rawUrl) {
+    let url = (rawUrl || 'http://localhost:1234').trim().replace(/\/+$/, '');
+    url = url.replace(/\/(?:api\/v[01]|v1)$/i, '');
+    return url.replace(/\/+$/, '') || 'http://localhost:1234';
+}
+
+// LM Studio replies HTTP 200 with a JSON `error` body for unknown endpoints,
+// so an OK status alone is not enough to know the request succeeded.
+function lmStudioErrorFromBody(data) {
+    if (!data || !data.error) return null;
+    const err = data.error;
+    if (typeof err === 'string') return err;
+    return err.message || JSON.stringify(err);
+}
+
+// Throw a helpful error if LM Studio returned a 200-with-error body.
+function assertLmStudioResponse(data) {
+    const errMsg = lmStudioErrorFromBody(data);
+    if (errMsg) {
+        const hint = /unexpected endpoint|not found/i.test(errMsg)
+            ? ' Check the LM Studio URL in settings - use the server root (e.g. http://localhost:1234), not the /v1 OpenAI-compatible base.'
+            : '';
+        throw new Error(`LM Studio error: ${errMsg}.${hint}`);
+    }
+    return data;
+}
+
 // LM Studio native REST API chat (POST /api/v1/chat).
 // Tries a direct fetch first (host permission + LM Studio's default CORS),
 // then falls back to tab injection for setups where the background fetch is blocked.
 async function lmStudioChat(lmUrl, model, prompt, authToken) {
-    const base = (lmUrl || 'http://localhost:1234').trim().replace(/\/+$/, '');
+    const base = normalizeLmStudioBaseUrl(lmUrl);
     const headers = { 'Content-Type': 'application/json' };
     if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
 
@@ -135,7 +166,8 @@ async function lmStudioChat(lmUrl, model, prompt, authToken) {
         });
     } catch (netErr) {
         console.warn('[LM Studio] Direct fetch failed, falling back to tab injection:', netErr.message);
-        return await localChatViaTab(base, '/api/v1/chat', body, authToken);
+        const fallbackData = await localChatViaTab(base, '/api/v1/chat', body, authToken);
+        return assertLmStudioResponse(fallbackData);
     }
 
     if (!response.ok) {
@@ -145,7 +177,8 @@ async function lmStudioChat(lmUrl, model, prompt, authToken) {
         throw new Error(`LM Studio HTTP ${response.status}: ${(detail || '').substring(0, 200)}`);
     }
 
-    return await response.json();
+    // LM Studio returns HTTP 200 even for unknown endpoints - detect that here.
+    return assertLmStudioResponse(await response.json());
 }
 
 // Generic helper: POST JSON from a hidden tab at the local server's origin

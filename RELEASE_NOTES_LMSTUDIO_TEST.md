@@ -8,6 +8,17 @@ This is a **test release** that adds **LM Studio** as a local LLM provider.
 > maintainer. Please install it, try it, and report back (see
 > [What to report back](#-what-to-report-back)).
 
+## 🔧 Update (rebuild)
+
+- **Fixed:** `Unexpected endpoint or method. (GET /v1/api/v1/models). Returning 200
+  anyway` followed by a misleading "no models found". Two LM Studio quirks are now
+  handled:
+  - The **Server URL** tolerates a pasted OpenAI-compatible base — a trailing `/v1` or
+    `/api/v1` is stripped, so we no longer request `/v1/api/v1/models`.
+  - LM Studio answers unknown endpoints with **HTTP 200** plus a JSON `error` body. That
+    body is now detected and shown as a real error (with a hint to use the server root)
+    instead of being treated as success.
+
 ## ✨ What's New
 
 **Local LM Studio Support:**
