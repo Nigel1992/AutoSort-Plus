@@ -7,6 +7,24 @@ browser.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse({ label: label });
         });
         return true; // Required for async response
+    } else if (message.action === 'batchCancel') {
+        if (batchState.running) {
+            batchState.cancelRequested = true;
+            sendResponse({ ok: true, cancelling: true });
+        } else {
+            sendResponse({ ok: true, cancelling: false });
+        }
+    } else if (message.action === 'batchSync') {
+        if (batchState.running && batchState.snapshot) {
+            sendResponse(Object.assign({ running: true }, batchState.snapshot));
+        } else if (batchState.lastSnapshot) {
+            sendResponse(Object.assign({ running: false }, batchState.lastSnapshot));
+        } else {
+            sendResponse(null);
+        }
+    } else if (message.action === 'batchRetry') {
+        handleBatchRetry(message).then(sendResponse);
+        return true; // Required for async response
     } else if (message.action === 'startOllamaPull') {
         (async () => {
             try {
@@ -295,8 +313,23 @@ async function callOllamaViaTab(ollamaUrl, payload) {
     }
 }
 
+// Serializes all Gemini rate-limit read/modify/write operations. Batch
+// processing fires several requests concurrently, so without this lock the
+// per-key counters would repeatedly read the same value and clobber each
+// other's increments (e.g. 10 emails only adding +1).
+let geminiRateLimitQueue = Promise.resolve();
+function withGeminiRateLimitLock(task) {
+    const run = geminiRateLimitQueue.then(task, task);
+    geminiRateLimitQueue = run.then(() => {}, () => {});
+    return run;
+}
+
 // Gemini rate limiting functions (free tier: 5/min, 20/day per key)
 async function checkGeminiRateLimit() {
+    return withGeminiRateLimitLock(() => checkGeminiRateLimitInner());
+}
+
+async function checkGeminiRateLimitInner() {
     const now = Date.now();
     const data = await browser.storage.local.get([
         'geminiApiKeys', 
@@ -314,12 +347,20 @@ async function checkGeminiRateLimit() {
     // Multi-key mode
     if (data.geminiApiKeys && data.geminiApiKeys.length > 0) {
         const keys = data.geminiApiKeys;
-        const rateLimits = data.geminiRateLimits || keys.map(() => ({
-            requests: [],
-            dailyCount: 0,
-            dailyResetTime: now + (24 * 60 * 60 * 1000)
-        }));
-        let currentIndex = data.currentGeminiKeyIndex || 0;
+        const rawRateLimits = Array.isArray(data.geminiRateLimits) ? data.geminiRateLimits : [];
+        const defaultResetTime = now + (24 * 60 * 60 * 1000);
+        const rateLimits = keys.map((_, i) => {
+            const rl = rawRateLimits[i];
+            if (rl && typeof rl === 'object') {
+                return {
+                    requests: Array.isArray(rl.requests) ? rl.requests : [],
+                    dailyCount: typeof rl.dailyCount === 'number' ? rl.dailyCount : 0,
+                    dailyResetTime: typeof rl.dailyResetTime === 'number' ? rl.dailyResetTime : defaultResetTime
+                };
+            }
+            return { requests: [], dailyCount: 0, dailyResetTime: defaultResetTime };
+        });
+        let currentIndex = (data.currentGeminiKeyIndex || 0) % keys.length;
         
         // Try to find an available key
         const startIndex = currentIndex;
@@ -383,7 +424,14 @@ async function checkGeminiRateLimit() {
     }
     
     // Legacy single-key mode (backward compatibility)
-    const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: now };
+    const storedRateLimit = data.geminiRateLimit;
+    const rateLimit = (storedRateLimit && typeof storedRateLimit === 'object')
+        ? {
+            requests: Array.isArray(storedRateLimit.requests) ? storedRateLimit.requests : [],
+            dailyCount: typeof storedRateLimit.dailyCount === 'number' ? storedRateLimit.dailyCount : 0,
+            dailyResetTime: typeof storedRateLimit.dailyResetTime === 'number' ? storedRateLimit.dailyResetTime : now
+        }
+        : { requests: [], dailyCount: 0, dailyResetTime: now };
     
     // Reset daily count if it's a new day
     if (now > rateLimit.dailyResetTime) {
@@ -426,7 +474,13 @@ async function checkGeminiRateLimit() {
 }
 
 async function trackGeminiRequest(keyIndex = null) {
+    return withGeminiRateLimitLock(() => trackGeminiRequestInner(keyIndex));
+}
+
+async function trackGeminiRequestInner(keyIndex = null) {
     const now = Date.now();
+    
+    // Always fetch the latest rate limit state from storage to prevent race conditions
     const data = await browser.storage.local.get([
         'geminiApiKeys',
         'geminiRateLimits',
@@ -434,13 +488,24 @@ async function trackGeminiRequest(keyIndex = null) {
         'geminiRateLimit' // Legacy
     ]);
     
+    let updatedLimit;
+    
     // Multi-key mode
     if (data.geminiApiKeys && data.geminiApiKeys.length > 0 && keyIndex !== null) {
-        const rateLimits = data.geminiRateLimits || data.geminiApiKeys.map(() => ({
-            requests: [],
-            dailyCount: 0,
-            dailyResetTime: now + (24 * 60 * 60 * 1000)
-        }));
+        const keys = data.geminiApiKeys;
+        const defaultResetTime = now + (24 * 60 * 60 * 1000);
+        const rawRateLimits = Array.isArray(data.geminiRateLimits) ? data.geminiRateLimits : [];
+        let rateLimits = keys.map((_, i) => {
+            const rl = rawRateLimits[i];
+            if (rl && typeof rl === 'object') {
+                return {
+                    requests: Array.isArray(rl.requests) ? rl.requests : [],
+                    dailyCount: typeof rl.dailyCount === 'number' ? rl.dailyCount : 0,
+                    dailyResetTime: typeof rl.dailyResetTime === 'number' ? rl.dailyResetTime : defaultResetTime
+                };
+            }
+            return { requests: [], dailyCount: 0, dailyResetTime: defaultResetTime };
+        });
         
         const rateLimit = rateLimits[keyIndex];
         
@@ -448,22 +513,32 @@ async function trackGeminiRequest(keyIndex = null) {
         rateLimit.requests.push(now);
         rateLimit.dailyCount += 1;
         
-        // Clean old requests
+        // Clean old requests (older than 1 minute)
         const oneMinuteAgo = now - 60000;
         rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
+        
+        // Update in the array
+        rateLimits[keyIndex] = rateLimit;
         
         await browser.storage.local.set({ geminiRateLimits: rateLimits });
         
         console.log(`Gemini Key #${keyIndex + 1}: ${rateLimit.dailyCount}/20 today, ${rateLimit.requests.length} in last minute`);
     } else {
         // Legacy single-key mode
-        const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: now + (24 * 60 * 60 * 1000) };
+        const storedRateLimit = data.geminiRateLimit;
+        let rateLimit = (storedRateLimit && typeof storedRateLimit === 'object')
+            ? {
+                requests: Array.isArray(storedRateLimit.requests) ? storedRateLimit.requests : [],
+                dailyCount: typeof storedRateLimit.dailyCount === 'number' ? storedRateLimit.dailyCount : 0,
+                dailyResetTime: typeof storedRateLimit.dailyResetTime === 'number' ? storedRateLimit.dailyResetTime : now + (24 * 60 * 60 * 1000)
+            }
+            : { requests: [], dailyCount: 0, dailyResetTime: now + (24 * 60 * 60 * 1000) };
         
         // Add current request
         rateLimit.requests.push(now);
         rateLimit.dailyCount += 1;
         
-        // Clean old requests
+        // Clean old requests (older than 1 minute)
         const oneMinuteAgo = now - 60000;
         rateLimit.requests = rateLimit.requests.filter(time => time > oneMinuteAgo);
         
@@ -541,9 +616,13 @@ function buildGeminiGenerationConfig(geminiModel) {
 }
 
 // Function to analyze email content using AI
-async function analyzeEmailContent(emailContent) {
+async function analyzeEmailContent(emailContent, notify) {
+    // `notify(title, message)` routes status updates to a custom sink when
+    // provided (batch processing forwards them to the progress panel);
+    // default to desktop notifications.
+    const notifyFn = typeof notify === 'function' ? notify : showNotification;
     try {
-        const notificationId = await showNotification(
+        const notificationId = await notifyFn(
             "AutoSort+ AI Analysis",
             "Starting email analysis..."
         );
@@ -572,14 +651,14 @@ async function analyzeEmailContent(emailContent) {
                 const isSingleKey = !settings.geminiApiKeys || settings.geminiApiKeys.length <= 1;
                 const notifTitle = isSingleKey ? "⛔ Gemini API Limit Reached" : "⛔ All Gemini Keys at Limit";
                 
-                const notifId = await showNotification(
+                const notifId = await notifyFn(
                     notifTitle,
                     rateLimitCheck.message,
                     "list"
                 );
                 
                 // Also try to update the current notification
-                await updateNotification(
+                await notifyFn(
                     notificationId,
                     "AutoSort+ Rate Limit",
                     rateLimitCheck.message
@@ -588,7 +667,7 @@ async function analyzeEmailContent(emailContent) {
             }
             
             if (rateLimitCheck.waitTime > 0) {
-                await updateNotification(
+                await notifyFn(
                     notificationId,
                     "AutoSort+ Rate Limit",
                     `Rate limit reached. Waiting ${rateLimitCheck.waitTime} seconds...`
@@ -607,7 +686,7 @@ async function analyzeEmailContent(emailContent) {
         
         if (settings.enableAi === false) {
             console.error("AI is disabled");
-            await updateNotification(
+            await notifyFn(
                 notificationId,
                 "AutoSort+ Error",
                 "AI analysis is disabled in settings."
@@ -633,7 +712,7 @@ async function analyzeEmailContent(emailContent) {
         
         if (!apiKeyToUse && provider !== 'ollama' && provider !== 'lmstudio') {
             console.error("Missing API key");
-            await updateNotification(
+            await notifyFn(
                 notificationId,
                 "AutoSort+ Error",
                 `${provider.charAt(0).toUpperCase() + provider.slice(1)} API key not configured. Please add your API key in settings.`
@@ -643,7 +722,7 @@ async function analyzeEmailContent(emailContent) {
         
         if (!settings.labels || settings.labels.length === 0) {
             console.error("No labels configured");
-            await updateNotification(
+            await notifyFn(
                 notificationId,
                 "AutoSort+ Error",
                 "No folders/labels configured. Please go to settings and either load folders from your mail account or add custom labels."
@@ -663,7 +742,7 @@ async function analyzeEmailContent(emailContent) {
         Email content:
         ${emailContent}`;
 
-        await updateNotification(
+        await notifyFn(
             notificationId,
             "AutoSort+ AI Analysis",
             `Sending request to ${provider.charAt(0).toUpperCase() + provider.slice(1)} AI...`
@@ -683,7 +762,7 @@ async function analyzeEmailContent(emailContent) {
                 await trackGeminiRequest(keyIndexToUse);
             }
             
-            await updateNotification(
+            await notifyFn(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Analyzing email content with Gemini AI..."
@@ -728,7 +807,7 @@ async function analyzeEmailContent(emailContent) {
         } else if (provider === 'openai') {
             console.log("Making API request to OpenAI...");
             
-            await updateNotification(
+            await notifyFn(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Analyzing email content with OpenAI..."
@@ -751,7 +830,7 @@ async function analyzeEmailContent(emailContent) {
         } else if (provider === 'anthropic') {
             console.log("Making API request to Anthropic...");
             
-            await updateNotification(
+            await notifyFn(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Analyzing email content with Claude..."
@@ -774,7 +853,7 @@ async function analyzeEmailContent(emailContent) {
         } else if (provider === 'groq') {
             console.log("Making API request to Groq...");
             
-            await updateNotification(
+            await notifyFn(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Analyzing email content with Groq..."
@@ -798,7 +877,7 @@ async function analyzeEmailContent(emailContent) {
         } else if (provider === 'mistral') {
             console.log("Making API request to Mistral...");
             
-            await updateNotification(
+            await notifyFn(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Analyzing email content with Mistral..."
@@ -821,7 +900,7 @@ async function analyzeEmailContent(emailContent) {
         } else if (provider === 'ollama') {
             console.log("Making API request to Ollama (local)...");
             
-            await updateNotification(
+            await notifyFn(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Analyzing email content with local Ollama..."
@@ -861,7 +940,7 @@ async function analyzeEmailContent(emailContent) {
         } else if (provider === 'lmstudio') {
             console.log("Making API request to LM Studio (local)...");
 
-            await updateNotification(
+            await notifyFn(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Analyzing email content with local LM Studio..."
@@ -932,7 +1011,7 @@ async function analyzeEmailContent(emailContent) {
                     errorMessage = "Ollama authentication failed (403). Check your API key/token if Ollama requires authentication.";
                 }
                 
-                await updateNotification(
+                await notifyFn(
                     notificationId,
                     "AutoSort+ Error",
                     `API Error: ${errorMessage}`
@@ -940,7 +1019,7 @@ async function analyzeEmailContent(emailContent) {
                 return null;
             }
 
-            await updateNotification(
+            await notifyFn(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Processing AI response..."
@@ -949,14 +1028,14 @@ async function analyzeEmailContent(emailContent) {
             data = await response.json();
             console.log("Full API response data:", JSON.stringify(data, null, 2));
         } else if (data) {
-            await updateNotification(
+            await notifyFn(
                 notificationId,
                 "AutoSort+ AI Analysis",
                 "Processing AI response..."
             );
             console.log("Using response from native helper.");
         } else {
-            await updateNotification(
+            await notifyFn(
                 notificationId,
                 "AutoSort+ Error",
                 "No response received from provider."
@@ -980,7 +1059,7 @@ async function analyzeEmailContent(emailContent) {
                 const candidate = data.candidates[0];
                 if (candidate.finishReason === "MAX_TOKENS") {
                     console.error("Response truncated");
-                    await updateNotification(notificationId, "AutoSort+ Error", "AI response was cut off");
+                    await notifyFn(notificationId, "AutoSort+ Error", "AI response was cut off");
                     return null;
                 }
                 if (candidate.content && candidate.content.parts && candidate.content.parts.length > 0) {
@@ -1053,7 +1132,7 @@ async function analyzeEmailContent(emailContent) {
 
         if (!label) {
             console.error("No label extracted from response:", data);
-            await updateNotification(notificationId, "AutoSort+ Error", "No response from AI");
+            await notifyFn(notificationId, "AutoSort+ Error", "No response from AI");
             return null;
         }
 
@@ -1065,7 +1144,7 @@ async function analyzeEmailContent(emailContent) {
 
         // Exact match first
         if (settings.labels.includes(label)) {
-            await updateNotification(notificationId, "AutoSort+ Success", `AI analysis complete. Selected label: ${label}`);
+            await notifyFn(notificationId, "AutoSort+ Success", `AI analysis complete. Selected label: ${label}`);
             return label;
         }
 
@@ -1077,21 +1156,391 @@ async function analyzeEmailContent(emailContent) {
 
         if (matched) {
             console.log('Mapped AI output to configured label:', matched);
-            await updateNotification(notificationId, "AutoSort+ Success", `AI analysis complete. Selected label: ${matched}`);
+            await notifyFn(notificationId, "AutoSort+ Success", `AI analysis complete. Selected label: ${matched}`);
             return matched;
         }
 
         console.log("Label not found in configured labels. Generated:", label);
-        await updateNotification(notificationId, "AutoSort+ Warning", `AI suggested: "${label}" but it's not in your configured labels.`);
+        await notifyFn(notificationId, "AutoSort+ Warning", `AI suggested: "${label}" but it's not in your configured labels.`);
         return null;
     } catch (error) {
         console.error("Error analyzing email:", error);
-        await showNotification(
+        await notifyFn(
             "AutoSort+ Error",
             `Error analyzing email: ${error.message}`
         );
         return null;
     }
+}
+
+// ---- Batch processing with progress tracking ----
+
+// Shared state for the current/last batch, pushed to the progress tab.
+const batchState = {
+    running: false,
+    cancelRequested: false,
+    progressTabId: null,
+    snapshot: null,     // latest progress payload for a running batch
+    lastSnapshot: null  // retained after completion so the tab can re-sync
+};
+
+async function getApiKeyUsageInfo() {
+    try {
+        const data = await browser.storage.local.get(['geminiApiKeys', 'geminiRateLimits', 'currentGeminiKeyIndex', 'geminiPaidPlan']);
+        if (!data.geminiApiKeys || data.geminiApiKeys.length === 0) return null;
+        const rateLimits = Array.isArray(data.geminiRateLimits) ? data.geminiRateLimits : [];
+        const currentIndex = data.currentGeminiKeyIndex || 0;
+        return data.geminiApiKeys.map((key, idx) => ({
+            index: idx + 1,
+            dailyCount: (rateLimits[idx] && typeof rateLimits[idx].dailyCount === 'number') ? rateLimits[idx].dailyCount : 0,
+            active: idx === currentIndex,
+            resetTime: (rateLimits[idx] && rateLimits[idx].dailyResetTime) || null
+        }));
+    } catch (e) {
+        return null;
+    }
+}
+
+// Push a progress snapshot to the batch progress tab (if still open).
+async function pushBatchSnapshot(patch) {
+    const usageInfo = await getApiKeyUsageInfo();
+    const snap = Object.assign({}, batchState.snapshot, patch);
+    snap.counts = Object.assign({}, (batchState.snapshot && batchState.snapshot.counts) || {}, patch.counts || {});
+    snap.results = patch.results || (batchState.snapshot && batchState.snapshot.results) || [];
+    if (usageInfo) snap.apiKeyUsage = usageInfo;
+    batchState.snapshot = snap;
+    batchState.lastSnapshot = snap;
+
+    try {
+            await browser.runtime.sendMessage(Object.assign({ action: 'batchProgress' }, snap));
+        } catch (e) {
+            console.warn('[AutoSort+] Progress tab closed; continuing batch without UI:', e.message);
+        }
+}
+
+// Extract readable text from a full message object (recursive MIME parts).
+async function extractEmailContentFromMessage(fullMessage) {
+    async function extractTextFromParts(parts) {
+        let text = "";
+        if (!parts) return text;
+
+        for (const part of parts) {
+            if (part.parts) {
+                text += await extractTextFromParts(part.parts);
+            }
+
+            if (part.contentType === "text/plain") {
+                text += (part.body ?? "") + "\n";
+            } else if (part.contentType === "text/html" && !text) {
+                // Only use HTML if we haven't found plain text
+                text = await browser.messengerUtilities.convertToPlainText(part.body ?? "");
+            } else if (part.contentType === "message/rfc822" && part.body) {
+                text += (part.body ?? "") + "\n";
+            }
+        }
+        return text;
+    }
+
+    if (fullMessage.parts) {
+        return await extractTextFromParts(fullMessage.parts);
+    }
+    const body = fullMessage.body;
+    return typeof body === 'string' ? body : (body ? String(body) : '');
+}
+
+// Resolve the destination folder for a label. Handles the built-in category
+// hierarchy, direct matches, and auto-creating folders for custom labels.
+async function findTargetFolder(account, label) {
+    const findFolder = (folders, targetName) => {
+        for (const folder of folders) {
+            if (folder.name === targetName) {
+                return folder;
+            }
+            if (folder.subFolders) {
+                const found = findFolder(folder.subFolders, targetName);
+                if (found) return found;
+            }
+        }
+        return null;
+    };
+
+    const categories = [
+        "Financiën",
+        "Werk en Carrière",
+        "Persoonlijke Communicatie en Sociale Leven",
+        "Gezondheid en Welzijn",
+        "Online Activiteiten en E-commerce",
+        "Reizen en Evenementen",
+        "Informatie en Media",
+        "Beveiliging en IT",
+        "Klantensupport en Acties",
+        "Overheid en Gemeenschap"
+    ];
+
+    let targetFolder = null;
+
+    for (const category of categories) {
+        if (label.startsWith(category)) {
+            const categoryFolder = findFolder(account.folders, category);
+            if (categoryFolder) {
+                const subfolderName = label.replace(category + "/", "");
+                targetFolder = findFolder(categoryFolder.subFolders || [], subfolderName);
+                break;
+            }
+        }
+    }
+
+    // If no category match found, try direct match
+    if (!targetFolder) {
+        targetFolder = findFolder(account.folders, label);
+    }
+
+    // Auto-create missing folder when it's a custom label (skip imported/structured labels)
+    if (!targetFolder) {
+        const looksImported = label.includes('/') || label.includes('\\');
+        if (looksImported) {
+            console.warn(`Folder "${label}" looks imported/structured; skipping auto-create.`);
+        } else {
+            try {
+                const parentFolder = account.folders && account.folders.length > 0 ? account.folders[0] : null;
+                if (parentFolder && browser.folders && browser.folders.create) {
+                    console.log(`Creating missing folder "${label}" under ${parentFolder.name || 'root'}`);
+                    const created = await browser.folders.create(parentFolder, label);
+                    if (created) {
+                        targetFolder = created;
+                        console.log("Created folder:", created);
+                    }
+                }
+            } catch (createError) {
+                console.error(`Failed to create folder "${label}":`, createError);
+            }
+        }
+    }
+
+    return targetFolder;
+}
+
+// Process multiple selected emails with progress tracking.
+// Each message is AI-analyzed and moved to its sorted folder; per-message
+// outcomes are reported to the progress tab as sorted/skipped/failed.
+async function runBatchProcessing(messages, progressTabId, options = {}) {
+    const mergeResults = Array.isArray(options.mergeResults) ? options.mergeResults : null;
+    const retriedIds = new Set(messages.map(m => m.id));
+
+    // When retrying failures, keep prior outcomes for messages not being retried
+    const results = (mergeResults || []).filter(r => !retriedIds.has(r.id));
+    const counts = { sorted: 0, skipped: 0, failed: 0 };
+    for (const r of results) {
+        counts[r.status] = (counts[r.status] || 0) + 1;
+    }
+    const total = results.length + messages.length;
+
+    batchState.running = true;
+    batchState.cancelRequested = false;
+    batchState.progressTabId = progressTabId;
+    batchState.snapshot = null;
+    batchState.lastSnapshot = null;
+
+    // Route AI status updates to the progress panel instead of desktop notifications
+    let lastAiStatus = '';
+    const notify = (title, message) => {
+        lastAiStatus = message || '';
+    };
+
+    await pushBatchSnapshot({ phase: 'processing', current: results.length, total, counts, subject: '', aiStatus: '', results });
+
+    // Parallelism: how many emails to analyze at once. Prefer an explicit
+    // option, otherwise read the user's setting (Settings → Parallel batch
+    // size), clamped to 1-20 with a default of 5.
+    let chunkSizeOption = options.chunkSize;
+    if (chunkSizeOption === undefined || chunkSizeOption === null) {
+        try {
+            const stored = await browser.storage.local.get('batchChunkSize');
+            chunkSizeOption = stored.batchChunkSize;
+        } catch (e) {
+            // Fall back to the default below.
+        }
+    }
+    const chunkSize = Math.min(20, Math.max(1, parseInt(chunkSizeOption || 5, 10)));
+    let rateLimitHit = false;
+
+    for (let i = 0; i < messages.length; i += chunkSize) {
+        if (batchState.cancelRequested || rateLimitHit) {
+            console.log('[AutoSort+] Batch stopped/cancelled');
+            break;
+        }
+
+        const chunk = messages.slice(i, i + chunkSize);
+
+        const chunkPromises = chunk.map(async (message) => {
+            if (batchState.cancelRequested || rateLimitHit) return;
+
+            const subject = message.subject || '(No subject)';
+            let status = 'failed';
+            let label = null;
+            let detail = null;
+
+            const maxRetries = Math.max(0, parseInt(options.maxRetries || 2, 10));
+            // Analyze at most once per email; retries reuse this result so a
+            // transient failure (e.g. a move error) never spends another API call.
+            let cachedAiLabel;
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                status = 'failed';
+                label = null;
+                detail = null;
+                try {
+                    const fullMessage = await browser.messages.getFull(message.id);
+                    if (!fullMessage) {
+                        throw new Error('Email already moved or no longer available');
+                    }
+
+                    const emailContent = await extractEmailContentFromMessage(fullMessage);
+                    if (!emailContent || typeof emailContent !== 'string' || !emailContent.trim()) {
+                        status = 'skipped';
+                        detail = 'No readable content';
+                        break;
+                    } else {
+                        if (cachedAiLabel === undefined) {
+                            cachedAiLabel = await analyzeEmailContent(emailContent, notify);
+                        }
+                        const aiLabel = cachedAiLabel;
+                        if (!aiLabel || String(aiLabel).trim().toLowerCase() === 'null') {
+                            status = 'skipped';
+                            detail = 'AI returned no label';
+                        } else {
+                            const account = await browser.accounts.get(message.folder.accountId);
+                            const targetFolder = await findTargetFolder(account, aiLabel);
+                            if (!targetFolder) {
+                                status = 'failed';
+                                detail = `Folder "${aiLabel}" not found. Please create it first in Thunderbird.`;
+                            } else {
+                                try {
+                                    await browser.messages.move([message.id], targetFolder.id);
+                                    status = 'sorted';
+                                    label = aiLabel;
+                                    detail = targetFolder.name;
+                                    break;
+                                } catch (moveError) {
+                                    status = 'failed';
+                                    detail = moveError.message || String(moveError);
+                                }
+                            }
+                        }
+                    }
+                } catch (err) {
+                    status = 'failed';
+                    detail = err.message || String(err);
+                    if (/limit/i.test(detail)) {
+                        rateLimitHit = true;
+                        break;
+                    }
+                }
+
+                // Only retry genuinely transient failures (move/fetch errors).
+                // Deterministic outcomes (no label, missing folder) are not
+                // retried, since they would just consume more API quota.
+                const retryable = status === 'failed'
+                    && !/limit/i.test(detail || '')
+                    && !/not found/i.test(detail || '')
+                    && !/already moved/i.test(detail || '');
+                if (!retryable || attempt === maxRetries) break;
+                await new Promise(r => setTimeout(r, 1000));
+            }
+
+            const res = {
+                id: message.id,
+                subject,
+                status,
+                label,
+                detail,
+                timestamp: new Date().toISOString()
+            };
+
+            counts[res.status]++;
+            results.push(res);
+            await storeMoveHistory({
+                subject: res.subject,
+                status: res.status === 'sorted' ? 'Success' : 'Error',
+                destination: res.label || res.detail || ''
+            });
+
+            if (rateLimitHit && /limit/i.test(res.detail)) {
+                await pushBatchSnapshot({ phase: 'stopped', current: results.length, total, counts, subject: res.subject, aiStatus: res.detail, results });
+                batchState.running = false;
+            } else {
+                await pushBatchSnapshot({
+                    current: results.length,
+                    subject: res.subject,
+                    aiStatus: lastAiStatus,
+                    counts,
+                    results
+                });
+            }
+
+            return res;
+        });
+
+        await Promise.all(chunkPromises);
+
+        if (rateLimitHit) break;
+    }
+
+    const cancelled = batchState.cancelRequested;
+    const phase = cancelled ? 'cancelled' : 'done';
+    batchState.running = false;
+    batchState.progressTabId = null;
+
+    await pushBatchSnapshot({ phase, current: results.length, total, counts, results, aiStatus: lastAiStatus, subject: '' });
+
+    if (cancelled) {
+        await showNotification(
+            "AutoSort+ Batch Cancelled",
+            `Processed ${results.length}/${total} message(s): ${counts.sorted} sorted, ${counts.skipped} skipped, ${counts.failed} failed`
+        );
+    } else if (counts.failed === 0 && counts.skipped === 0) {
+        await showNotification("AutoSort+ Success", `Batch complete: sorted ${counts.sorted} message(s)`);
+    } else {
+        await showNotification(
+            "AutoSort+ Batch Complete",
+            `Processed ${total} message(s): ${counts.sorted} sorted, ${counts.skipped} skipped, ${counts.failed} failed`
+        );
+    }
+}
+
+// Re-run only the messages that failed in the last batch.
+async function handleBatchRetry(message) {
+    if (batchState.running) {
+        return { ok: false, error: 'A batch is already running' };
+    }
+    const failedIds = (message.messageIds || []).filter(Boolean);
+    if (failedIds.length === 0) {
+        return { ok: false, error: 'No failed messages to retry' };
+    }
+
+    const retryMessages = [];
+    for (const id of failedIds) {
+        try {
+            retryMessages.push(await browser.messages.get(id));
+        } catch (e) {
+            console.warn(`[AutoSort+] Could not reload message ${id} for retry:`, e.message);
+        }
+    }
+    if (retryMessages.length === 0) {
+        return { ok: false, error: 'Failed messages could not be reloaded' };
+    }
+
+    let tabId = batchState.progressTabId;
+    if (!tabId) {
+        const tab = await browser.tabs.create({ url: browser.runtime.getURL('batch.html'), active: true });
+        tabId = tab.id;
+    }
+
+    const mergeResults = batchState.lastSnapshot ? batchState.lastSnapshot.results : null;
+    runBatchProcessing(retryMessages, tabId, { mergeResults }).catch(err => {
+        console.error('[AutoSort+] Retry batch failed:', err);
+    });
+
+    return { ok: true, retried: retryMessages.length };
 }
 
 // Function to store move history
@@ -1140,84 +1589,7 @@ async function applyLabelsToMessages(messages, label) {
                 `Finding destination folder for message ${successCount + errorCount + 1}/${messageCount}...`
             );
 
-            // Find the folder with matching name
-            const findFolder = (folders, targetName) => {
-                for (const folder of folders) {
-                    console.log("Checking folder:", folder.name);
-                    if (folder.name === targetName) {
-                        return folder;
-                    }
-                    if (folder.subFolders) {
-                        const found = findFolder(folder.subFolders, targetName);
-                        if (found) return found;
-                    }
-                }
-                return null;
-            };
-
-            // First try to find the category folder
-            const categories = [
-                "Financiën",
-                "Werk en Carrière",
-                "Persoonlijke Communicatie en Sociale Leven",
-                "Gezondheid en Welzijn",
-                "Online Activiteiten en E-commerce",
-                "Reizen en Evenementen",
-                "Informatie en Media",
-                "Beveiliging en IT",
-                "Klantensupport en Acties",
-                "Overheid en Gemeenschap"
-            ];
-
-            let categoryFolder = null;
-            let targetFolder = null;
-
-            // Find the category and target folder
-            for (const category of categories) {
-                if (label.startsWith(category)) {
-                    console.log("Found matching category:", category);
-                    categoryFolder = findFolder(account.folders, category);
-                    if (categoryFolder) {
-                        console.log("Found category folder:", categoryFolder.name);
-                        // Try to find the subfolder
-                        const subfolderName = label.replace(category + "/", "");
-                        console.log("Looking for subfolder:", subfolderName);
-                        targetFolder = findFolder(categoryFolder.subFolders || [], subfolderName);
-                        break;
-                    } else {
-                        console.log("Category folder not found:", category, "- skipping to next category");
-                        continue;
-                    }
-                }
-            }
-
-            // If no target folder found, try direct match
-            if (!targetFolder) {
-                console.log("No category match found, trying direct folder match");
-                targetFolder = findFolder(account.folders, label);
-            }
-
-            // Auto-create missing folder when it's a custom label (skip imported/structured labels)
-            if (!targetFolder) {
-                const looksImported = label.includes('/') || label.includes('\\');
-                if (looksImported) {
-                    console.warn(`Folder "${label}" looks imported/structured; skipping auto-create.`);
-                } else {
-                    try {
-                        const parentFolder = account.folders && account.folders.length > 0 ? account.folders[0] : null;
-                        if (parentFolder && browser.folders && browser.folders.create) {
-                            console.log(`Creating missing folder "${label}" under ${parentFolder.name || 'root'}`);
-                            const created = await browser.folders.create(parentFolder, label);
-                            if (created) {
-                                targetFolder = created;
-                                console.log("Created folder:", created);
-                            }
-                        }
-                    } catch (createError) {
-                        console.error(`Failed to create folder "${label}":`, createError);
-                    }
-                }
-            }
+            const targetFolder = await findTargetFolder(account, label);
 
             console.log("Moving message to folder:", targetFolder ? targetFolder.name : "not found");
 
@@ -1368,7 +1740,7 @@ browser.storage.local.get(['labels']).then(result => {
 // Add AI analysis option
 browser.menus.create({
     id: "autosort-analyze",
-    title: "AutoSort+ Analyze with AI",
+    title: "AutoSort+ Batch Analyze with AI",
     contexts: ["message_list"]
 });
 
@@ -1397,9 +1769,18 @@ browser.menus.onClicked.addListener(async (info, tab) => {
             await showNotification("AutoSort+ Error", `Error applying label: ${error.message}`);
         }
     } else if (info.menuItemId === "autosort-analyze") {
-        console.log("AI analysis selected - starting process");
-        await showNotification("AutoSort+", "Starting AI analysis of selected messages...");
-        
+        console.log("AI analysis selected - starting batch process");
+
+        if (batchState.running) {
+            await showNotification("AutoSort+", "A batch is already running. Cancel it or wait for it to finish.");
+            if (batchState.progressTabId) {
+                try {
+                    await browser.tabs.update(batchState.progressTabId, { active: true });
+                } catch (e) { /* progress tab was closed */ }
+            }
+            return;
+        }
+
         try {
             // Get the current mail tab
             const mailTabs = await browser.mailTabs.query({ active: true, currentWindow: true });
@@ -1420,78 +1801,15 @@ browser.menus.onClicked.addListener(async (info, tab) => {
                 return;
             }
 
-            console.log(`Analyzing ${selectedMessageList.messages.length} selected messages`);
-            
-            for (const message of selectedMessageList.messages) {
-                // Get the full message with body
-                const fullMessage = await browser.messages.getFull(message.id);
-                console.log("Got full message:", fullMessage ? "yes" : "no");
-                console.log("Message content:", fullMessage);
+            console.log(`Starting batch AI analysis of ${selectedMessageList.messages.length} selected messages`);
 
-                if (!fullMessage) {
-                    console.error("Could not get message content");
-                    continue;
-                }
+            // Open the progress panel in a tab so the user can watch and control the batch
+            const progressTab = await browser.tabs.create({
+                url: browser.runtime.getURL('batch.html'),
+                active: true
+            });
 
-                // Function to recursively extract text from message parts
-                function extractTextFromParts(parts) {
-                    let text = "";
-                    if (!parts) return text;
-
-                    for (const part of parts) {
-                        console.log("Processing part:", {
-                            contentType: part.contentType,
-                            partName: part.partName,
-                            size: part.size
-                        });
-
-                        if (part.parts) {
-                            // Recursively process nested parts
-                            text += extractTextFromParts(part.parts);
-                        }
-                        
-                        if (part.contentType === "text/plain") {
-                            text += part.body + "\n";
-                        } else if (part.contentType === "text/html" && !text) {
-                            // Only use HTML if we haven't found plain text
-                            text = browser.messengerUtilities.convertToPlainText(part.body);
-                        } else if (part.contentType === "message/rfc822" && part.body) {
-                            // Handle message/rfc822 parts
-                            text += part.body + "\n";
-                        }
-                    }
-                    return text;
-                }
-
-                // Extract email content from the message
-                let emailContent = "";
-                if (fullMessage.parts) {
-                    emailContent = await extractTextFromParts(fullMessage.parts);
-                } else if (fullMessage.body) {
-                    emailContent = fullMessage.body;
-                }
-
-                console.log("Extracted email content:", emailContent || "<empty string>");
-
-                if (!emailContent) {
-                    console.error("No readable content found in message");
-                    await showNotification("AutoSort+ Error", "Could not extract email content");
-                    continue;
-                }
-
-                console.log("Analyzing message content");
-                const label = await analyzeEmailContent(emailContent);
-
-                // Skip if AI returned null/no label
-                if (!label || String(label).trim().toLowerCase() === "null") {
-                    console.log("Skipping message because generated label was null/empty");
-                    continue;
-                }
-
-                console.log("Applying label:", label);
-                await applyLabelsToMessages([message], label);
-                await showNotification("AutoSort+", `Successfully applied label: ${label}`);
-            }
+            await runBatchProcessing(selectedMessageList.messages, progressTab.id);
         } catch (error) {
             console.error("Error during AI analysis:", error);
             await showNotification("AutoSort+ Error", `Error: ${error.message}`);

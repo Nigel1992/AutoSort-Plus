@@ -1,3 +1,30 @@
+## AutoSort+ v1.4.0
+
+### 🗂️ Batch Panel, Bulk Key Import, Dark Mode & Quick Popup
+
+- **Batch progress panel:** Sorting multiple emails now opens a dedicated panel with a live progress bar, per-email results (sorted / skipped / failed), running counts, and live per-key API usage cards. Includes **Cancel** and **Retry Failed only** controls, and re-syncs automatically if you reopen the tab.
+- **Parallel batch processing:** Emails are analyzed concurrently in chunks (**5 at a time** by default, configurable from **1 to 20** in **Settings → General Settings → Parallel batch size**), so large batches finish much faster while per-key usage counting stays correct.
+- **Bulk import Gemini API keys:** Paste many keys at once (one per line) into **Settings → Multiple Gemini API Keys → Bulk Import**. Duplicate keys are detected before import so you never add the same key twice.
+- **Toolbar popup:** Click the AutoSort+ icon in the Thunderbird toolbar for an at-a-glance view of your API usage. It shows total usage across all Gemini keys (`N / total used`), a color-coded progress bar, how many keys you have and how much quota is left, plus quick buttons to open **Settings** and the **Batch Panel**.
+- **Dark mode:** Full dark-theme support across the Settings page, the popup, and the Batch Panel. It follows your OS/Thunderbird color scheme automatically — no more bright-white panels in a dark UI.
+
+### 🐛 Fixes
+
+- **One email = one AI request:** Retries no longer re-analyze the same email, so batches consume quota exactly as expected (previously a batch of emails could make far more or fewer calls than intended).
+- **More reliable email content extraction:** HTML bodies are now properly converted to text (the conversion is awaited) and messages without MIME parts are handled, so fewer emails are skipped (previously some would move based on empty content).
+- **`rateLimit is undefined` fixed:** Per-key Gemini usage is normalized with safe defaults, so the settings and popup no longer crash when a key has no usage record yet.
+- **Usage race condition fixed:** Concurrent requests could clobber the per-key daily counter; a lock now serializes reads/writes so every email is counted correctly.
+
+### 📦 Installation in Thunderbird
+
+1. Download the attached `autosortplus.xpi` file
+2. Open Thunderbird → Menu (☰) → **Add-ons and Themes**
+3. Gear icon → **Install Add-on From File...**
+4. Select the downloaded `.xpi` file
+5. Click **Add** and restart Thunderbird when prompted
+
+---
+
 ## AutoSort+ v1.2.5
 
 ### 🧠 Configurable AI Models & Gemini 404 Fix

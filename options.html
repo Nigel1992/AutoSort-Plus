@@ -125,10 +125,16 @@
             <div class="subsection" id="gemini-multi-keys-subsection" style="display: none;">
                 <h3>🔄 Multiple Gemini API Keys</h3>
                 <p class="info-text">Add multiple API keys from different Google Cloud projects. The extension will automatically rotate between them when rate limits are reached.</p>
-                <div id="gemini-keys-list" class="gemini-keys-list"></div>
+                
+                <div class="input-group">
+                    <label for="bulk-import-gemini-keys-text" class="help-text">Bulk Import:</label>
+                    <textarea id="bulk-import-gemini-keys-text" rows="3" placeholder="Enter one API key per line"></textarea>
+                </div>
                 <div class="button-group">
+                    <button id="bulk-import-keys-button" class="button">Import Keys</button>
                     <button id="add-gemini-key" class="button">+ Add Another Gemini Key</button>
                 </div>
+                <div id="gemini-keys-list" class="gemini-keys-list"></div>
             </div>
 
             <div class="subsection" id="gemini-model-subsection" style="display: none;">
@@ -161,6 +167,11 @@
                 <h3>⚙️ General Settings</h3>
                 <input type="checkbox" id="enable-ai" checked>
                 <label for="enable-ai">Enable AI-powered sorting</label>
+                <div class="input-group">
+                    <label for="batch-chunk-size">Parallel batch size:</label>
+                    <input type="number" id="batch-chunk-size" class="api-key-input" min="1" max="20" step="1" value="5">
+                    <small class="help-text">How many emails to analyze at once during a batch (1–20). Default 5. Higher is faster but fires more API requests at the same time.</small>
+                </div>
             </div>
                 <div class="checkbox-container" id="gemini-paid-container" style="display: none;">
                     <input type="checkbox" id="gemini-paid-plan">
@@ -236,8 +247,8 @@
                 </div>
             </div>
             <div class="bulk-import">
-                <label for="bulk-import-text">Import Categories/Folders (one per line):</label>
-                <textarea id="bulk-import-text" class="bulk-import-textarea" placeholder="Enter categories/folders, one per line"></textarea>
+                <label for="bulk-import-labels-text">Import Categories/Folders (one per line):</label>
+                <textarea id="bulk-import-labels-text" class="bulk-import-textarea" placeholder="Enter categories/folders, one per line"></textarea>
                 <button id="import-labels" class="button">Import</button>
             </div>
             <div id="labels-container">

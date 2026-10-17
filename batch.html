@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>AutoSort+ Batch Processing</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container batch-container">
+        <h1>📦 Batch Processing</h1>
+
+        <div id="batch-idle" class="batch-idle">
+            No batch is running.<br>
+            Select emails in Thunderbird, right-click and choose
+            <strong>AutoSort+ Batch Analyze with AI</strong> to sort them with progress tracking.
+        </div>
+
+        <div id="batch-panel" style="display: none;">
+            <div class="progress-status-row">
+                <span id="batch-status" class="batch-phase-processing">Starting…</span>
+                <span id="batch-counter">0 / 0</span>
+            </div>
+
+            <div class="progress-bar">
+                <div class="progress-fill" id="batch-progress-fill"></div>
+            </div>
+
+            <div id="batch-ai-status" class="ai-status" style="display: none;"></div>
+
+            <div class="batch-counts">
+                <div class="count-card count-sorted">
+                    <span class="count-value" id="count-sorted">0</span>
+                    <span class="count-label">Sorted</span>
+                </div>
+                <div class="count-card count-skipped">
+                    <span class="count-value" id="count-skipped">0</span>
+                    <span class="count-label">Skipped</span>
+                </div>
+                <div class="count-card count-failed">
+                    <span class="count-value" id="count-failed">0</span>
+                    <span class="count-label">Failed</span>
+                </div>
+            </div>
+
+            <div id="batch-api-usage" class="batch-api-usage" style="display: none;">
+                <h3>🔑 API Key Usage (20/day limit per key)</h3>
+                <div id="api-usage-cards" class="api-usage-cards"></div>
+                <div class="api-usage-summary" id="api-usage-summary"></div>
+            </div>
+
+            <div id="batch-results" class="batch-results"></div>
+
+            <div class="button-group">
+                <button id="batch-cancel" class="button">Cancel</button>
+                <button id="batch-retry" class="button" style="display: none;">Retry Failed</button>
+                <button id="batch-close" class="button primary" style="display: none;">Close</button>
+            </div>
+        </div>
+    </div>
+    <script src="batch.js"></script>
+</body>
+</html>

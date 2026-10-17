@@ -31,10 +31,10 @@ pre{background:#0b0d0f;padding:12px;border-radius:8px;color:#d7e9c7}
 
 # 🎯 AutoSort+ for Thunderbird
 
-<p class="lead">AI-powered email organization that adapts to your workflow. Choose from cloud providers (Gemini, OpenAI, Anthropic, Groq, Mistral) or run a <strong>local Ollama</strong> model and let AutoSort+ automatically move emails to the right folders.</p>
+<p class="lead">AI-powered email organization that adapts to your workflow. Choose from cloud providers (Gemini, OpenAI, Anthropic, Groq, Mistral) or run a <strong>local Ollama</strong> or <strong>LM Studio</strong> model and let AutoSort+ automatically move emails to the right folders.</p>
 
 <div class="badges">
-<a href="https://github.com/Nigel1992/AutoSort-Plus/releases"><img src="https://img.shields.io/badge/Version-1.2.5-blue?style=for-the-badge" alt="Version"></a>
+<a href="https://github.com/Nigel1992/AutoSort-Plus/releases"><img src="https://img.shields.io/badge/Version-1.4.0-blue?style=for-the-badge" alt="Version"></a>
 <a href="https://www.thunderbird.net/"><img src="https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=for-the-badge&logo=thunderbird&logoColor=white" alt="Thunderbird"></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"></a>
 </div>
@@ -64,25 +64,28 @@ AutoSort+ transforms your email workflow by automatically organizing messages in
 | **Setup Time** | Hours of rule configuration | Minutes with AI |
 | **Flexibility** | Static rules, breaks easily | Adaptive AI, learns patterns |
 | **Context Understanding** | Basic keyword matching | Full content comprehension |
-| **Multi-Provider** | N/A | 5 cloud providers + local Ollama support |
+| **Multi-Provider** | N/A | 5 cloud providers + local Ollama & LM Studio support |
 | **Smart Limits** | N/A | Built-in rate limit management |
 | **History Tracking** | Manual logging | Automatic 100-move history |
 
 ---
 
-## 🎉 Latest Release: v1.2.5
+## 🎉 Latest Release: v1.4.0
 
 <div class="release-banner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 20px 0;" markdown="1">
 
-### 🚀 Release v1.2.5
+### 🚀 Release v1.4.0
 
-**Summary:** Configurable AI models and a fix for the Gemini `404` on new API keys.
+**Summary:** A live batch progress panel, bulk Gemini key import, full dark mode, and a toolbar usage popup.
 
 #### 🛠️ Notable Changes
-- ✅ **Gemini 404 fixed:** Google now limits the legacy `gemini-2.5-*` models to accounts that used them in the past, so brand-new API keys returned a `404`. The default model is now `gemini-3.5-flash-lite`.
-- ✅ **Choose your model:** Pick the Gemini model in settings (with a **Load Available Models** button that lists the models your key can access). Other providers get an optional **Model** override too.
-- ✅ **Gemini 3 support:** Correct `thinkingLevel` handling for Gemini 3.x (the legacy `thinkingBudget` is no longer sent, which would cause a `400`).
-- ✅ **Clearer errors:** Model-not-found responses now include a hint to switch models.
+- ✅ **Batch progress panel:** "Batch Analyze with AI" now opens a dedicated panel with a live progress bar, per-email results, running counts, and live per-key usage cards — with **Cancel** and **Retry Failed** controls.
+- ✅ **Parallel processing:** Emails are analyzed concurrently in chunks (5 at a time by default, configurable 1–20 in Settings) so large batches run much faster.
+- ✅ **Bulk import Gemini keys:** Paste many API keys at once (one per line) with duplicate detection.
+- ✅ **Toolbar popup:** Click the toolbar icon for an at-a-glance API usage summary and quick links to Settings and the Batch Panel.
+- ✅ **Dark mode:** Full dark-theme support across Settings, the popup, and the Batch Panel.
+- ✅ **Fixes:** One email = one API request; more reliable email content extraction; hardened per-key usage tracking (no more `rateLimit is undefined` or clobbered counters).
+- 🧪 **Also new in v1.3.0:** **LM Studio** as a local provider (native REST API, optional token) alongside Ollama.
 
 </div>
 
@@ -102,6 +105,7 @@ Choose the best AI provider for your needs:
 | **Groq** | gpt-oss-120b | Generous | ⚡⚡⚡⚡ | Ultra-fast, free |
 | **Mistral** | mistral-small | Free tier | ⚡⚡⚡ | European privacy focus |
 | **Ollama** | local LLM (llama3.2, phi, tinyllama) | Local (no external usage) | ⚡⚡ - ⚡⚡⚡ | Run models locally for privacy and offline use; supports model download and CPU-only mode |
+| **LM Studio** | local LLM (any loaded chat model) | Local (no external usage) | ⚡⚡ - ⚡⚡⚡ | Local server with native REST API and optional token; fully private |
 
 > **Gemini model selection:** The model is configurable in **Settings → AI Settings → Gemini Model**. New Google AI Studio API keys can no longer access the legacy `gemini-2.5-*` models (they return a 404 "no longer available to new users"), so the default is now `gemini-3.5-flash-lite`. Use **Load Available Models** to fetch the models your key can access. Other providers support an optional **Model** override too.
 
@@ -111,7 +115,16 @@ Choose the best AI provider for your needs:
 - **Real-Time Tracking**: See usage in settings dashboard
 - **Smart Warnings**: Alerts at 15/20 limit
 - **Multi-Key Support**: Switch keys when limit reached
+- **Bulk Key Import**: Paste many keys at once (one per line) with duplicate detection
 - **Paid Plan Bypass**: Disable limits with paid plan checkbox
+
+### 🗂️ Batch Processing with Live Progress
+
+- **Batch Panel**: Sort many emails with a live progress bar and per-email results
+- **Parallel Processing**: Emails are analyzed concurrently in chunks (5 at a time by default, configurable 1–20 in **Settings → General Settings**) for much faster batches
+- **Cancel Anytime**: Stop a running batch cleanly
+- **Retry Failed**: Re-run only the emails that failed
+- **Live Usage Cards**: Watch per-key API usage as the batch runs
 
 ### 📁 Flexible Folder Management
 
@@ -159,6 +172,7 @@ Choose your preferred AI provider:
 - **Groq** (Free): [Get API Key](https://console.groq.com/keys) - Generous limits
 - **Mistral** (Free/Paid): [Get API Key](https://console.mistral.ai/)
 - **Ollama (Local)**: No API key required — [Install Ollama](https://ollama.ai/download) and pull a model (e.g., `ollama pull llama3.2`). See the Ollama setup guide in the docs for details.
+- **LM Studio (Local)**: No API key required — [Install LM Studio](https://lmstudio.ai/), load a chat model, and enable the local server under **Settings → Local Model API**. Optionally set a token if you enable authentication.
 
 ### 3️⃣ Configure AutoSort+
 
@@ -174,8 +188,8 @@ Choose your preferred AI provider:
 You have two options:
 
 **Option 1: AI-Powered Sorting**
-- Select emails → Right-click → **AutoSort+ → Analyze with AI**
-- The AI will analyze and move emails to the best folder/category.
+- Select emails → Right-click → **AutoSort+ → Batch Analyze with AI**
+- A live **Batch Panel** opens with progress and per-email results; the AI analyzes and moves emails to the best folder/category. Cancel anytime or retry failed emails.
 
 **Option 2: Manual Labeling**
 - Select emails → Right-click → **AutoSort+ → AutoSort Label → [Pick any label]**
@@ -436,6 +450,6 @@ See [LICENSE](https://github.com/Nigel1992/AutoSort-Plus/blob/main/LICENSE) for 
 
 ![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=flat-square&logo=thunderbird&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![Version](https://img.shields.io/badge/Version-1.2.5-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.4.0-blue?style=flat-square)
 
 </div>

@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "AutoSort+ TEST",
-  "version": "1.3.0",
-  "description": "TEST BUILD - Automatically sort and label your emails with custom rules using AI (includes LM Studio support)",
+  "name": "AutoSort+",
+  "version": "1.4.0",
+  "description": "Automatically sort and label your emails with custom rules using AI (includes Ollama and LM Studio local support)",
   "author": "Nigel Hagen",
   "applications": {
     "gecko": {
@@ -39,7 +39,8 @@
   },
   "browser_action": {
     "default_icon": "icons/icon-48.png",
-    "default_title": "AutoSort+ Settings"
+    "default_title": "AutoSort+ Settings",
+    "default_popup": "popup.html"
   },
   "icons": {
     "48": "icons/icon-48.png",
@@ -48,7 +49,11 @@
   "web_accessible_resources": [
     "api_ollama/index.html",
     "api_ollama/ollama-popup.js",
+    "batch.html",
+    "batch.js",
     "js/ollama.js",
-    "js/workers/ollama-worker.js"
+    "js/workers/ollama-worker.js",
+    "popup.html",
+    "popup.js"
   ]
 } 

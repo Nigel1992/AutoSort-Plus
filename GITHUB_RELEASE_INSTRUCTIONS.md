@@ -1,56 +1,86 @@
-# GitHub Release Instructions
+# Release Process (AutoSort+)
 
-## Step 1: Push the Tag
+How to cut a new release. Run all commands from the repo root:
+
 ```bash
-cd /home/nigel/AutoSort-Plus
-git push origin v1.2.3.1-ollama-test
+cd /home/nigel/AutoSort+/AutoSort-Plus
 ```
 
-## Step 2: Create GitHub Release
+## 1. Bump the version
 
-1. Go to your GitHub repo: https://github.com/[YOUR_USERNAME]/AutoSort-Plus
-2. Click **Releases** → **Draft a new release**
-3. **Choose tag:** Select `v1.2.3.1-ollama-test`
-4. **Release title:** `v1.2.3.1-ollama-test - Ollama Local AI Support (TEST)`
-5. **Description:** Copy content from `RELEASE_NOTES_OLLAMA_TEST.md`
-6. **Attach binary:** Upload `autosortplus.xpi`
-7. ✅ Check **"This is a pre-release"**
-8. Click **Publish release**
+Edit `manifest.json`:
 
-## Step 3: Get the Link
+- Set `"version"` (e.g. `1.4.1`).
+- Remove any `TEST` label from `name`/`description` for a stable release.
 
-After publishing, your download link will be:
+## 2. Update the docs
+
+- **`README.md`** — bump both version badges and add a new entry at the top of `## 📝 Changelog`.
+- **`release_notes.md`** — add a `## AutoSort+ vX.Y.Z` section at the very top (this becomes the GitHub release body).
+- **`docs/index.md`** — bump the version badge(s) and refresh the "Latest Release" banner.
+- **`docs/_config.yml`** — update the description if providers/features changed.
+
+> Keep historical files (`RELEASE_NOTES_*`, `CHANGELOG_OLLAMA.md`, `REDDIT_POST.md`) as-is; they document past releases.
+
+## 3. Rebuild the XPI
+
+The XPI bundles the docs, so rebuild it after any change:
+
+```bash
+rm -f autosortplus.xpi
+zip -r -q autosortplus.xpi . -x "./.git/*" -x "./.github/*" -x "./.gitignore" -x "./autosortplus.xpi"
+unzip -t autosortplus.xpi | tail -1
 ```
-https://github.com/[YOUR_USERNAME]/AutoSort-Plus/releases/download/v1.2.3.1-ollama-test/autosortplus.xpi
+
+Quick sanity check that the version inside the XPI is right:
+
+```bash
+python3 -c "import zipfile,json; print(json.loads(zipfile.ZipFile('autosortplus.xpi').read('manifest.json'))['version'])"
 ```
 
-## Step 4: Update Reddit Post
+## 4. Commit and tag
 
-Replace `[**Download XPI from GitHub**](https://github.com/yourusername/AutoSort-Plus/releases/tag/v1.2.3.1-ollama-test)` with your actual GitHub username and release link.
+```bash
+git add -A
+git commit -m "Release vX.Y.Z: <summary>"
+git tag -a vX.Y.Z -m "AutoSort+ vX.Y.Z - <summary>"
+git push origin main
+git push origin vX.Y.Z
+```
 
-## Files Ready to Upload:
-✅ autosortplus.xpi (58KB)
-✅ RELEASE_NOTES_OLLAMA_TEST.md (for release description)
-✅ REDDIT_POST.md (ready to post)
+## 5. Create the GitHub release
 
----
+Extract the top section of `release_notes.md` as the release body, then create the release and attach the XPI:
 
-## Quick Copy-Paste for Reddit Reply:
+```bash
+python3 - <<'PY'
+txt = open('release_notes.md').read()
+start = txt.index('## AutoSort+ vX.Y.Z')          # <-- new version
+end = txt.index('## AutoSort+ ', start + 1)        # <-- next (older) version
+open('/tmp/opencode/notes.md', 'w').write(txt[start:end].rstrip().rstrip('-').rstrip() + '\n')
+PY
 
-**Reply to the Ollama request:**
+gh release create vX.Y.Z autosortplus.xpi \
+  --title "AutoSort+ vX.Y.Z - <summary>" \
+  --notes-file /tmp/opencode/notes.md \
+  --latest
+```
 
-> Hey! Great news - I just added Ollama support in a test release! 🎉
-> 
-> You can now use **any local Ollama model** (llama3.2, tinyllama, phi, gemma, etc.) for email classification. No API keys, no rate limits, completely private.
-> 
-> **Download:** https://github.com/[YOUR_USERNAME]/AutoSort-Plus/releases/tag/v1.2.3.1-ollama-test
-> 
-> Setup is simple:
-> 1. Install Ollama: https://ollama.com/download
-> 2. Pull a model: `ollama pull tinyllama`
-> 3. Install the XPI
-> 4. Select "Ollama" in settings
-> 
-> This is a test release, so please let me know if you hit any issues! Full debugging guide in the release notes.
-> 
-> Would love to hear what models work best for you!
+Add `--prerelease` for test builds.
+
+> A tag push also triggers `.github/workflows/discord-notify.yml`.
+
+## Replacing an already-published release
+
+If a release was just published and needs to be replaced (e.g. a missing changelog item or a hotfix):
+
+```bash
+git add -A
+git commit --amend --no-edit
+git tag -f -a vX.Y.Z -m "AutoSort+ vX.Y.Z - <summary>"
+git push --force-with-lease origin main
+git push --force origin vX.Y.Z
+
+gh release edit vX.Y.Z --notes-file /tmp/opencode/notes.md
+gh release upload vX.Y.Z autosortplus.xpi --clobber
+```

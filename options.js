@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const geminiPaidContainer = document.getElementById('gemini-paid-container');
     const geminiPaidCheckbox = document.getElementById('gemini-paid-plan');
     const importLabelsButton = document.getElementById('import-labels');
-    const bulkImportTextarea = document.getElementById('bulk-import-text');
+    const bulkImportGeminiKeysTextarea = document.getElementById('bulk-import-gemini-keys-text');
     const loadImapFoldersButton = document.getElementById('load-imap-folders');
     const folderLoadingIndicator = document.getElementById('folder-loading');
     const folderSelection = document.getElementById('folder-selection');
@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const loadGeminiModelsButton = document.getElementById('load-gemini-models');
     const providerModelInput = document.getElementById('provider-model');
     const providerModelHelp = document.getElementById('provider-model-help');
+    const batchChunkSizeInput = document.getElementById('batch-chunk-size');
     
     // Ollama-specific elements  
     const ollamaModelSelect = document.getElementById('ollama-model');
@@ -333,19 +334,22 @@ document.addEventListener('DOMContentLoaded', async function() {
             // Multi-key mode
             document.getElementById('single-key-usage').style.display = 'none';
             document.getElementById('multi-key-usage').style.display = 'block';
-            const rateLimits = data.geminiRateLimits || [];
+            const rateLimits = Array.isArray(data.geminiRateLimits) ? data.geminiRateLimits : [];
             updateMultiKeyUsageDisplay(keys, rateLimits, currentIndex);
         } else if (keys.length === 1) {
             // Single-key mode but stored in new format
             document.getElementById('single-key-usage').style.display = 'block';
             document.getElementById('multi-key-usage').style.display = 'none';
-            const rateLimits = data.geminiRateLimits || [{ requests: [], dailyCount: 0, dailyResetTime: Date.now() }];
-            updateSingleKeyUsageDisplay(rateLimits[0]);
+            const rateLimits = Array.isArray(data.geminiRateLimits) ? data.geminiRateLimits : [];
+            updateSingleKeyUsageDisplay(rateLimits[0] || { requests: [], dailyCount: 0, dailyResetTime: Date.now() });
         } else {
             // Legacy single-key mode (backward compatibility)
             document.getElementById('single-key-usage').style.display = 'block';
             document.getElementById('multi-key-usage').style.display = 'none';
-            const rateLimit = data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: Date.now() };
+            const storedLegacy = data.geminiRateLimit;
+            const rateLimit = (storedLegacy && typeof storedLegacy === 'object')
+                ? storedLegacy
+                : { requests: [], dailyCount: 0, dailyResetTime: Date.now() };
             updateSingleKeyUsageDisplay(rateLimit);
         }
     }
@@ -648,6 +652,50 @@ document.addEventListener('DOMContentLoaded', async function() {
         addGeminiKeyInput('');
     });
 
+    // Bulk import Gemini API keys button
+    const bulkImportKeysButton = document.getElementById('bulk-import-keys-button');
+    if (bulkImportKeysButton) {
+        bulkImportKeysButton.addEventListener('click', () => {
+            const bulkText = bulkImportGeminiKeysTextarea.value.trim();
+            const keys = bulkText.split('\n').map(k => k.trim()).filter(k => k !== '');
+            
+            // Validation
+            if (keys.length === 0) {
+                showMessage('Please add at least one Gemini API key. Enter keys one per line.', false);
+                return;
+            }
+            
+            // Check for duplicate keys
+            const uniqueKeys = new Set(keys.map(key => key.trim().toLowerCase()));
+            if (uniqueKeys.size !== keys.length) {
+                showMessage('⚠️ Duplicate API keys detected! Each key must be unique. Please remove duplicates before importing.', false);
+                return;
+            }
+            
+            // Update Gemini keys
+            geminiKeys = keys;
+            refreshGeminiKeysList();
+            
+            // Save settings automatically
+            const provider = aiProviderSelect.value;
+            if (provider === 'gemini') {
+                const apiKey = geminiKeys.find(key => key && key.trim() !== '');
+                if (apiKey) {
+                    browser.storage.local.set({
+                        geminiApiKeys: geminiKeys,
+                        currentGeminiKeyIndex: 0,
+                        aiProvider: provider
+                    }).then(() => {
+                        showMessage(`✓ Imported ${keys.length} Gemini API keys successfully!`, true);
+                        updateSaveButtonState();
+                    }).catch(error => {
+                        showMessage('Error saving keys: ' + error, false);
+                    });
+                }
+            }
+        });
+    }
+
     // Load available Gemini models for the entered API key
     if (loadGeminiModelsButton) {
         loadGeminiModelsButton.addEventListener('click', async () => {
@@ -819,8 +867,15 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
     }
 
+    // Read and clamp the parallel batch size (1–20, default 5)
+    function getBatchChunkSize() {
+        const raw = batchChunkSizeInput ? parseInt(batchChunkSizeInput.value, 10) : NaN;
+        if (isNaN(raw)) return 5;
+        return Math.min(20, Math.max(1, raw));
+    }
+
     // Load saved settings
-    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'geminiModel', 'providerModel', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'ollamaAuthToken', 'lmstudioUrl', 'lmstudioModel', 'lmstudioCustomModel', 'lmstudioAuthToken']).then(result => {
+    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'geminiModel', 'providerModel', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'ollamaAuthToken', 'lmstudioUrl', 'lmstudioModel', 'lmstudioCustomModel', 'lmstudioAuthToken', 'batchChunkSize']).then(result => {
         if (result.labels && result.labels.length > 0) {
             result.labels.forEach(label => {
                 addLabelInput(label);
@@ -896,12 +951,21 @@ document.addEventListener('DOMContentLoaded', async function() {
         // Set gemini paid plan checkbox
         geminiPaidCheckbox.checked = result.geminiPaidPlan === true;
         
+        // Load parallel batch size (1-20, default 5)
+        if (batchChunkSizeInput) {
+            const storedChunkSize = parseInt(result.batchChunkSize, 10);
+            batchChunkSizeInput.value = (storedChunkSize >= 1 && storedChunkSize <= 20) ? storedChunkSize : 5;
+        }
+        
         updateSaveButtonState();
     });
     
     // Add input listeners for validation
     apiKeyInput.addEventListener('input', updateSaveButtonState);
     labelsContainer.addEventListener('input', updateSaveButtonState);
+    if (batchChunkSizeInput) {
+        batchChunkSizeInput.addEventListener('input', updateSaveButtonState);
+    }
 
     // Test API connection
     testApiButton.addEventListener('click', async () => {
@@ -1662,7 +1726,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 aiProvider: provider,
                 enableAi: document.getElementById('enable-ai').checked,
                 geminiPaidPlan: geminiPaidCheckbox.checked,
-                geminiModel: getSelectedGeminiModel()
+                geminiModel: getSelectedGeminiModel(),
+                batchChunkSize: getBatchChunkSize()
             };
             
             // Initialize rate limits array for all keys if not exists
@@ -1701,7 +1766,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 ollamaModel: ollamaModel,
                 ollamaCustomModel: ollamaCustomModelInput.value.trim(),
                 ollamaAuthToken: ollamaAuthTokenInput ? ollamaAuthTokenInput.value.trim() : '',
-                ollamaCpuOnly: ollamaCpuOnlyCheckbox.checked
+                ollamaCpuOnly: ollamaCpuOnlyCheckbox.checked,
+                batchChunkSize: getBatchChunkSize()
             };
 
             browser.storage.local.set(settings).then(() => {
@@ -1728,7 +1794,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     ? 'custom'
                     : (lmStudioModelSelect ? lmStudioModelSelect.value : lmModel),
                 lmstudioCustomModel: lmStudioCustomModelInput ? lmStudioCustomModelInput.value.trim() : '',
-                lmstudioAuthToken: lmStudioAuthTokenInput ? lmStudioAuthTokenInput.value.trim() : ''
+                lmstudioAuthToken: lmStudioAuthTokenInput ? lmStudioAuthTokenInput.value.trim() : '',
+                batchChunkSize: getBatchChunkSize()
             };
 
             browser.storage.local.set(settings).then(() => {
@@ -1750,7 +1817,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                 aiProvider: provider,
                 enableAi: document.getElementById('enable-ai').checked,
                 geminiPaidPlan: geminiPaidCheckbox.checked,
-                providerModel: (providerModelInput && providerModelInput.value.trim()) || ''
+                providerModel: (providerModelInput && providerModelInput.value.trim()) || '',
+                batchChunkSize: getBatchChunkSize()
             };
 
             browser.storage.local.set(settings).then(() => {
