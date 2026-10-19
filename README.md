@@ -16,7 +16,7 @@
 <img width="120" height="120" alt="AutoSort+ Logo" src="https://github.com/user-attachments/assets/32e8e1fb-7cb0-4b65-9bcc-e1cf693bf5e5" />
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg)](https://github.com/Nigel1992/AutoSort-Plus/releases)
+[![Version](https://img.shields.io/badge/version-1.4.1-blue.svg)](https://github.com/Nigel1992/AutoSort-Plus/releases)
 [![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0%2B-0a84ff.svg)](https://www.thunderbird.net/)
 [![Development Status](https://img.shields.io/badge/status-active-success)](https://github.com/Nigel1992/AutoSort-Plus)
 
@@ -521,6 +521,16 @@ You can also manually label emails without AI analysis:
 
 ## 📝 Changelog
 
+### 🎉 v1.4.1 (2026-10-19) - Gemini Quota Handling, Key Tools & Completion Sound
+
+- ✅ Gemini 429 responses now honor Google's retry delay and retry up to five times; failed API responses don't increment local usage counters
+- ✅ Increased Gemini output-token budget and preserve returned label text when a response reaches `MAX_TOKENS`
+- ✅ Gemini usage counters refresh automatically every 10 seconds; Settings has a live per-key countdown and optional reset notifications
+- ✅ Each key's 24-hour countdown starts only when that key reaches the add-on's 20-request cap; other keys have independent counters and countdowns
+- ✅ Parallel requests reserve each key's remaining daily slots before sending, so concurrent batches cannot push the counter above 20/20; failed requests release their reservations
+- ✅ Test all Gemini keys sequentially, reveal/hide keys individually, and remove keys from usage cards immediately
+- ✅ Optional longer, more audible completion chime after batch sorting finishes
+
 ### 🎉 v1.4.0 (2026-10-17) - Batch Panel, Bulk Key Import, Dark Mode & Quick Popup
 
 <details open>
@@ -763,7 +773,7 @@ See [LICENSE](LICENSE) file for full text.
 
 ![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=for-the-badge&logo=thunderbird&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Version](https://img.shields.io/badge/Version-1.4.0-blue?style=for-the-badge)
+![Version](https://img.shields.io/badge/Version-1.4.1-blue?style=for-the-badge)
 
 </div>
 

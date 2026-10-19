@@ -34,7 +34,7 @@ pre{background:#0b0d0f;padding:12px;border-radius:8px;color:#d7e9c7}
 <p class="lead">AI-powered email organization that adapts to your workflow. Choose from cloud providers (Gemini, OpenAI, Anthropic, Groq, Mistral) or run a <strong>local Ollama</strong> or <strong>LM Studio</strong> model and let AutoSort+ automatically move emails to the right folders.</p>
 
 <div class="badges">
-<a href="https://github.com/Nigel1992/AutoSort-Plus/releases"><img src="https://img.shields.io/badge/Version-1.4.0-blue?style=for-the-badge" alt="Version"></a>
+<a href="https://github.com/Nigel1992/AutoSort-Plus/releases"><img src="https://img.shields.io/badge/Version-1.4.1-blue?style=for-the-badge" alt="Version"></a>
 <a href="https://www.thunderbird.net/"><img src="https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=for-the-badge&logo=thunderbird&logoColor=white" alt="Thunderbird"></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"></a>
 </div>
@@ -70,22 +70,21 @@ AutoSort+ transforms your email workflow by automatically organizing messages in
 
 ---
 
-## 🎉 Latest Release: v1.4.0
+## 🎉 Latest Release: v1.4.1
 
 <div class="release-banner" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); margin: 20px 0;" markdown="1">
 
-### 🚀 Release v1.4.0
+### 🚀 Release v1.4.1
 
-**Summary:** A live batch progress panel, bulk Gemini key import, full dark mode, and a toolbar usage popup.
+**Summary:** Gemini quota-aware retries and usage tracking, improved key tools, per-key countdowns, and optional batch completion sound.
 
 #### 🛠️ Notable Changes
-- ✅ **Batch progress panel:** "Batch Analyze with AI" now opens a dedicated panel with a live progress bar, per-email results, running counts, and live per-key usage cards — with **Cancel** and **Retry Failed** controls.
-- ✅ **Parallel processing:** Emails are analyzed concurrently in chunks (5 at a time by default, configurable 1–20 in Settings) so large batches run much faster.
-- ✅ **Bulk import Gemini keys:** Paste many API keys at once (one per line) with duplicate detection.
-- ✅ **Toolbar popup:** Click the toolbar icon for an at-a-glance API usage summary and quick links to Settings and the Batch Panel.
-- ✅ **Dark mode:** Full dark-theme support across Settings, the popup, and the Batch Panel.
-- ✅ **Fixes:** One email = one API request; more reliable email content extraction; hardened per-key usage tracking (no more `rateLimit is undefined` or clobbered counters).
-- 🧪 **Also new in v1.3.0:** **LM Studio** as a local provider (native REST API, optional token) alongside Ollama.
+- ✅ **Gemini 429 handling:** Honor Google's retry delay and retry up to five times; failed responses don't increment the local usage counter.
+- ✅ **Per-key countdown:** Each key's 24-hour timer starts only when that key reaches the add-on's 20-request cap; keys remain independent.
+- ✅ **Accurate parallel counters:** Reserve each key's remaining daily slots before concurrent requests; failed requests release reservations, preventing counters from exceeding 20/20.
+- ✅ **Automatic usage refresh:** Reconcile counters every 10 seconds and show a live per-key countdown in Settings, with optional reset notifications.
+- ✅ **Gemini key tools:** Test all keys, reveal/hide each key, and remove usage cards immediately when removing keys.
+- ✅ **Completion sound:** Optional longer chime after a batch finishes.
 
 </div>
 
@@ -450,6 +449,6 @@ See [LICENSE](https://github.com/Nigel1992/AutoSort-Plus/blob/main/LICENSE) for 
 
 ![Thunderbird](https://img.shields.io/badge/Thunderbird-78.0+-0A84FF?style=flat-square&logo=thunderbird&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
-![Version](https://img.shields.io/badge/Version-1.4.0-blue?style=flat-square)
+![Version](https://img.shields.io/badge/Version-1.4.1-blue?style=flat-square)
 
 </div>

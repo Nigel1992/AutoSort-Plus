@@ -1,3 +1,24 @@
+## AutoSort+ v1.4.1
+
+### 🔔 Gemini quota handling, key tools & completion sound
+
+- **Quota-aware Gemini retries:** On HTTP 429, AutoSort+ honors Google's retry delay and retries the request up to five times. Failed responses do not increment the add-on's local usage counter; successful API responses do, even if the generated label cannot be used.
+- **More reliable Gemini classification:** Increased the output-token budget and use any returned label text when Gemini reports `MAX_TOKENS`.
+- **Automatic usage refresh:** Gemini counters are reconciled every 10 seconds and when usage is refreshed. Each key's countdown starts only when that key reaches the add-on's 20-request daily cap; keys below the cap show that the countdown starts at the limit. One key's timer does not affect another. Optional desktop notifications announce resets for keys that had usage.
+- **Accurate parallel usage counters:** Concurrent requests reserve per-key daily slots before sending. Successful requests commit usage, failed requests release reservations, and counters stay within 20/20.
+- **Gemini key management:** Test all configured keys sequentially, reveal or hide each key, and remove a key and its usage card immediately.
+- **Completion sound:** Optional sound notification after a batch finishes, with a longer, more audible chime.
+
+### 📦 Installation in Thunderbird
+
+1. Download the attached `autosortplus.xpi` file.
+2. Open Thunderbird → Menu (☰) → **Add-ons and Themes**.
+3. Gear icon → **Install Add-on From File...**
+4. Select the downloaded `.xpi` file.
+5. Click **Add** and restart Thunderbird if prompted.
+
+---
+
 ## AutoSort+ v1.4.0
 
 ### 🗂️ Batch Panel, Bulk Key Import, Dark Mode & Quick Popup

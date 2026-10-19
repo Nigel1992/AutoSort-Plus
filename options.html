@@ -133,7 +133,9 @@
                 <div class="button-group">
                     <button id="bulk-import-keys-button" class="button">Import Keys</button>
                     <button id="add-gemini-key" class="button">+ Add Another Gemini Key</button>
+                    <button id="test-all-gemini-keys" class="button">Test All Keys</button>
                 </div>
+                <small class="help-text">Testing sends one API request per key and may count toward each key's quota.</small>
                 <div id="gemini-keys-list" class="gemini-keys-list"></div>
             </div>
 
@@ -167,6 +169,10 @@
                 <h3>⚙️ General Settings</h3>
                 <input type="checkbox" id="enable-ai" checked>
                 <label for="enable-ai">Enable AI-powered sorting</label>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="completion-sound-enabled">
+                    <label for="completion-sound-enabled">Play a sound when batch sorting finishes</label>
+                </div>
                 <div class="input-group">
                     <label for="batch-chunk-size">Parallel batch size:</label>
                     <input type="number" id="batch-chunk-size" class="api-key-input" min="1" max="20" step="1" value="5">
@@ -181,6 +187,11 @@
             
             <div class="subsection" id="gemini-usage-subsection" style="display: none;">
                 <h3>📊 Gemini API Usage</h3>
+                <small class="help-text">Usage automatically refreshes every 10 seconds.</small>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="gemini-reset-notifications">
+                    <label for="gemini-reset-notifications">Notify me when a used key's daily counter resets</label>
+                </div>
                 <div id="single-key-usage" style="display: none;">
                     <div class="usage-stats">
                         <div class="usage-item">
@@ -295,4 +306,4 @@
     </div>
     <script src="options.js"></script>
 </body>
-</html> 
+</html>

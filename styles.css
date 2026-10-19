@@ -669,6 +669,10 @@ input[type="checkbox"] {
     border-radius: 4px;
 }
 
+.gemini-key-item .gemini-key-visibility {
+    flex: 0 0 auto;
+}
+
 .gemini-key-item input:focus {
     outline: none;
     border-color: var(--primary-color);
@@ -1301,4 +1305,3 @@ input[type="checkbox"] {
         border-bottom-color: #3a3a3a;
     }
 }
- 

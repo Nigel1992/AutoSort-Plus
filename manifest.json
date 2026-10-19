@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "AutoSort+",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "Automatically sort and label your emails with custom rules using AI (includes Ollama and LM Studio local support)",
   "author": "Nigel Hagen",
   "applications": {
@@ -15,6 +15,8 @@
     "messagesModify",
     "accountsRead",
     "storage",
+    "alarms",
+    "notifications",
     "menus",
     "tabs",
     "messagesMove",
@@ -56,4 +58,4 @@
     "popup.html",
     "popup.js"
   ]
-} 
+}

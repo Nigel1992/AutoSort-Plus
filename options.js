@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const apiTestResult = document.getElementById('api-test-result');
     const geminiPaidContainer = document.getElementById('gemini-paid-container');
     const geminiPaidCheckbox = document.getElementById('gemini-paid-plan');
+    const geminiResetNotificationsCheckbox = document.getElementById('gemini-reset-notifications');
     const importLabelsButton = document.getElementById('import-labels');
     const bulkImportGeminiKeysTextarea = document.getElementById('bulk-import-gemini-keys-text');
     const loadImapFoldersButton = document.getElementById('load-imap-folders');
@@ -325,10 +326,13 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Update Gemini usage display
+    let geminiCountdownTimer = null;
+    let geminiUsageRefreshTimer = null;
     async function updateGeminiUsageDisplay() {
+        await browser.runtime.sendMessage({ action: 'refreshGeminiUsage' });
         const data = await browser.storage.local.get(['geminiRateLimits', 'currentGeminiKeyIndex', 'geminiApiKeys', 'geminiRateLimit']);
         const currentIndex = data.currentGeminiKeyIndex || 0;
-        const keys = data.geminiApiKeys || geminiKeys;
+        const keys = geminiKeys.length ? geminiKeys : (data.geminiApiKeys || []);
         
         if (keys.length > 1) {
             // Multi-key mode
@@ -341,7 +345,7 @@ document.addEventListener('DOMContentLoaded', async function() {
             document.getElementById('single-key-usage').style.display = 'block';
             document.getElementById('multi-key-usage').style.display = 'none';
             const rateLimits = Array.isArray(data.geminiRateLimits) ? data.geminiRateLimits : [];
-            updateSingleKeyUsageDisplay(rateLimits[0] || { requests: [], dailyCount: 0, dailyResetTime: Date.now() });
+            updateSingleKeyUsageDisplay(rateLimits[0] || { requests: [], dailyCount: 0, dailyResetTime: null });
         } else {
             // Legacy single-key mode (backward compatibility)
             document.getElementById('single-key-usage').style.display = 'block';
@@ -349,9 +353,46 @@ document.addEventListener('DOMContentLoaded', async function() {
             const storedLegacy = data.geminiRateLimit;
             const rateLimit = (storedLegacy && typeof storedLegacy === 'object')
                 ? storedLegacy
-                : { requests: [], dailyCount: 0, dailyResetTime: Date.now() };
+                : { requests: [], dailyCount: 0, dailyResetTime: null };
             updateSingleKeyUsageDisplay(rateLimit);
         }
+        if (geminiCountdownTimer) clearInterval(geminiCountdownTimer);
+        geminiCountdownTimer = setInterval(() => {
+            if (keys.length > 1) {
+                const limits = Array.isArray(data.geminiRateLimits) ? data.geminiRateLimits : [];
+                updateMultiKeyUsageDisplay(keys, limits, currentIndex);
+            } else if (keys.length === 1) {
+                const limits = Array.isArray(data.geminiRateLimits) ? data.geminiRateLimits : [];
+                updateSingleKeyUsageDisplay(limits[0] || { requests: [], dailyCount: 0, dailyResetTime: null });
+            } else {
+                updateSingleKeyUsageDisplay(data.geminiRateLimit || { requests: [], dailyCount: 0, dailyResetTime: null });
+            }
+            if (Date.now() >= getEarliestGeminiResetTime(data, keys.length)) {
+                updateGeminiUsageDisplay();
+            }
+        }, 1000);
+
+        if (!geminiUsageRefreshTimer) {
+            geminiUsageRefreshTimer = setInterval(() => {
+                if (aiProviderSelect.value === 'gemini') updateGeminiUsageDisplay();
+            }, 10000);
+        }
+    }
+
+    function getEarliestGeminiResetTime(data, keyCount) {
+        const limits = keyCount > 0
+            ? (Array.isArray(data.geminiRateLimits) ? data.geminiRateLimits : [])
+            : [data.geminiRateLimit || {}];
+        const deadlines = limits.map(limit => limit && limit.dailyResetTime).filter(time => typeof time === 'number');
+        return deadlines.length ? Math.min(...deadlines) : Infinity;
+    }
+
+    function formatGeminiCountdown(resetTime) {
+        const remaining = Math.max(0, Math.ceil((resetTime - Date.now()) / 1000));
+        const hours = Math.floor(remaining / 3600);
+        const minutes = Math.floor((remaining % 3600) / 60);
+        const seconds = remaining % 60;
+        return `In ${hours}h ${minutes}m ${seconds}s`;
     }
     
     // Update single key usage display (backward compatibility)
@@ -378,11 +419,13 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         // Update reset time
-        if (rateLimit.dailyResetTime > now) {
-            const hoursUntil = Math.ceil((rateLimit.dailyResetTime - now) / (1000 * 60 * 60));
-            document.getElementById('gemini-reset-time').textContent = `In ${hoursUntil} hour${hoursUntil > 1 ? 's' : ''}`;
+        if (rateLimit.dailyCount >= 20 && typeof rateLimit.dailyResetTime === 'number' && rateLimit.dailyResetTime > now) {
+            document.getElementById('gemini-reset-time').textContent = formatGeminiCountdown(rateLimit.dailyResetTime);
+        } else if (rateLimit.dailyCount >= 20) {
+            document.getElementById('gemini-reset-time').textContent = 'Resetting…';
+            browser.runtime.sendMessage({ action: 'refreshGeminiUsage' }).then(() => updateGeminiUsageDisplay());
         } else {
-            document.getElementById('gemini-reset-time').textContent = 'Expired (will reset on next request)';
+            document.getElementById('gemini-reset-time').textContent = 'Starts when limit is reached';
         }
         
         // Update status and show warnings
@@ -415,7 +458,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         container.innerHTML = '';
         
         keys.forEach((key, index) => {
-            const rateLimit = rateLimits[index] || { requests: [], dailyCount: 0, dailyResetTime: now };
+            const rateLimit = rateLimits[index] || { requests: [], dailyCount: 0, dailyResetTime: null };
             const isActive = index === currentIndex;
             
             const card = document.createElement('div');
@@ -435,9 +478,12 @@ document.addEventListener('DOMContentLoaded', async function() {
             
             // Calculate reset time
             let resetText = '--';
-            if (rateLimit.dailyResetTime > now) {
-                const hoursUntil = Math.ceil((rateLimit.dailyResetTime - now) / (1000 * 60 * 60));
-                resetText = `${hoursUntil}h`;
+            if (rateLimit.dailyCount >= 20 && typeof rateLimit.dailyResetTime === 'number' && rateLimit.dailyResetTime > now) {
+                resetText = formatGeminiCountdown(rateLimit.dailyResetTime);
+            } else if (rateLimit.dailyCount >= 20) {
+                resetText = 'Resetting…';
+            } else {
+                resetText = 'Starts at limit';
             }
             
             // Last request time
@@ -526,6 +572,18 @@ document.addEventListener('DOMContentLoaded', async function() {
                 input.title = '';
             }
         });
+
+        const visibilityButton = document.createElement('button');
+        visibilityButton.type = 'button';
+        visibilityButton.className = 'button gemini-key-visibility';
+        visibilityButton.textContent = 'Show';
+        visibilityButton.setAttribute('aria-label', `Show API key ${index + 1}`);
+        visibilityButton.addEventListener('click', () => {
+            const reveal = input.type === 'password';
+            input.type = reveal ? 'text' : 'password';
+            visibilityButton.textContent = reveal ? 'Hide' : 'Show';
+            visibilityButton.setAttribute('aria-label', `${reveal ? 'Hide' : 'Show'} API key ${index + 1}`);
+        });
         
         const testButton = document.createElement('button');
         testButton.className = 'button';
@@ -558,6 +616,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         keyItem.appendChild(keyIndex);
         keyItem.appendChild(input);
+        keyItem.appendChild(visibilityButton);
         keyItem.appendChild(testButton);
         keyItem.appendChild(removeButton);
         keyItem.appendChild(statusSpan);
@@ -574,6 +633,19 @@ document.addEventListener('DOMContentLoaded', async function() {
         if (confirm(`Remove API key #${index + 1}?`)) {
             geminiKeys.splice(index, 1);
             refreshGeminiKeysList();
+            browser.storage.local.get(['geminiRateLimits', 'currentGeminiKeyIndex']).then(data => {
+                const rateLimits = Array.isArray(data.geminiRateLimits) ? data.geminiRateLimits.slice() : [];
+                rateLimits.splice(index, 1);
+                const currentIndex = data.currentGeminiKeyIndex || 0;
+                const nextIndex = Math.max(0, Math.min(currentIndex > index ? currentIndex - 1 : currentIndex, geminiKeys.length - 1));
+                return browser.storage.local.set({
+                    geminiApiKeys: geminiKeys.slice(),
+                    geminiRateLimits: rateLimits,
+                    currentGeminiKeyIndex: nextIndex
+                });
+            }).then(() => updateGeminiUsageDisplay()).catch(error => {
+                console.error('Could not synchronize removed Gemini key usage:', error);
+            });
         }
     }
     
@@ -650,6 +722,31 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Add Gemini key button
     addGeminiKeyButton.addEventListener('click', () => {
         addGeminiKeyInput('');
+    });
+
+    const testAllGeminiKeysButton = document.getElementById('test-all-gemini-keys');
+    testAllGeminiKeysButton.addEventListener('click', async () => {
+        const rows = Array.from(geminiKeysList.querySelectorAll('.gemini-key-item'));
+        const configured = rows.map((row, index) => ({
+            row,
+            index,
+            key: row.querySelector('input').value.trim()
+        })).filter(item => item.key);
+        if (!configured.length) {
+            showMessage('Add at least one Gemini API key before testing.', false);
+            return;
+        }
+
+        testAllGeminiKeysButton.disabled = true;
+        testAllGeminiKeysButton.textContent = 'Testing keys...';
+        try {
+            for (const item of configured) {
+                await testGeminiKey(item.key, item.index, item.row);
+            }
+        } finally {
+            testAllGeminiKeysButton.disabled = false;
+            testAllGeminiKeysButton.textContent = 'Test All Keys';
+        }
     });
 
     // Bulk import Gemini API keys button
@@ -758,8 +855,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Reset Gemini counter button
     document.getElementById('reset-gemini-counter').addEventListener('click', async () => {
         if (confirm('Reset usage counter? Do this only after switching to a new API key.')) {
-            const now = Date.now();
-            const makeFresh = () => ({ requests: [], dailyCount: 0, dailyResetTime: now + (24 * 60 * 60 * 1000) });
+            const makeFresh = () => ({ requests: [], dailyCount: 0, pendingCount: 0, dailyResetTime: null });
 
             const data = await browser.storage.local.get(['geminiRateLimits', 'geminiApiKeys']);
             const keys = data.geminiApiKeys || geminiKeys || [];
@@ -875,7 +971,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 
     // Load saved settings
-    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'geminiPaidPlan', 'geminiModel', 'providerModel', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'ollamaAuthToken', 'lmstudioUrl', 'lmstudioModel', 'lmstudioCustomModel', 'lmstudioAuthToken', 'batchChunkSize']).then(result => {
+    browser.storage.local.get(['labels', 'apiKey', 'geminiApiKeys', 'aiProvider', 'enableAi', 'completionSoundEnabled', 'geminiPaidPlan', 'geminiResetNotifications', 'geminiModel', 'providerModel', 'ollamaUrl', 'ollamaModel', 'ollamaCustomModel', 'ollamaCpuOnly', 'ollamaAuthToken', 'lmstudioUrl', 'lmstudioModel', 'lmstudioCustomModel', 'lmstudioAuthToken', 'batchChunkSize']).then(result => {
         if (result.labels && result.labels.length > 0) {
             result.labels.forEach(label => {
                 addLabelInput(label);
@@ -947,9 +1043,11 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         // Set enableAi to true by default if not set
         document.getElementById('enable-ai').checked = result.enableAi !== false;
+        document.getElementById('completion-sound-enabled').checked = result.completionSoundEnabled === true;
         
         // Set gemini paid plan checkbox
         geminiPaidCheckbox.checked = result.geminiPaidPlan === true;
+        geminiResetNotificationsCheckbox.checked = result.geminiResetNotifications === true;
         
         // Load parallel batch size (1-20, default 5)
         if (batchChunkSizeInput) {
@@ -958,6 +1056,12 @@ document.addEventListener('DOMContentLoaded', async function() {
         }
         
         updateSaveButtonState();
+    });
+
+    document.getElementById('completion-sound-enabled').addEventListener('change', event => {
+        browser.storage.local.set({ completionSoundEnabled: event.target.checked }).catch(error => {
+            console.error('Could not save completion sound preference:', error);
+        });
     });
     
     // Add input listeners for validation
@@ -1726,6 +1830,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 aiProvider: provider,
                 enableAi: document.getElementById('enable-ai').checked,
                 geminiPaidPlan: geminiPaidCheckbox.checked,
+                geminiResetNotifications: geminiResetNotificationsCheckbox.checked,
                 geminiModel: getSelectedGeminiModel(),
                 batchChunkSize: getBatchChunkSize()
             };
@@ -1736,7 +1841,8 @@ document.addEventListener('DOMContentLoaded', async function() {
                     settings.geminiRateLimits = validGeminiKeys.map(() => ({
                         requests: [],
                         dailyCount: 0,
-                        dailyResetTime: Date.now() + (24 * 60 * 60 * 1000)
+                        pendingCount: 0,
+                        dailyResetTime: null
                     }));
                 }
                 
@@ -1817,6 +1923,7 @@ document.addEventListener('DOMContentLoaded', async function() {
                 aiProvider: provider,
                 enableAi: document.getElementById('enable-ai').checked,
                 geminiPaidPlan: geminiPaidCheckbox.checked,
+                geminiResetNotifications: geminiResetNotificationsCheckbox.checked,
                 providerModel: (providerModelInput && providerModelInput.value.trim()) || '',
                 batchChunkSize: getBatchChunkSize()
             };
@@ -1917,4 +2024,4 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Add event listeners for history controls
     document.getElementById('clear-history').addEventListener('click', clearHistory);
     document.getElementById('refresh-history').addEventListener('click', updateHistoryTable);
-}); 
+});
