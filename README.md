@@ -7,6 +7,8 @@
 
 # 🎯 AutoSort+ 
 
+[![Vibe Coded](https://img.shields.io/badge/Vibe_Coded-✨-8A2BE2?style=for-the-badge)](https://github.com)
+
 ### AI-Powered Email Organization for Thunderbird
 
 <img width="120" height="120" alt="AutoSort+ Logo" src="https://github.com/user-attachments/assets/32e8e1fb-7cb0-4b65-9bcc-e1cf693bf5e5" />
