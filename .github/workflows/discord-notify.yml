@@ -19,10 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      DISCORD_WEBHOOK_ISSUES: ${{ secrets.DISCORD_WEBHOOK_ISSUES }}
-      DISCORD_WEBHOOK_SUGGESTIONS: ${{ secrets.DISCORD_WEBHOOK_SUGGESTIONS }}
-      DISCORD_WEBHOOK_ANNOUNCEMENTS: ${{ secrets.DISCORD_WEBHOOK_ANNOUNCEMENTS }}
-      DISCORD_WEBHOOK_UPDATES: ${{ secrets.DISCORD_WEBHOOK_UPDATES }}
+      DISCORD_WEBHOOK_SUPPORT: ${{ secrets.DISCORD_WEBHOOK_SUPPORT }}
+      DISCORD_WEBHOOK_IDEAS: ${{ secrets.DISCORD_WEBHOOK_IDEAS }}
+      DISCORD_WEBHOOK_NEWS: ${{ secrets.DISCORD_WEBHOOK_NEWS }}
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Post event to Discord
@@ -30,7 +29,7 @@ jobs:
         run: |
           import json, os, re, urllib.error, urllib.request
 
-          MARKER = re.compile(r"<!-- discord-message: (issues|suggestions):(\d+) -->")
+          MARKER = re.compile(r"<!-- discord-message: (support|ideas):(\d+) -->")
 
           def post(url, payload):
               req = urllib.request.Request(
@@ -100,7 +99,7 @@ jobs:
               labels = [l["name"] for l in issue.get("labels", [])]
               label_text = " ".join(labels).lower()
               suggestions = "feature" in label_text or "enhancement" in label_text
-              channel = "suggestions" if suggestions else "issues"
+              channel = "ideas" if suggestions else "support"
               color = {"opened": 0x3498DB, "closed": 0x57F287, "reopened": 0xE67E22}.get(action, 0x95A5A6)
               payload = {"embeds": [{
                   "title": f"[{action.upper()}] #{issue['number']} {issue['title']}"[:256],
@@ -115,31 +114,36 @@ jobs:
               }]}
 
               webhooks = {
-                  "issues": os.environ["DISCORD_WEBHOOK_ISSUES"],
-                  "suggestions": os.environ["DISCORD_WEBHOOK_SUGGESTIONS"],
+                  "support": os.environ.get("DISCORD_WEBHOOK_SUPPORT"),
+                  "ideas": os.environ.get("DISCORD_WEBHOOK_IDEAS"),
               }
               number = issue["number"]
               marker = None if action == "opened" else find_marker(repo, number)
               if marker and webhooks.get(marker[0]):
+                  base = webhooks[marker[0]].split("?")[0]
                   try:
-                      discord(webhooks[marker[0]].split("?")[0] + "/messages/" + marker[1], payload, "PATCH")
-                      print("Edited Discord message", marker[1])
+                      discord(f"{base}/messages/{marker[1]}?thread_id={marker[1]}", payload, "PATCH")
+                      print("Edited Discord post", marker[1])
                       raise SystemExit(0)
                   except urllib.error.HTTPError as e:
-                      print("Could not edit Discord message", marker[1], "-", e.code, e.read().decode(errors="replace")[:500])
+                      print("Could not edit Discord post", marker[1], "-", e.code, e.read().decode(errors="replace")[:500])
+              if action != "opened":
+                  print("No Discord post to update for", action, "; skipping")
+                  raise SystemExit(0)
               if not webhooks[channel]:
                   print("Discord webhook secret missing; skipping")
                   raise SystemExit(0)
+              payload["thread_name"] = f"#{number} {issue['title']}"[:100]
               msg = discord(webhooks[channel].split("?")[0] + "?wait=true", payload)
               github("POST", f"/repos/{repo}/issues/{number}/comments", {
                   "body": f"<!-- discord-message: {channel}:{msg['id']} -->\nLinked to the Discord post.",
               })
-              print("Posted Discord message", msg["id"])
+              print("Posted Discord post", msg["id"])
               raise SystemExit(0)
 
           elif event == "release":
               rel = data["release"]
-              url = os.environ["DISCORD_WEBHOOK_ANNOUNCEMENTS"]
+              url = os.environ["DISCORD_WEBHOOK_NEWS"]
               payload = {"embeds": [{
                   "title": f"Release {rel['tag_name']}",
                   "url": rel["html_url"],
@@ -158,7 +162,7 @@ jobs:
                   lines.append(f"`{c['id'][:7]}` {msg} — {c.get('author', {}).get('name', '?')}")
               if len(commits) > 10:
                   lines.append(f"…and {len(commits) - 10} more")
-              url = os.environ["DISCORD_WEBHOOK_UPDATES"]
+              url = os.environ["DISCORD_WEBHOOK_NEWS"]
               payload = {"embeds": [{
                   "title": f"{len(commits)} new commit(s) to {branch}",
                   "url": data.get("compare", ""),
