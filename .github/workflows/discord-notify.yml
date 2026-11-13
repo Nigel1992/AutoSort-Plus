@@ -12,88 +12,103 @@ on:
 
 permissions:
   contents: read
-  issues: write
+  issues: read
 
 jobs:
   notify:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     env:
       DISCORD_WEBHOOK_SUPPORT: ${{ secrets.DISCORD_WEBHOOK_SUPPORT }}
       DISCORD_WEBHOOK_IDEAS: ${{ secrets.DISCORD_WEBHOOK_IDEAS }}
       DISCORD_WEBHOOK_NEWS: ${{ secrets.DISCORD_WEBHOOK_NEWS }}
+      DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+      DISCORD_GUILD_ID: '1468295714961494029'
+      DISCORD_FORUM_IDS: '{"support":"1570943779563765760","ideas":"1570943784685019218"}'
       DISCORD_TAG_IDS: '{"support":{"🐛 Bug":"1570943779563765761","❓ Question":"1570943779563765762","✅ Resolved":"1570943779563765763"},"ideas":{"💡 Idea":"1570943784685019219","🛠 Planned":"1570943784685019220","✔ Done":"1570943784685019221","❌ Rejected":"1570943784685019222"}}'
-      GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Post event to Discord
         shell: python
         run: |
-          import json, os, re, urllib.error, urllib.request
+          import json, os, urllib.request
 
-          MARKER = re.compile(r"<!-- discord-message: (support|ideas):(\d+) -->")
+          GUILD = os.environ["DISCORD_GUILD_ID"]
+          FORUMS = json.loads(os.environ["DISCORD_FORUM_IDS"])
+          TAG_IDS = json.loads(os.environ["DISCORD_TAG_IDS"])
+          WEBHOOKS = {"support": "DISCORD_WEBHOOK_SUPPORT", "ideas": "DISCORD_WEBHOOK_IDEAS"}
+          UA = "NigelDiscordNotify/1.0 (+https://github.com/Nigel1992)"
 
-          def post(url, payload):
+          def http(method, url, payload=None, headers=None):
+              h = {"Content-Type": "application/json", "User-Agent": UA}
+              h.update(headers or {})
               req = urllib.request.Request(
                   url,
-                  data=json.dumps(payload).encode(),
-                  headers={
-                      "Content-Type": "application/json",
-                      "User-Agent": "NigelDiscordNotify/1.0 (+https://github.com/Nigel1992)",
-                  },
-                  method="POST",
-              )
-              with urllib.request.urlopen(req, timeout=30) as r:
-                  return r.status
-
-          def discord(url, payload, method="POST"):
-              req = urllib.request.Request(
-                  url,
-                  data=json.dumps(payload).encode(),
-                  headers={
-                      "Content-Type": "application/json",
-                      "User-Agent": "NigelDiscordNotify/1.0 (+https://github.com/Nigel1992)",
-                  },
+                  data=json.dumps(payload).encode() if payload is not None else None,
+                  headers=h,
                   method=method,
               )
               with urllib.request.urlopen(req, timeout=30) as r:
                   body = r.read()
                   return json.loads(body) if body else {}
 
-          def github(method, path, payload=None):
-              req = urllib.request.Request(
-                  "https://api.github.com" + path,
-                  data=json.dumps(payload).encode() if payload is not None else None,
-                  headers={
-                      "Authorization": "Bearer " + os.environ["GITHUB_TOKEN"],
-                      "Accept": "application/vnd.github+json",
-                      "User-Agent": "NigelDiscordNotify/1.0 (+https://github.com/Nigel1992)",
-                  },
-                  method=method,
-              )
-              with urllib.request.urlopen(req, timeout=30) as r:
-                  return json.loads(r.read() or b"null")
-
-          def find_marker(repo, number):
-              found = None
-              page = 1
-              while True:
-                  comments = github("GET", f"/repos/{repo}/issues/{number}/comments?per_page=100&page={page}")
-                  for c in comments:
-                      m = MARKER.search(c.get("body") or "")
-                      if m:
-                          found = (m.group(1), m.group(2))
-                  if len(comments) < 100:
-                      return found
-                  page += 1
-
-          TAG_IDS = json.loads(os.environ.get("DISCORD_TAG_IDS") or "{}")
-          TAG_RULES = {
-              "support": lambda l, s: (["🐛 Bug"] if "bug" in l else ["❓ Question"] if "question" in l else []) + (["✅ Resolved"] if s == "closed" else []),
-              "ideas": lambda l, s: ["💡 Idea"] + ((["❌ Rejected"] if any(k in x for x in l for k in ("wontfix", "invalid", "duplicate", "not planned")) else ["✔ Done"]) if s == "closed" else (["🛠 Planned"] if any("progress" in x or "planned" in x for x in l) else [])),
-          }
+          def bot(method, path, payload=None):
+              return http(method, "https://discord.com/api/v10" + path, payload, {"Authorization": "Bot " + os.environ["DISCORD_BOT_TOKEN"]})
 
           def field(name, value, inline=False):
               return {"name": name, "value": (value or "-")[:1000], "inline": inline}
+
+          def tag_id(kind, word):
+              return next((v for k, v in TAG_IDS[kind].items() if k.split(" ", 1)[-1] == word), None)
+
+          def tags_for(kind, labels, state):
+              l = [x.lower() for x in labels]
+              has = lambda *ks: any(k in x for x in l for k in ks)
+              words = []
+              if kind == "support":
+                  if has("bug"):
+                      words.append("Bug")
+                  elif has("question"):
+                      words.append("Question")
+                  if state == "closed":
+                      words.append("Resolved")
+              else:
+                  words.append("Idea")
+                  if state == "closed":
+                      words.append("Rejected" if has("wontfix", "invalid", "duplicate", "not planned") else "Done")
+                  elif has("progress", "planned"):
+                      words.append("Planned")
+              return [t for t in (tag_id(kind, w) for w in words) if t]
+
+          def find_thread(kind, number):
+              prefix = f"#{number} "
+              forum = FORUMS[kind]
+              for t in bot("GET", f"/guilds/{GUILD}/threads/active").get("threads", []):
+                  if t["parent_id"] == forum and t["name"].startswith(prefix):
+                      return t
+              before = None
+              for _ in range(20):
+                  path = f"/channels/{forum}/threads/archived/public?limit=100" + (f"&before={before}" if before else "")
+                  data = bot("GET", path)
+                  for t in data.get("threads", []):
+                      if t["name"].startswith(prefix):
+                          return t
+                  if not data.get("has_more") or not data.get("threads"):
+                      return None
+                  before = data["threads"][-1]["thread_metadata"]["archive_timestamp"]
+              return None
+
+          def sync(thread, kind, labels, state, payload):
+              tid = thread["id"]
+              archived = thread.get("thread_metadata", {}).get("archived", False)
+              if archived:
+                  bot("PATCH", f"/channels/{tid}", {"archived": False})
+              try:
+                  bot("PATCH", f"/channels/{tid}", {"applied_tags": tags_for(kind, labels, state)})
+                  webhook = os.environ[WEBHOOKS[kind]].split("?")[0]
+                  http("PATCH", f"{webhook}/messages/{tid}?thread_id={tid}", payload)
+              finally:
+                  if archived:
+                      bot("PATCH", f"/channels/{tid}", {"archived": True})
 
           event = os.environ.get("GITHUB_EVENT_NAME")
           repo = os.environ["GITHUB_REPOSITORY"]
@@ -103,13 +118,14 @@ jobs:
           if event == "issues":
               issue = data["issue"]
               action = data["action"]
+              number = issue["number"]
               labels = [l["name"] for l in issue.get("labels", [])]
               label_text = " ".join(labels).lower()
               suggestions = "feature" in label_text or "enhancement" in label_text
-              channel = "ideas" if suggestions else "support"
+              kind = "ideas" if suggestions else "support"
               color = {"opened": 0x3498DB, "closed": 0x57F287, "reopened": 0xE67E22}.get(action, 0x95A5A6)
               payload = {"embeds": [{
-                  "title": f"[{action.upper()}] #{issue['number']} {issue['title']}"[:256],
+                  "title": f"[{action.upper()}] #{number} {issue['title']}"[:256],
                   "url": issue["html_url"],
                   "color": color,
                   "description": (issue.get("body") or "")[:1500],
@@ -120,34 +136,29 @@ jobs:
                   "footer": {"text": repo},
               }]}
 
-              webhooks = {
-                  "support": os.environ.get("DISCORD_WEBHOOK_SUPPORT"),
-                  "ideas": os.environ.get("DISCORD_WEBHOOK_IDEAS"),
-              }
-              number = issue["number"]
-              marker = None if action == "opened" else find_marker(repo, number)
-              if marker and webhooks.get(marker[0]):
-                  base = webhooks[marker[0]].split("?")[0]
-                  try:
-                      discord(f"{base}/messages/{marker[1]}?thread_id={marker[1]}", payload, "PATCH")
-                      print("Edited Discord post", marker[1])
+              if action == "opened":
+                  if not os.environ.get(WEBHOOKS[kind]):
+                      print("Discord webhook secret missing; skipping")
                       raise SystemExit(0)
-                  except urllib.error.HTTPError as e:
-                      print("Could not edit Discord post", marker[1], "-", e.code, e.read().decode(errors="replace")[:500])
-              if action != "opened":
-                  print("No Discord post to update for", action, "; skipping")
+                  payload["thread_name"] = f"#{number} {issue['title']}"[:100]
+                  payload["applied_tags"] = tags_for(kind, labels, "open")
+                  url = os.environ[WEBHOOKS[kind]].split("?")[0] + "?wait=true"
+                  msg = http("POST", url, payload)
+                  print("Posted Discord post", msg["id"])
                   raise SystemExit(0)
-              if not webhooks[channel]:
-                  print("Discord webhook secret missing; skipping")
+
+              other = "ideas" if kind == "support" else "support"
+              found = None
+              for k in (kind, other):
+                  found = find_thread(k, number)
+                  if found:
+                      kind = k
+                      break
+              if not found:
+                  print("No Discord post found for #", number, "; skipping")
                   raise SystemExit(0)
-              payload["thread_name"] = f"#{number} {issue['title']}"[:100]
-              wanted = TAG_RULES[channel]([l.lower() for l in labels], issue["state"])
-              payload["applied_tags"] = [TAG_IDS.get(channel, {})[n] for n in wanted if n in TAG_IDS.get(channel, {})]
-              msg = discord(webhooks[channel].split("?")[0] + "?wait=true", payload)
-              github("POST", f"/repos/{repo}/issues/{number}/comments", {
-                  "body": f"<!-- discord-message: {channel}:{msg['id']} -->\nLinked to the Discord post.",
-              })
-              print("Posted Discord post", msg["id"])
+              sync(found, kind, labels, issue["state"], payload)
+              print("Updated Discord post", found["id"], "for", action)
               raise SystemExit(0)
 
           elif event == "release":
@@ -188,4 +199,4 @@ jobs:
           if not url:
               print("Discord webhook secret missing; skipping")
               raise SystemExit(0)
-          print("Discord response:", post(url, payload))
+          print("Discord response:", http("POST", url, payload))
