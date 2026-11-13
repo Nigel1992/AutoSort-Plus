@@ -22,6 +22,7 @@ jobs:
       DISCORD_WEBHOOK_SUPPORT: ${{ secrets.DISCORD_WEBHOOK_SUPPORT }}
       DISCORD_WEBHOOK_IDEAS: ${{ secrets.DISCORD_WEBHOOK_IDEAS }}
       DISCORD_WEBHOOK_NEWS: ${{ secrets.DISCORD_WEBHOOK_NEWS }}
+      DISCORD_TAG_IDS: '{"support":{"🐛 Bug":"1570943779563765761","❓ Vraag":"1570943779563765762","✅ Opgelost":"1570943779563765763"},"ideas":{"💡 Idee":"1570943784685019219","🛠 Gepland":"1570943784685019220","✔ Uitgevoerd":"1570943784685019221","❌ Afgewezen":"1570943784685019222"}}'
       GITHUB_TOKEN: ${{ github.token }}
     steps:
       - name: Post event to Discord
@@ -85,6 +86,12 @@ jobs:
                       return found
                   page += 1
 
+          TAG_IDS = json.loads(os.environ.get("DISCORD_TAG_IDS") or "{}")
+          TAG_RULES = {
+              "support": lambda l, s: (["🐛 Bug"] if "bug" in l else ["❓ Vraag"] if "question" in l else []) + (["✅ Opgelost"] if s == "closed" else []),
+              "ideas": lambda l, s: ["💡 Idee"] + ((["❌ Afgewezen"] if any(k in x for x in l for k in ("wontfix", "invalid", "duplicate", "not planned")) else ["✔️ Uitgevoerd"]) if s == "closed" else (["🛠️ Gepland"] if any("progress" in x or "planned" in x for x in l) else [])),
+          }
+
           def field(name, value, inline=False):
               return {"name": name, "value": (value or "-")[:1000], "inline": inline}
 
@@ -134,6 +141,8 @@ jobs:
                   print("Discord webhook secret missing; skipping")
                   raise SystemExit(0)
               payload["thread_name"] = f"#{number} {issue['title']}"[:100]
+              wanted = TAG_RULES[channel]([l.lower() for l in labels], issue["state"])
+              payload["applied_tags"] = [TAG_IDS.get(channel, {})[n] for n in wanted if n in TAG_IDS.get(channel, {})]
               msg = discord(webhooks[channel].split("?")[0] + "?wait=true", payload)
               github("POST", f"/repos/{repo}/issues/{number}/comments", {
                   "body": f"<!-- discord-message: {channel}:{msg['id']} -->\nLinked to the Discord post.",
