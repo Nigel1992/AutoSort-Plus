@@ -166,21 +166,39 @@ jobs:
           elif event == "issue_comment":
               issue = data["issue"]
               comment = data["comment"]
+              number = issue["number"]
               labels = [l["name"] for l in issue.get("labels", [])]
               label_text = " ".join(labels).lower()
               suggestions = "feature" in label_text or "enhancement" in label_text
-              url = os.environ["DISCORD_WEBHOOK_SUGGESTIONS"] if suggestions else os.environ["DISCORD_WEBHOOK_ISSUES"]
+              kind = "ideas" if suggestions else "support"
+              other = "support" if kind == "ideas" else "ideas"
+              found = None
+              for k in (kind, other):
+                  found = find_thread(k, number)
+                  if found:
+                      kind = k
+                      break
+              if not found:
+                  print("No Discord post found for #", number, "; skipping")
+                  raise SystemExit(0)
+              if not os.environ.get(WEBHOOKS[kind]):
+                  print("Discord webhook secret missing; skipping")
+                  raise SystemExit(0)
               payload = {"embeds": [{
-                  "title": f"[COMMENT] #{issue['number']} {issue['title']}"[:256],
+                  "title": f"[COMMENT] #{number} {issue['title']}"[:256],
                   "url": comment["html_url"],
                   "color": 0x5865F2,
-                  "description": (comment.get("body") or "")[:1500],
+                  "description": (comment.get("body") or "")[:1500] or "(no text)",
                   "fields": [
                       field("Author", comment["user"]["login"], True),
                       field("Labels", ", ".join(labels) or "none", True),
                   ],
                   "footer": {"text": repo},
               }]}
+              webhook = os.environ[WEBHOOKS[kind]].split("?")[0]
+              http("POST", f"{webhook}?wait=true&thread_id={found['id']}", payload)
+              print("Posted comment to Discord post", found["id"])
+              raise SystemExit(0)
 
           elif event == "release":
               rel = data["release"]
