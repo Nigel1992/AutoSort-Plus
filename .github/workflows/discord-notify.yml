@@ -3,6 +3,8 @@ name: Discord Notify
 on:
   issues:
     types: [opened, closed, reopened]
+  issue_comment:
+    types: [created]
   release:
     types: [published]
   push:
@@ -160,6 +162,25 @@ jobs:
               sync(found, kind, labels, issue["state"], payload)
               print("Updated Discord post", found["id"], "for", action)
               raise SystemExit(0)
+
+          elif event == "issue_comment":
+              issue = data["issue"]
+              comment = data["comment"]
+              labels = [l["name"] for l in issue.get("labels", [])]
+              label_text = " ".join(labels).lower()
+              suggestions = "feature" in label_text or "enhancement" in label_text
+              url = os.environ["DISCORD_WEBHOOK_SUGGESTIONS"] if suggestions else os.environ["DISCORD_WEBHOOK_ISSUES"]
+              payload = {"embeds": [{
+                  "title": f"[COMMENT] #{issue['number']} {issue['title']}"[:256],
+                  "url": comment["html_url"],
+                  "color": 0x5865F2,
+                  "description": (comment.get("body") or "")[:1500],
+                  "fields": [
+                      field("Author", comment["user"]["login"], True),
+                      field("Labels", ", ".join(labels) or "none", True),
+                  ],
+                  "footer": {"text": repo},
+              }]}
 
           elif event == "release":
               rel = data["release"]
